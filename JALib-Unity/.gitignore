@@ -1,0 +1,14 @@
+# Intellij Idea
+.idea
+
+# Compile File
+*.dll
+bin/
+obj/
+
+# Unity File
+Library/
+Logs/
+Packages/
+Temp/
+UserSettings/

@@ -1,0 +1,81 @@
+﻿using System;
+using System.IO;
+using System.Reflection;
+using JALib.Tools;
+using Newtonsoft.Json.Linq;
+using UnityEngine;
+
+namespace JALib.Core.Setting;
+
+internal class JAModSetting : JASetting {
+    private string path;
+    public Version LatestVersion;
+    public bool ForceUpdate;
+    public SystemLanguage[] AvailableLanguages;
+    public string Homepage;
+    public bool IsBetaBranch;
+    public string Discord;
+    public SystemLanguage? CustomLanguage;
+    internal JASetting Setting;
+    
+    public JAModSetting(JAMod mod, string path = null, Type type = null) : base(mod, LoadJson(mod, ref path)) {
+        this.path = path;
+        if(type != null && !JsonObject.ContainsKey(nameof(Setting))) JsonObject[nameof(Setting)] = new JObject();
+        Setting = type?.New<JASetting>(Mod, JsonObject[nameof(Setting)] as JObject);
+        if(!JsonObject.ContainsKey(nameof(Feature))) JsonObject[nameof(Feature)] = new JObject();
+    }
+    
+    private static JObject LoadJson(JAMod mod, ref string path) {
+        path ??= Path.Combine(mod.Path, "Settings.json");
+        return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
+    }
+
+    public new void PutFieldData() {
+        try {
+            base.PutFieldData();
+            Setting.PutFieldData();
+            foreach(Feature f in Mod.Features) f.FeatureSetting.PutFieldData();
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            ErrorUtils.ShowError(JALib.Instance, e);
+        }
+    }
+    
+    public new void RemoveFieldData() {
+        try {
+            base.RemoveFieldData();
+            Setting.RemoveFieldData();
+            foreach(Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            ErrorUtils.ShowError(JALib.Instance, e);
+        }
+    }
+    
+    public void Save() {
+        try {
+            PutFieldData();
+            File.WriteAllText(path, JsonObject.ToString());
+            RemoveFieldData();
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            ErrorUtils.ShowError(JALib.Instance, e);
+        }
+    }
+    
+    protected override void Dispose0() {
+        try {
+            base.Dispose0();
+            Mod = null;
+            path = null;
+            LatestVersion = null;
+            AvailableLanguages = null;
+            Homepage = null;
+            Setting.Dispose();
+            Setting = null;
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            ErrorUtils.ShowError(JALib.Instance, e);
+        }
+    }
+}
