@@ -80,29 +80,31 @@ public class JAPatcher : IDisposable {
                             attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
                 }
                 MethodInfo originalMethod = attribute.Method;
-                TypeBuilder typeBuilder = moduleBuilder.DefineType($"JAPatch.{mod.Name}.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.Public);
-                FieldBuilder fieldBuilder = typeBuilder.DefineField("Patcher", typeof(JAPatcher), FieldAttributes.Private | FieldAttributes.Static);
-                fieldBuilder.SetConstant(this);
-                MethodBuilder methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Public | MethodAttributes.Static,
-                    originalMethod.ReturnType, originalMethod.GetGenericArguments());
-                foreach(ParameterInfo parameter in originalMethod.GetParameters()) methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.Name);
-                ILGenerator ilGenerator = methodBuilder.GetILGenerator();
-                Label tryBlock = ilGenerator.BeginExceptionBlock();
-                for(int i = 0; i < originalMethod.GetParameters().Length; i++) ilGenerator.Emit(OpCodes.Ldarg, i + 1);
-                ilGenerator.Emit(OpCodes.Call, originalMethod);
-                ilGenerator.Emit(OpCodes.Leave_S, tryBlock);
-                ilGenerator.BeginCatchBlock(typeof(Exception));
-                LocalBuilder exceptionLocal = ilGenerator.DeclareLocal(typeof(Exception));
-                ilGenerator.Emit(OpCodes.Stloc, exceptionLocal);
-                ilGenerator.Emit(OpCodes.Ldsfld, fieldBuilder);
-                ilGenerator.Emit(OpCodes.Ldloc, exceptionLocal);
-                ilGenerator.Emit(OpCodes.Call, this.Method(nameof(OnPatchException)));
-                ilGenerator.Emit(OpCodes.Leave_S, tryBlock);
-                ilGenerator.EndExceptionBlock();
-                ilGenerator.Emit(OpCodes.Ret);
-                Type patchType = typeBuilder.CreateType();
-                patchType.SetValue("Patcher", this);
-                attribute.HarmonyMethod ??= new HarmonyMethod(patchType.Method(originalMethod.Name));
+                if(attribute.TryingCatch) {
+                    TypeBuilder typeBuilder = moduleBuilder.DefineType($"JAPatch.{mod.Name}.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.Public);
+                    FieldBuilder fieldBuilder = typeBuilder.DefineField("Patcher", typeof(JAPatcher), FieldAttributes.Private | FieldAttributes.Static);
+                    fieldBuilder.SetConstant(this);
+                    MethodBuilder methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Public | MethodAttributes.Static,
+                        originalMethod.ReturnType, originalMethod.GetGenericArguments());
+                    foreach(ParameterInfo parameter in originalMethod.GetParameters()) methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.Name);
+                    ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+                    Label tryBlock = ilGenerator.BeginExceptionBlock();
+                    for(int i = 0; i < originalMethod.GetParameters().Length; i++) ilGenerator.Emit(OpCodes.Ldarg, i + 1);
+                    ilGenerator.Emit(OpCodes.Call, originalMethod);
+                    ilGenerator.Emit(OpCodes.Leave_S, tryBlock);
+                    ilGenerator.BeginCatchBlock(typeof(Exception));
+                    LocalBuilder exceptionLocal = ilGenerator.DeclareLocal(typeof(Exception));
+                    ilGenerator.Emit(OpCodes.Stloc, exceptionLocal);
+                    ilGenerator.Emit(OpCodes.Ldsfld, fieldBuilder);
+                    ilGenerator.Emit(OpCodes.Ldloc, exceptionLocal);
+                    ilGenerator.Emit(OpCodes.Call, this.Method(nameof(OnPatchException)));
+                    ilGenerator.Emit(OpCodes.Leave_S, tryBlock);
+                    ilGenerator.EndExceptionBlock();
+                    ilGenerator.Emit(OpCodes.Ret);
+                    Type patchType = typeBuilder.CreateType();
+                    patchType.SetValue("Patcher", this);
+                    attribute.HarmonyMethod ??= new HarmonyMethod(patchType.Method(originalMethod.Name));
+                } else attribute.HarmonyMethod ??= new HarmonyMethod(originalMethod);
                 attribute.Patch = JALib.Harmony.Patch(attribute.MethodBase,
                     attribute.PatchType == PatchType.Prefix ? attribute.HarmonyMethod : null,
                     attribute.PatchType == PatchType.Postfix ? attribute.HarmonyMethod : null,
@@ -122,7 +124,6 @@ public class JAPatcher : IDisposable {
     }
     
     public void OnPatchException(Exception e) {
-        mod.Error("Patch Exception");
         mod.LogException(e);
         ErrorUtils.ShowError(mod, e);
     }
