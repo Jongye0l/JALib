@@ -4,12 +4,17 @@ using UnityEngine.UI;
 
 namespace JALib.Core.Setting.GUI.Notification;
 
-public class Notification : MonoBehaviour {
+public class JANotification : MonoBehaviour {
+    public TMP_Text title;
     public TMP_Text text;
     public Button closeButton;
     
     public void SetMessage(string message) {
         text.text = message;
+    }
+    
+    public void SetTitle(string title) {
+        this.title.text = title;
     }
     
     public void Close() {

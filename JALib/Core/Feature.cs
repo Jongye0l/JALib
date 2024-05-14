@@ -97,7 +97,7 @@ public abstract class Feature {
           fontSize = 15,
           margin = new RectOffset(4, 2, 6, 6)
         }, Array.Empty<GUILayoutOption>());
-        bool enabled = !CanEnable || GUILayout.Toggle(Enabled, Name, new GUIStyle(GUI.skin.toggle) {
+        bool enabled = !CanEnable || GUILayout.Toggle(Enabled, Name, new GUIStyle(UnityEngine.GUI.skin.toggle) {
             fontStyle = FontStyle.Normal,
             font = null,
             margin = new RectOffset(0, 4, 4, 4)

@@ -1,5 +1,5 @@
 ﻿namespace JALib.Core.Setting.GUI.Notification;
 
-public class NotificationWarning : Notification {
+public class NotificationWarning : JANotification {
     
 }

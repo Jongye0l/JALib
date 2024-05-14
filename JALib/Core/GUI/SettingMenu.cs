@@ -1,8 +1,8 @@
-﻿using System.IO;
+﻿using JALib.Core.Setting.GUI;
 using JALib.Core.Setting.GUI.Features;
 using UnityEngine;
 
-namespace JALib.Core.Setting.GUI;
+namespace JALib.Core.GUI;
 
 public class SettingMenu {
 
@@ -11,8 +11,7 @@ public class SettingMenu {
     private static JAMod activeMod;
     
     internal static void Initialize() {
-        SettingBundle.Initialize();
-        GameObject ob = Object.Instantiate(SettingBundle.JASettings);
+        GameObject ob = Object.Instantiate(JABundle.JASettings);
         ob.SetActive(false);
         Object.DontDestroyOnLoad(ob);
         Panel = ob.GetComponent<SettingPanel>();
@@ -29,8 +28,8 @@ public class SettingMenu {
         GameObject featureContent = null;
         bool first = true;
         foreach(Feature feature in mod.Features) {
-            if(first) featureContent = Object.Instantiate(SettingBundle.FeatureContent, Content.transform);
-            GameObject featureOb = Object.Instantiate(SettingBundle.Feature, featureContent.transform);
+            if(first) featureContent = Object.Instantiate(JABundle.FeatureContent, Content.transform);
+            GameObject featureOb = Object.Instantiate(JABundle.Feature, featureContent.transform);
             FeatureMenu menu = featureOb.GetComponent<FeatureMenu>();
             menu.text.text = feature.Name;
             menu.SetEnable(feature.Enabled);
@@ -44,6 +43,6 @@ public class SettingMenu {
         Object.Destroy(Panel);
         Content = null;
         Panel = null;
-        SettingBundle.Dispose();
+        JABundle.Dispose();
     }
 }

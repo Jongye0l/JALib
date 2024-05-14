@@ -5,18 +5,18 @@ namespace JALib.Core.Setting.GUI.Notification;
 
 public class NotificationRoom : MonoBehaviour {
     public static NotificationRoom Instance;
-    public List<Notification> notifications = new();
+    public List<JANotification> notifications = new();
     
     private void Awake() {
         Instance ??= this;
     }
     
-    public void AddNotification(Notification notification) {
+    public void AddNotification(JANotification notification) {
         notifications.Add(notification);
         notification.transform.SetParent(transform);
     }
     
-    public void RemoveNotification(Notification notification) {
+    public void RemoveNotification(JANotification notification) {
         notifications.Remove(notification);
         Destroy(notification.gameObject);
     }

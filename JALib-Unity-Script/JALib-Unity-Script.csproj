@@ -410,7 +410,7 @@
         <Compile Include="Core\Setting\GUI\Elements\LongField.cs" />
         <Compile Include="Core\Setting\GUI\Elements\Select.cs" />
         <Compile Include="Core\Setting\GUI\Features\FeatureMenu.cs" />
-        <Compile Include="Core\Setting\GUI\Notification\Notification.cs" />
+        <Compile Include="Core\Setting\GUI\Notification\JANotification.cs" />
         <Compile Include="Core\Setting\GUI\Notification\NotificationError.cs" />
         <Compile Include="Core\Setting\GUI\Notification\NotificationInfo.cs" />
         <Compile Include="Core\Setting\GUI\Notification\NotificationRoom.cs" />

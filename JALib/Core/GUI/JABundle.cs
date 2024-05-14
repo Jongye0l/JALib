@@ -1,14 +1,19 @@
 ﻿using System.IO;
+using JALib.Core.Setting.GUI.Notification;
 using UnityEngine;
 
-namespace JALib.Core.Setting.GUI;
+namespace JALib.Core.GUI;
 
-public class SettingBundle {
+public class JABundle {
     
     private static AssetBundle bundle;
     public static GameObject JASettings;
     public static GameObject FeatureContent;
     public static GameObject Feature;
+    public static GameObject Notification;
+    public static NotificationInfo NotificationInfo;
+    public static NotificationWarning NotificationWarning;
+    public static NotificationError NotificationError;
     
     internal static void Initialize() {
         bundle = AssetBundle.LoadFromFile(Path.Combine(JALib.Instance.Path, "SettingBundle"));
@@ -16,6 +21,10 @@ public class SettingBundle {
         JASettings = bundle.LoadAsset<GameObject>("JASettings.prefab");
         FeatureContent = bundle.LoadAsset<GameObject>("FeatureContent.prefab");
         Feature = bundle.LoadAsset<GameObject>("Feature.prefab");
+        Notification = bundle.LoadAsset<GameObject>("Notification.prefab");
+        NotificationInfo = bundle.LoadAsset<GameObject>("NotificationInfo.prefab").GetComponent<NotificationInfo>();
+        NotificationWarning = bundle.LoadAsset<GameObject>("NotificationWarning.prefab").GetComponent<NotificationWarning>();
+        NotificationError = bundle.LoadAsset<GameObject>("NotificationError.prefab").GetComponent<NotificationError>();
     }
     
     internal static void Dispose() {

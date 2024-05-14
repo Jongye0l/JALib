@@ -6,6 +6,7 @@ using ADOFAI;
 using HarmonyLib;
 using JALib.API;
 using JALib.Core;
+using JALib.Core.GUI;
 using JALib.Core.Patch;
 using JALib.Core.Setting.GUI;
 using JALib.Tools;
@@ -42,6 +43,7 @@ public class JALib : JAMod {
         EnableInit();
         Harmony = new Harmony(ModEntry.Info.Id);
         patcher.Patch();
+        JABundle.Initialize();
         SettingMenu.Initialize();
     }
 

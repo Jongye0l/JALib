@@ -519,13 +519,14 @@
         <Compile Include="API\ResponsePacket.cs" />
         <Compile Include="Core\Dependency.cs" />
         <Compile Include="Core\Feature.cs" />
+        <Compile Include="Core\GUI\JABundle.cs" />
+        <Compile Include="Core\GUI\NotificationCanvas.cs" />
+        <Compile Include="Core\GUI\SettingMenu.cs" />
         <Compile Include="Core\JALocalization.cs" />
         <Compile Include="Core\JAMod.cs" />
         <Compile Include="Core\Patch\JAPatchAttribute.cs" />
         <Compile Include="Core\Patch\JAPatcher.cs" />
         <Compile Include="Core\Patch\PatchType.cs" />
-        <Compile Include="Core\Setting\GUI\SettingBundle.cs" />
-        <Compile Include="Core\Setting\GUI\SettingMenu.cs" />
         <Compile Include="Core\Setting\JAFeatureSetting.cs" />
         <Compile Include="Core\Setting\JASetting.cs" />
         <Compile Include="Core\Setting\JAModSetting.cs" />

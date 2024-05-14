@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using JALib.API;
 using JALib.API.Packets;
+using JALib.Core.GUI;
 using JALib.Core.Setting;
 using JALib.Core.Setting.GUI;
 using JALib.Stream;
