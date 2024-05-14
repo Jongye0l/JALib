@@ -19,6 +19,10 @@ public class JAction {
     }
 
     public void Invoke() {
+        if(mod == null) {
+            action.Invoke();
+            return;
+        }
         try {
             action.Invoke();
         } catch (Exception e) {
@@ -66,5 +70,9 @@ public class JAction {
     
     public static bool operator !=(JAction a, JAction b) {
         return !(a == b);
+    }
+    
+    public static implicit operator JAction(Action action) {
+        return new JAction(null, action);
     }
 }
