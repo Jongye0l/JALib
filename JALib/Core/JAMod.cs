@@ -93,13 +93,9 @@ public abstract class JAMod {
         }
     }
 
-    private bool IsExistMethod(string name) {
-        return GetType().Method(name).DeclaringType == GetType();
-    }
+    private bool IsExistMethod(string name) => GetType().Method(name).DeclaringType == GetType();
 
-    public static JAMod GetMods(string name) {
-        return mods[name];
-    }
+    public static JAMod GetMods(string name) => mods[name];
     
     internal static void EnableInit() {
         foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
@@ -279,33 +275,19 @@ public abstract class JAMod {
     protected virtual void OnSessionStop() {
     }
 
-    public void Log(object o) {
-        Logger.Log(o?.ToString());
-    }
+    public void Log(object o) => Logger.Log(o?.ToString());
     
-    public void Error(object o) {
-        Logger.Error(o?.ToString());
-    }
+    public void Error(object o) => Logger.Error(o?.ToString());
     
-    public void Warning(object o) {
-        Logger.Warning(o?.ToString());
-    }
+    public void Warning(object o) => Logger.Warning(o?.ToString());
 
-    public void Critical(object o) {
-        Logger.Critical(o?.ToString());
-    }
+    public void Critical(object o) => Logger.Critical(o?.ToString());
     
-    public void NativeLog(object o) {
-        Logger.NativeLog(o?.ToString());
-    }
+    public void NativeLog(object o) => Logger.NativeLog(o?.ToString());
 
-    public void LogException(string key, Exception e) {
-        Logger.LogException(key, e);
-    }
+    public void LogException(string key, Exception e) => Logger.LogException(key, e);
 
-    public void LogException(Exception e) {
-        Logger.LogException(e);
-    }
+    public void LogException(Exception e) => Logger.LogException(e);
 
     public void SaveSetting() => ModSetting.Save();
 }
