@@ -1,6 +1,7 @@
 ﻿using System;
 using JALib.Core.Patch;
 using JALib.Core.Setting;
+using JALib.Core.Setting.GUI;
 using JALib.Tools;
 using UnityEngine;
 
@@ -25,16 +26,16 @@ public abstract class Feature {
     public JAMod Mod { get; private set; }
     public string Name { get; private set; }
     protected JAPatcher Patcher { get; private set; }
-    private bool expendable => Active && (IsExistMethod(nameof(OnGUI)) || Setting != null);
-    internal bool expanded;
+    internal ContentsType contentsType;
 
-    protected Feature(JAMod mod, string name, bool canEnable = true, Type patchClass = null, Type settingType = null) {
+    protected Feature(JAMod mod, string name, bool canEnable = true, Type patchClass = null, Type settingType = null, ContentsType contentsType = ContentsType.SettingWithDescription) {
         Mod = mod;
         Name = name;
         Patcher = new JAPatcher(mod);
         if(patchClass != null) Patcher.AddPatch(patchClass);
         CanEnable = canEnable;
         FeatureSetting = new JAFeatureSetting(this, settingType);
+        this.contentsType = contentsType;
     }
 
     internal void Enable() {
@@ -87,54 +88,18 @@ public abstract class Feature {
     protected virtual void OnUnload() {
     }
 
-    internal void OnGUI0() {
-        bool ex = expendable;
-        if(!ex && !CanEnable) return;
-        GUILayout.BeginHorizontal();
-        bool expend = GUILayout.Toggle(expanded, ex ? expanded ? "◢" : "▶" : "", new GUIStyle {
-          fixedWidth = 10f,
-          normal = new GUIStyleState { textColor = Color.white },
-          fontSize = 15,
-          margin = new RectOffset(4, 2, 6, 6)
-        }, Array.Empty<GUILayoutOption>());
-        bool enabled = !CanEnable || GUILayout.Toggle(Enabled, Name, new GUIStyle(UnityEngine.GUI.skin.toggle) {
-            fontStyle = FontStyle.Normal,
-            font = null,
-            margin = new RectOffset(0, 4, 4, 4)
-        }, Array.Empty<GUILayoutOption>());
-        GUILayout.FlexibleSpace();
-        GUILayout.EndHorizontal();
-        if(enabled != Enabled) {
-            Enabled = enabled;
-            if(enabled) expend = ex;
-        }
-        if(expend != expanded) {
-            expanded = expend;
-            if(!expend) OnHideGUI();
-            else OnShowGUI();
-        }
-        if(!expend || !Enabled) return;
-        GUILayout.BeginHorizontal();
-        GUILayout.Space(24f);
-        GUILayout.BeginVertical();
-        OnGUI();
-        GUILayout.EndVertical();
-        GUILayout.EndHorizontal();
-        GUILayout.Space(12f);
+    internal void OnGUI0() => OnGUI();
+
+    protected virtual void OnGUI() {
     }
     
-    private bool IsExistMethod(string name) {
-        return GetType().Method(name).DeclaringType == GetType();
-    }
+    internal void OnShowGUI0() => OnShowGUI();
 
-    public virtual void OnGUI() {
-        
-    }
-
-    public virtual void OnShowGUI() {
-        
+    protected virtual void OnShowGUI() {
     }
     
-    public virtual void OnHideGUI() {
+    internal void OnHideGUI0() => OnHideGUI();
+    
+    protected virtual void OnHideGUI() {
     }
 }

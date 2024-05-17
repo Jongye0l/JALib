@@ -67,6 +67,7 @@ public class JALib : JAMod {
     protected override void OnUpdate(float deltaTime) {
         MainThread.OnUpdate();
         ErrorUtils.OnUpdate();
+        SettingMenu.OnUpdate();
     }
     
     

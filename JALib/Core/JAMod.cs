@@ -70,12 +70,8 @@ public abstract class JAMod {
             modEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            if(IsExistMethod(nameof(OnGUI))) modEntry.OnGUI = OnGUI0;
-            modEntry.OnGUI = OnGUI0;
+            modEntry.OnGUI = _ => {};
             modEntry.OnShowGUI = OnShowGUI0;
-            if(IsExistMethod(nameof(OnFixedGUI))) modEntry.OnFixedGUI = OnFixedGUI0;
-            modEntry.OnHideGUI = OnHideGUI0;
-            modEntry.OnSaveGUI = OnSaveGUI0;
             if(IsExistMethod(nameof(OnUpdate))) modEntry.OnUpdate = OnUpdate0;
             if(IsExistMethod(nameof(OnFixedUpdate))) modEntry.OnFixedUpdate = OnFixedUpdate0;
             if(IsExistMethod(nameof(OnLateUpdate))) modEntry.OnLateUpdate = OnLateUpdate0;
@@ -197,47 +193,27 @@ public abstract class JAMod {
 
     protected virtual void OnDisable() {
     }
-
-    // TODO : Make GUI
-    private void OnGUI0(UnityModManager.ModEntry modEntry) {
-        OnGUI();
-        foreach(Feature feature in Features) feature.OnGUI0();
-    }
+    
+    internal void OnGUI0() => OnGUI();
 
     protected virtual void OnGUI() {
     }
 
     private void OnShowGUI0(UnityModManager.ModEntry modEntry) {
-        SettingMenu.ShowFeature(this);
+        SettingMenu.ShowMod(this);
         UnityModManager.UI.Instance.ToggleWindow(false);
         OnShowGUI();
-        foreach(Feature feature in Features.Where(feature => feature.expanded)) feature.OnShowGUI(); 
     }
     
     protected virtual void OnShowGUI() {
     }
     
-    private void OnFixedGUI0(UnityModManager.ModEntry modEntry) {
-        OnFixedGUI();
-    }
-    
-    protected virtual void OnFixedGUI() {
-    }
-    
-    private void OnHideGUI0(UnityModManager.ModEntry modEntry) {
-        foreach(Feature feature in Features.Where(feature => feature.expanded)) feature.OnHideGUI(); 
+    internal void OnHideGUI0(Feature feature) {
+        feature.OnHideGUI0(); 
         OnHideGUI();
     }
     
     protected virtual void OnHideGUI() {
-    }
-    
-    private void OnSaveGUI0(UnityModManager.ModEntry modEntry) {
-        OnSaveGUI();
-        SaveSetting();
-    }
-    
-    protected virtual void OnSaveGUI() {
     }
 
     private void OnUpdate0(UnityModManager.ModEntry modEntry, float deltaTime) {
