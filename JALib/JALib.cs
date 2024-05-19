@@ -22,19 +22,19 @@ public class JALib : JAMod {
     private static JAPatcher patcher;
 
     private static void Setup(UnityModManager.ModEntry modEntry) {
+        foreach(string file in Directory.GetFiles(System.IO.Path.Combine(modEntry.Path, "lib"), "*.dll")) {
+            try {
+                Assembly.LoadFile(file);
+            } catch (Exception e) {
+                modEntry.Logger.LogException(e);
+            }
+        }
         Instance = new JALib(modEntry);
     }
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true) {
         _assembly = Assembly.GetExecutingAssembly();
         patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
-        foreach(string file in Directory.GetFiles(System.IO.Path.Combine(Path, "lib"), "*.dll")) {
-            try {
-                Assembly.LoadFile(file);
-            } catch (Exception e) {
-                LogException(e);
-            }
-        }
     }
 
     protected override void OnEnable() {
