@@ -17,7 +17,6 @@ public class JAPatchAttribute : Attribute {
     internal bool Disable;
     public string[] ArgumentTypes;
     public Type[] ArgumentTypesType;
-    public bool TryingCatch = true;
     internal MethodInfo Method;
     internal HarmonyMethod HarmonyMethod;
     internal MethodInfo Patch;

@@ -37,7 +37,6 @@ internal class JAModSetting : JASetting {
             foreach(Feature f in Mod.Features) f.FeatureSetting.PutFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(JALib.Instance, e);
         }
     }
     
@@ -48,7 +47,6 @@ internal class JAModSetting : JASetting {
             foreach(Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(JALib.Instance, e);
         }
     }
     
@@ -59,7 +57,6 @@ internal class JAModSetting : JASetting {
             RemoveFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(JALib.Instance, e);
         }
     }
     
@@ -75,7 +72,6 @@ internal class JAModSetting : JASetting {
             Setting = null;
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(JALib.Instance, e);
         }
     }
 }

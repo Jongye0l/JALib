@@ -41,7 +41,6 @@ public abstract class JASetting : IDisposable {
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(Mod, e);
         }
     }
 
@@ -92,7 +91,6 @@ public abstract class JASetting : IDisposable {
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(JALib.Instance, e);
         }
     }
 
@@ -106,7 +104,6 @@ public abstract class JASetting : IDisposable {
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(JALib.Instance, e);
         }
     }
 
@@ -123,7 +120,6 @@ public abstract class JASetting : IDisposable {
             jsonFields = null;
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(JALib.Instance, e);
         }
     }
 
@@ -132,7 +128,6 @@ public abstract class JASetting : IDisposable {
             Dispose0();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
-            ErrorUtils.ShowError(Mod, e);
         }
     }
 }

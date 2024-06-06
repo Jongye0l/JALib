@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using JALib.API;
 using JALib.API.Packets;
-using JALib.Core.GUI;
 using JALib.Core.Setting;
-using JALib.Core.Setting.GUI;
 using JALib.Stream;
 using JALib.Tools;
 using UnityEngine;
@@ -70,8 +67,9 @@ public abstract class JAMod {
             modEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            modEntry.OnGUI = _ => {};
-            modEntry.OnShowGUI = OnShowGUI0;
+            if(IsExistMethod(nameof(OnGUI))) modEntry.OnGUI = OnGUI0;
+            if(IsExistMethod(nameof(OnShowGUI))) modEntry.OnShowGUI = OnShowGUI0;
+            if(IsExistMethod(nameof(OnHideGUI))) modEntry.OnHideGUI = OnHideGUI0;
             if(IsExistMethod(nameof(OnUpdate))) modEntry.OnUpdate = OnUpdate0;
             if(IsExistMethod(nameof(OnFixedUpdate))) modEntry.OnFixedUpdate = OnFixedUpdate0;
             if(IsExistMethod(nameof(OnLateUpdate))) modEntry.OnLateUpdate = OnLateUpdate0;
@@ -84,7 +82,6 @@ public abstract class JAMod {
             ModEntry.Info.DisplayName = $"{Name} <color=#FF0000>[Fail to load]</color>";
             Error("Failed to Initialize JAMod " + Name);
             LogException(e);
-            ErrorUtils.ShowError(this, e);
             throw;
         }
     }
@@ -194,23 +191,28 @@ public abstract class JAMod {
     protected virtual void OnDisable() {
     }
     
-    internal void OnGUI0() => OnGUI();
+    internal void OnGUI0(UnityModManager.ModEntry modEntry) => OnGUI();
 
     protected virtual void OnGUI() {
     }
 
     private void OnShowGUI0(UnityModManager.ModEntry modEntry) {
-        SettingMenu.ShowMod(this);
-        UnityModManager.UI.Instance.ToggleWindow(false);
-        OnShowGUI();
+        try {
+            OnShowGUI();
+        } catch (Exception e) {
+            LogException(e);
+        }
     }
     
     protected virtual void OnShowGUI() {
     }
     
-    internal void OnHideGUI0(Feature feature) {
-        feature.OnHideGUI0(); 
-        OnHideGUI();
+    internal void OnHideGUI0(UnityModManager.ModEntry modEntry) {
+        try {
+            OnHideGUI();
+        } catch (Exception e) {
+            LogException(e);
+        }
     }
     
     protected virtual void OnHideGUI() {
