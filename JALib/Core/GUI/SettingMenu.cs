@@ -9,7 +9,7 @@ namespace JALib.Core.GUI;
 public class SettingMenu {
 
     public static SettingPanel Panel;
-    public static GameObject Content;
+    public static SettingContents Content;
     public static JAMod activeMod { get; private set; }
     public static Feature activeFeature { get; private set; }
     
@@ -18,7 +18,7 @@ public class SettingMenu {
         ob.SetActive(false);
         Object.DontDestroyOnLoad(ob);
         Panel = ob.GetComponent<SettingPanel>();
-        Content = ob.GetComponentsInChildren<SettingContents>()[0].gameObject;
+        Content = ob.GetComponentsInChildren<SettingContents>()[0];
     }
 
     public static void Reset() {
@@ -40,6 +40,7 @@ public class SettingMenu {
             menu.OnClick += () => ShowFeature(feature);
             first = !first;
         }
+        Content.contentsType = ContentsType.Feature;
         Panel.gameObject.SetActive(true);
     }
 
@@ -56,7 +57,10 @@ public class SettingMenu {
                 break;
             case ContentsType.SettingWithDescription:
                 break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
+        Content.contentsType = feature.contentsType;
         feature.OnShowGUI0();
     }
     

@@ -16,7 +16,7 @@ public class JABundle {
     public static NotificationError NotificationError;
     
     internal static void Initialize() {
-        bundle = AssetBundle.LoadFromFile(Path.Combine(JALib.Instance.Path, "SettingBundle"));
+        bundle = AssetBundle.LoadFromFile(Path.Combine(JALib.Instance.Path, "jalib"));
         if(!bundle) throw new FileNotFoundException("SettingBundle not found.");
         JASettings = bundle.LoadAsset<GameObject>("JASettings.prefab");
         FeatureContent = bundle.LoadAsset<GameObject>("FeatureContent.prefab");

@@ -43,14 +43,14 @@ public class JALib : JAMod {
         EnableInit();
         Harmony = new Harmony(ModEntry.Info.Id);
         patcher.Patch();
-        JABundle.Initialize();
-        SettingMenu.Initialize();
+        //JABundle.Initialize();
+        //SettingMenu.Initialize();
     }
 
     protected override void OnDisable() {
         Harmony.UnpatchAll(ModEntry.Info.Id);
         patcher.Unpatch();
-        SettingMenu.Dispose();
+        //SettingMenu.Dispose();
         DisableInit();
         JApi.Dispose();
         MainThread.Dispose();
@@ -67,7 +67,7 @@ public class JALib : JAMod {
     protected override void OnUpdate(float deltaTime) {
         MainThread.OnUpdate();
         ErrorUtils.OnUpdate();
-        SettingMenu.OnUpdate();
+        //SettingMenu.OnUpdate();
     }
     
     
