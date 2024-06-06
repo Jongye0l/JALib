@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace JALib.Data;
@@ -6,7 +7,7 @@ namespace JALib.Data;
 public class RawFile : IDisposable {
     public string Name { get; private set; }
     public byte[] Data { get; private set; }
-    public RawFile[] Files { get; private set; }
+    public List<RawFile> Files { get; private set; }
     public bool IsFolder => Data == null;
     
     public RawFile(string name, byte[] data) {
@@ -22,13 +23,13 @@ public class RawFile : IDisposable {
         }
         if(!Directory.Exists(filePath)) throw new FileNotFoundException();
         string[] paths = Directory.GetFiles(filePath);
-        Files = new RawFile[paths.Length];
-        for(int i = 0; i < paths.Length; i++) Files[i] = new RawFile(paths[i]);
+        Files = new List<RawFile>();
+        foreach(string path in paths) Files.Add(new RawFile(path));
     }
     
     public RawFile(string name, RawFile[] files) {
         Name = name;
-        Files = files;
+        Files = new List<RawFile>(files);
     }
     
     public void Save(string path) {

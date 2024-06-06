@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -16,10 +17,30 @@ public static class Zipper {
     public static RawFile[] Unzip(System.IO.Stream stream) {
         using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
         List<RawFile> files = new();
+        Dictionary<string, RawFile> folders = new();
         foreach(ZipArchiveEntry entry in archive.Entries) {
             byte[] buffer = new byte[entry.Length];
             entry.Open().Read(buffer);
-            files.Add(new RawFile(entry.FullName, buffer));
+            string[] path = entry.FullName.Split('/');
+            if(path.Length > 1) {
+                string folder = string.Join("/", path[..^1]);
+                if(!folders.ContainsKey(folder)) {
+                    RawFile parent = null;
+                    for(int i = 0; i < path.Length - 1; i++) {
+                        string folderPath = string.Join("/", path[..i]);
+                        if(folders.TryGetValue(folderPath, out RawFile folder1)) {
+                            parent = folder1;
+                            continue;
+                        }
+                        RawFile rawFile = new(path[i], Array.Empty<RawFile>());
+                        folders.Add(folderPath, rawFile);
+                        files.Add(rawFile);
+                        parent?.Files.Add(rawFile);
+                        parent = rawFile;
+                    }
+                }
+                folders[folder].Files.Add(new RawFile(path[^1], buffer));
+            } else files.Add(new RawFile(entry.FullName, buffer));
         }
         return files.ToArray();
     }
