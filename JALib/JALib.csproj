@@ -508,8 +508,6 @@
         <Compile Include="API\Packets\DownloadModRequest.cs" />
         <Compile Include="API\Packets\ConnectInfo.cs" />
         <Compile Include="API\Packets\DiscordUpdate.cs" />
-        <Compile Include="API\Packets\ExceptionInfo.cs" />
-        <Compile Include="API\Packets\ExceptionReport.cs" />
         <Compile Include="API\Packets\GetLocalization.cs" />
         <Compile Include="API\Packets\GetModInfo.cs" />
         <Compile Include="API\Packets\PacketResponseError.cs" />
@@ -519,9 +517,6 @@
         <Compile Include="API\ResponsePacket.cs" />
         <Compile Include="Core\Dependency.cs" />
         <Compile Include="Core\Feature.cs" />
-        <Compile Include="Core\GUI\JABundle.cs" />
-        <Compile Include="Core\GUI\NotificationCanvas.cs" />
-        <Compile Include="Core\GUI\SettingMenu.cs" />
         <Compile Include="Core\JALocalization.cs" />
         <Compile Include="Core\JAMod.cs" />
         <Compile Include="Core\Patch\JAPatchAttribute.cs" />
@@ -542,7 +537,6 @@
         <Compile Include="Stream\ByteArrayDataInput.cs" />
         <Compile Include="Stream\ByteArrayDataOutput.cs" />
         <Compile Include="Tools\ByteTools.cs" />
-        <Compile Include="Tools\ErrorUtils.cs" />
         <Compile Include="Tools\ForceApplyMod.cs" />
         <Compile Include="Tools\JAction.cs" />
         <Compile Include="Tools\JARandom.cs" />
@@ -556,12 +550,6 @@
     <ItemGroup>
       <None Include="App.config" />
       <None Include="packages.config" />
-    </ItemGroup>
-    <ItemGroup>
-      <ProjectReference Include="..\JALib-Unity-Script\JALib-Unity-Script.csproj">
-        <Project>{4f6150b7-da6d-4c30-8d6b-96fe4e434f21}</Project>
-        <Name>JALib-Unity-Script</Name>
-      </ProjectReference>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

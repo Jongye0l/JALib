@@ -1,9 +1,6 @@
 ﻿using System;
 using JALib.Core.Patch;
 using JALib.Core.Setting;
-using JALib.Core.Setting.GUI;
-using JALib.Tools;
-using UnityEngine;
 
 namespace JALib.Core;
 
@@ -26,16 +23,14 @@ public abstract class Feature {
     public JAMod Mod { get; private set; }
     public string Name { get; private set; }
     protected JAPatcher Patcher { get; private set; }
-    internal ContentsType contentsType;
 
-    protected Feature(JAMod mod, string name, bool canEnable = true, Type patchClass = null, Type settingType = null, ContentsType contentsType = ContentsType.SettingWithDescription) {
+    protected Feature(JAMod mod, string name, bool canEnable = true, Type patchClass = null, Type settingType = null) {
         Mod = mod;
         Name = name;
         Patcher = new JAPatcher(mod);
         if(patchClass != null) Patcher.AddPatch(patchClass);
         CanEnable = canEnable;
         FeatureSetting = new JAFeatureSetting(this, settingType);
-        this.contentsType = contentsType;
     }
 
     internal void Enable() {
@@ -46,7 +41,6 @@ public abstract class Feature {
             Active = true;
         } catch (Exception e) {
             Mod.LogException(e);
-            ErrorUtils.ShowError(Mod, e);
         }
     }
 
@@ -58,7 +52,6 @@ public abstract class Feature {
             Active = false;
         } catch (Exception e) {
             Mod.LogException(e);
-            ErrorUtils.ShowError(Mod, e);
         }
     }
 
@@ -70,7 +63,6 @@ public abstract class Feature {
             OnUnload();
         } catch (Exception e) {
             Mod.LogException(e);
-            ErrorUtils.ShowError(Mod, e);
         }
         Patcher = null;
         Mod = null;
