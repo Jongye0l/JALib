@@ -1,10 +1,14 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using ADOFAI;
 using HarmonyLib;
 using JALib.API;
 using JALib.Core;
+using JALib.Core.GUI;
 using JALib.Core.Patch;
+using JALib.Core.Setting.GUI;
 using JALib.Tools;
 using UnityModManagerNet;
 
@@ -39,14 +43,18 @@ public class JALib : JAMod {
         EnableInit();
         Harmony = new Harmony(ModEntry.Info.Id);
         patcher.Patch();
+        //JABundle.Initialize();
+        //SettingMenu.Initialize();
     }
 
     protected override void OnDisable() {
         Harmony.UnpatchAll(ModEntry.Info.Id);
         patcher.Unpatch();
+        //SettingMenu.Dispose();
         DisableInit();
         JApi.Dispose();
         MainThread.Dispose();
+        ErrorUtils.Dispose();
         GC.Collect();
     }
 
@@ -58,11 +66,14 @@ public class JALib : JAMod {
 
     protected override void OnUpdate(float deltaTime) {
         MainThread.OnUpdate();
+        ErrorUtils.OnUpdate();
+        //SettingMenu.OnUpdate();
     }
     
     
     [JAPatch("JALib.AdofaiStart", typeof(scnSplash), "GoToMenu", PatchType.Postfix, false)]
     private static void OnAdofaiStart() {
+        ErrorUtils.OnAdofaiStart();
         JApi.OnAdofaiStart();
     }
 }

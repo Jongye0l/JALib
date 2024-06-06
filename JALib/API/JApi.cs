@@ -92,6 +92,7 @@ internal static class JApi {
         if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;
         Exception exception = new ResponseException(requestPacket.GetType().Name, message);
         JALib.Instance.LogException(exception);
+        ErrorUtils.ShowError(JALib.Instance, exception);
         if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
         _requests.Remove(id);
     }

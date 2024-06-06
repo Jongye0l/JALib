@@ -11,10 +11,16 @@ namespace JALib.Core.Patch;
 
 public class JAPatcher : IDisposable {
 
+    private static ModuleBuilder moduleBuilder;
     private List<JAPatchAttribute> patchData;
     private JAMod mod;
     public event FailPatch OnFailPatch;
     public delegate void FailPatch(string patchId);
+
+    static JAPatcher() {
+        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("JAPatcher"), AssemblyBuilderAccess.Run);
+        moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
+    }
     
     public JAPatcher(JAMod mod) {
         this.mod = mod;
@@ -74,7 +80,31 @@ public class JAPatcher : IDisposable {
                             attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
                 }
                 MethodInfo originalMethod = attribute.Method;
-                attribute.HarmonyMethod ??= new HarmonyMethod(originalMethod);
+                if(attribute.TryingCatch) {
+                    TypeBuilder typeBuilder = moduleBuilder.DefineType($"JAPatch.{mod.Name}.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.Public);
+                    FieldBuilder fieldBuilder = typeBuilder.DefineField("Patcher", typeof(JAPatcher), FieldAttributes.Private | FieldAttributes.Static);
+                    fieldBuilder.SetConstant(this);
+                    MethodBuilder methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Public | MethodAttributes.Static,
+                        originalMethod.ReturnType, originalMethod.GetGenericArguments());
+                    foreach(ParameterInfo parameter in originalMethod.GetParameters()) methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.Name);
+                    ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+                    Label tryBlock = ilGenerator.BeginExceptionBlock();
+                    for(int i = 0; i < originalMethod.GetParameters().Length; i++) ilGenerator.Emit(OpCodes.Ldarg, i + 1);
+                    ilGenerator.Emit(OpCodes.Call, originalMethod);
+                    ilGenerator.Emit(OpCodes.Leave_S, tryBlock);
+                    ilGenerator.BeginCatchBlock(typeof(Exception));
+                    LocalBuilder exceptionLocal = ilGenerator.DeclareLocal(typeof(Exception));
+                    ilGenerator.Emit(OpCodes.Stloc, exceptionLocal);
+                    ilGenerator.Emit(OpCodes.Ldsfld, fieldBuilder);
+                    ilGenerator.Emit(OpCodes.Ldloc, exceptionLocal);
+                    ilGenerator.Emit(OpCodes.Call, this.Method(nameof(OnPatchException)));
+                    ilGenerator.Emit(OpCodes.Leave_S, tryBlock);
+                    ilGenerator.EndExceptionBlock();
+                    ilGenerator.Emit(OpCodes.Ret);
+                    Type patchType = typeBuilder.CreateType();
+                    patchType.SetValue("Patcher", this);
+                    attribute.HarmonyMethod ??= new HarmonyMethod(patchType.Method(originalMethod.Name));
+                } else attribute.HarmonyMethod ??= new HarmonyMethod(originalMethod);
                 attribute.Patch = JALib.Harmony.Patch(attribute.MethodBase,
                     attribute.PatchType == PatchType.Prefix ? attribute.HarmonyMethod : null,
                     attribute.PatchType == PatchType.Postfix ? attribute.HarmonyMethod : null,
@@ -83,6 +113,7 @@ public class JAPatcher : IDisposable {
             } catch (Exception e) {
                 mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
                 mod.LogException(e);
+                ErrorUtils.ShowError(mod, e);
                 OnFailPatch?.Invoke(attribute.PatchId);
                 if(!attribute.Disable) continue;
                 mod.Error($"Mod {mod.Name} is Disabled.");
@@ -90,6 +121,11 @@ public class JAPatcher : IDisposable {
                 break;
             }
         }
+    }
+    
+    public void OnPatchException(Exception e) {
+        mod.LogException(e);
+        ErrorUtils.ShowError(mod, e);
     }
     
     public void Unpatch() {

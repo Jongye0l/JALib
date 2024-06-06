@@ -28,6 +28,7 @@ public class JAction {
         } catch (Exception e) {
             mod.Error("An error occurred while invoking an action.");
             mod.LogException(e);
+            ErrorUtils.ShowError(mod, e);
         }
     }
     
