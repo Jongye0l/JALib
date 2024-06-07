@@ -55,4 +55,8 @@
     </Target>
     -->
 
+    <Target Name="AfterBuild">
+        <Copy SourceFiles="bin/Debug/JALib_Bootstrap.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
+    </Target>
+
 </Project>
