@@ -19,6 +19,7 @@ namespace JALib.Bootstrap {
             string modInfoPath = Path.Combine(modEntry.Path, "JAModInfo.json");
             if(!File.Exists(modInfoPath)) throw new FileNotFoundException("JAModInfo not found.");
             JAModInfo modInfo = File.ReadAllText(modInfoPath).FromJson<JAModInfo>();
+            if(modInfo.BootstrapVersion > BootstrapVersion) throw new Exception("Bootstrap version is too low.");
             if(modInfo.DependencyPath != null) {
                 string dependencyPath = modInfo.DependencyRequireModPath ? Path.Combine(modEntry.Path, modInfo.DependencyPath) : modInfo.DependencyPath;
                 foreach(string file in Directory.GetFiles(dependencyPath)) {
