@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib", "JALib\JALib.csproj", "{A0C21116-20D4-4097-9486-3A5774671E00}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib-Bootstrap", "JALib-Bootstrap\JALib-Bootstrap.csproj", "{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{A0C21116-20D4-4097-9486-3A5774671E00}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0C21116-20D4-4097-9486-3A5774671E00}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0C21116-20D4-4097-9486-3A5774671E00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

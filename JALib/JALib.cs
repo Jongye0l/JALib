@@ -17,18 +17,8 @@ public class JALib : JAMod {
     internal static bool Active => Instance.ModEntry.Active;
     private static JAPatcher patcher;
 
-    private static void Setup(UnityModManager.ModEntry modEntry) {
-        foreach(string file in Directory.GetFiles(System.IO.Path.Combine(modEntry.Path, "lib"), "*.dll")) {
-            try {
-                Assembly.LoadFile(file);
-            } catch (Exception e) {
-                modEntry.Logger.LogException(e);
-            }
-        }
-        Instance = new JALib(modEntry);
-    }
-
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true) {
+        Instance = this;
         _assembly = Assembly.GetExecutingAssembly();
         patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
     }
