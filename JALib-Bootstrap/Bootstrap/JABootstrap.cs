@@ -9,9 +9,7 @@ namespace JALib.Bootstrap {
         public const int BootstrapVersion = 0;
         private static AppDomain domain;
         private static void Setup(UnityModManager.ModEntry modEntry) {
-            domain = AppDomain.CreateDomain("JAModDomain", null, new AppDomainSetup {
-                ApplicationBase = modEntry.Path
-            });
+            domain = AppDomain.CurrentDomain;
             Load(modEntry);
         }
         
@@ -33,7 +31,7 @@ namespace JALib.Bootstrap {
             Assembly modAssembly = domain.Load(AssemblyName.GetAssemblyName(modInfo.AssemblyRequireModPath ? Path.Combine(modEntry.Path, modInfo.AssemblyPath) : modInfo.AssemblyPath));
             Type modType = modAssembly.GetType(modInfo.ClassName);
             if(modType == null) throw new TypeLoadException("Type not found.");
-            Activator.CreateInstance(modType, modEntry);
+            Activator.CreateInstance(modType, (BindingFlags) 15420, null, new object[] {modEntry}, null, null);
         }
     }
 }
