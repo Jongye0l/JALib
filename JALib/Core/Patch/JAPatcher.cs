@@ -111,10 +111,10 @@ public class JAPatcher : IDisposable {
     }
 
     public JAPatcher AddPatch(MethodInfo method) {
-        JAPatchAttribute attribute = method.GetCustomAttribute<JAPatchAttribute>();
-        if(attribute == null) return this;
-        attribute.Method = method;
-        patchData.Add(attribute);
+        foreach(JAPatchAttribute attribute in method.GetCustomAttributes<JAPatchAttribute>()) {
+            attribute.Method = method;
+            patchData.Add(attribute);
+        }
         return this;
     }
 
