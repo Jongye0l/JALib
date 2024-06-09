@@ -73,8 +73,7 @@ public class JAPatcher : IDisposable {
                     else attribute.MethodBase = attribute.ArgumentTypesType == null ?
                             attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
                 }
-                MethodInfo originalMethod = attribute.Method;
-                attribute.HarmonyMethod ??= new HarmonyMethod(originalMethod);
+                attribute.HarmonyMethod ??= new HarmonyMethod(attribute.Method);
                 attribute.Patch = JALib.Harmony.Patch(attribute.MethodBase,
                     attribute.PatchType == PatchType.Prefix ? attribute.HarmonyMethod : null,
                     attribute.PatchType == PatchType.Postfix ? attribute.HarmonyMethod : null,

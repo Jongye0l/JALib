@@ -50,7 +50,7 @@ public class JALib : JAMod {
     }
     
     
-    [JAPatch("JALib.AdofaiStart", typeof(scnSplash), "GoToMenu", PatchType.Postfix, false)]
+    [JAPatch(typeof(scnSplash), "GoToMenu", PatchType.Postfix, false)]
     private static void OnAdofaiStart() {
         JApi.OnAdofaiStart();
     }
