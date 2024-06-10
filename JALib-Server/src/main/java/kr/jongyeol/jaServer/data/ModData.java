@@ -49,10 +49,7 @@ public class ModData {
     public static void LoadModData(Class<? extends ModData> cl) throws IOException {
         clazz = cl;
         File folder = new File(Settings.instance.modDataPath);
-        for(File file : folder.listFiles()) {
-            ModData modData = Variables.gson.fromJson(Files.readString(file.toPath()), cl);
-            modDataList.add(modData);
-        }
+        for(File file : folder.listFiles()) Variables.gson.fromJson(Files.readString(file.toPath()), cl);
     }
 
     public static ModData[] getModDataList() {
