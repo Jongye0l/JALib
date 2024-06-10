@@ -35,17 +35,17 @@ public abstract class JASetting : IDisposable {
                 string name = nameAttribute?.Name ?? field.Name;
                 if(JsonObject.TryGetValue(name, out JToken token)) {
                     field.SetValue(this, field.FieldType.IsSubclassOf(typeof(JASetting)) ?
-                        SetupJASetting(token) : token.ToObject(field.FieldType));
+                        SetupJASetting(field.FieldType, token) : token.ToObject(field.FieldType));
                     JsonObject.Remove(name);
-                } else if(field.FieldType.IsSubclassOf(typeof(JASetting))) field.SetValue(this, SetupJASetting(null));
+                } else if(field.FieldType.IsSubclassOf(typeof(JASetting))) field.SetValue(this, SetupJASetting(field.FieldType, null));
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }
     }
 
-    internal JASetting SetupJASetting(JToken token) {
-        return GetType().New<JASetting>(Mod, token as JObject);
+    internal JASetting SetupJASetting(Type type, JToken token) {
+        return type.New<JASetting>(Mod, token as JObject);
     }
 
     [CanBeNull]
