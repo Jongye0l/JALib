@@ -62,8 +62,8 @@ public static class ByteTools {
     }
     
     public static decimal ToDecimal(this byte[] bytes, int start = 0) {
-        CheckArgument(bytes.Length - start, 8);
-        return new decimal(new int[] {
+        CheckArgument(bytes.Length - start, 16);
+        return new decimal(new[] {
             bytes.ToInt(start),
             bytes.ToInt(start + 4),
             bytes.ToInt(start + 8),
