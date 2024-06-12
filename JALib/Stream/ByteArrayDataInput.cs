@@ -6,7 +6,7 @@ using JALib.Tools;
 
 namespace JALib.Stream;
 
-public class ByteArrayDataInput : IDisposable, IAsyncDisposable {
+public class ByteArrayDataInput : IDisposable {
     private byte[] data;
     private int cur;
     private JAMod mod;
@@ -19,11 +19,6 @@ public class ByteArrayDataInput : IDisposable, IAsyncDisposable {
     public void Dispose() {
         data = null;
         mod = null;
-    }
-
-    public async ValueTask DisposeAsync() {
-        if(mod == null) await Task.Run(Dispose);
-        else await JATask.Run(mod, Dispose);
     }
     
     public string ReadUTF() {

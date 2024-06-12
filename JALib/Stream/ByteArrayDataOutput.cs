@@ -6,7 +6,7 @@ using JALib.Tools;
 
 namespace JALib.Stream;
 
-public class ByteArrayDataOutput : IDisposable, IAsyncDisposable {
+public class ByteArrayDataOutput : IDisposable {
     private byte[] buf;
     private int count;
     private JAMod mod;
@@ -19,11 +19,6 @@ public class ByteArrayDataOutput : IDisposable, IAsyncDisposable {
     public void Dispose() {
         buf = null;
         mod = null;
-    }
-
-    public async ValueTask DisposeAsync() {
-        if(mod == null) await Task.Run(Dispose);
-        else await JATask.Run(mod, Dispose);
     }
 
     private void EnsureCapacity(int minCapacity) {
