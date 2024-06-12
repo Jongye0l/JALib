@@ -536,7 +536,8 @@
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="Stream\ByteArrayDataInput.cs" />
         <Compile Include="Stream\ByteArrayDataOutput.cs" />
-        <Compile Include="Tools\ByteTools.cs" />
+        <Compile Include="Tools\ByteTool\ByteTools.cs" />
+        <Compile Include="Tools\ByteTool\DataExcludeAttribute.cs" />
         <Compile Include="Tools\ForceApplyMod.cs" />
         <Compile Include="Tools\JAction.cs" />
         <Compile Include="Tools\JARandom.cs" />

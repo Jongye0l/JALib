@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DnsClient;
 using DnsClient.Protocol;
+using JALib.Tools.ByteTool;
 using JetBrains.Annotations;
 
 namespace JALib.Tools;

@@ -1,4 +1,5 @@
 ﻿using System;
+using JALib.Tools.ByteTool;
 
 namespace JALib.Tools;
 
