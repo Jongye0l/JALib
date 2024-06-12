@@ -118,6 +118,37 @@ public class ByteArrayDataOutput : IDisposable, IAsyncDisposable {
         WriteIntBypass(value.Length);
         foreach(byte b in value) buf[count++] = b;
     }
+    
+    public void WriteUShort(ushort value) {
+        EnsureCapacity(count + 2);
+        buf[count++] = (byte) (value >> 8);
+        buf[count++] = (byte) value;
+    }
+    
+    public void WriteUInt(uint value) {
+        EnsureCapacity(count + 4);
+        buf[count++] = (byte) (value >> 24);
+        buf[count++] = (byte) (value >> 16);
+        buf[count++] = (byte) (value >> 8);
+        buf[count++] = (byte) value;
+    }
+    
+    public void WriteSByte(sbyte value) {
+        EnsureCapacity(count + 1);
+        buf[count++] = (byte) value;
+    }
+    
+    public void WriteChar(char value) {
+        EnsureCapacity(count + 2);
+        buf[count++] = (byte) (value >> 8);
+        buf[count++] = (byte) value;
+    }
+    
+    public void WriteDecimal(decimal value) {
+        int[] bits = decimal.GetBits(value);
+        EnsureCapacity(count + bits.Length * 4);
+        foreach(int i in bits) WriteIntBypass(i);
+    }
 
     public byte[] ToByteArray() {
         byte[] data = new byte[count];

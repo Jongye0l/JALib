@@ -71,6 +71,39 @@ public class ByteArrayDataInput : IDisposable, IAsyncDisposable {
         return (short) ((data[cur++] << 8) + data[cur++]);
     }
 
+    public decimal ReadDecimal() {
+        int[] bits = new int[4];
+        for(int i = 0; i < 4; i++) bits[i] = ReadInt();
+        return new decimal(bits);
+    }
+    
+    public ushort ReadUShort() {
+        return (ushort) ((data[cur++] << 8) + data[cur++]);
+    }
+    
+    public uint ReadUInt() {
+        return (uint) ((data[cur++] << 24) + (data[cur++] << 16) + (data[cur++] << 8) + (data[cur++] << 0));
+    }
+    
+    public ulong ReadULong() {
+        return ((ulong) data[cur++] << 56) + 
+               ((ulong) (data[cur++]&255) << 48) + 
+               ((ulong) (data[cur++]&255) << 40) + 
+               ((ulong) (data[cur++]&255) << 32) + 
+               ((ulong) (data[cur++]&255) << 24) + 
+               ((ulong) (data[cur++]&255) << 16) + 
+               ((ulong) (data[cur++]&255) << 8) + 
+               ((ulong) (data[cur++]&255) << 0);
+    }
+    
+    public sbyte ReadSByte() {
+        return (sbyte) data[cur++];
+    }
+    
+    public char ReadChar() {
+        return (char) ((data[cur++] << 8) + data[cur++]);
+    }
+    
     public byte[] ReadBytes() {
         byte[] buffer = new byte[ReadInt()];
         for(int i = 0; i < buffer.Length; i++) buffer[i] = data[cur++];
