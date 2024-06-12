@@ -44,10 +44,8 @@ public class RawFile : IDisposable {
     }
 
     public void Dispose() {
-        Name = null;
-        Data = null;
-        if(Files == null) return;
         foreach(RawFile file in Files) file.Dispose();
-        Files = null;
+        GC.SuppressFinalize(Files);
+        GC.SuppressFinalize(this);
     }
 }

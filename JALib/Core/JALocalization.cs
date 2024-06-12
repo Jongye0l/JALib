@@ -48,9 +48,7 @@ public class JALocalization {
     }
 
     internal void Dispose() {
-        _localizations.Clear();
-        _localizations = null;
-        _jaMod = null;
-        _curLang = null;
+        GC.SuppressFinalize(_localizations);
+        GC.SuppressFinalize(this);
     }
 }

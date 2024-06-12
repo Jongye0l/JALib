@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Threading;
 using UnityEngine;
@@ -20,11 +21,11 @@ public static class MainThread {
 
     internal static void Dispose() {
         Thread = null;
-        queue.Clear();
-        queue = null;
+        GC.SuppressFinalize(queue);
         staticCoroutine.StopAllCoroutines();
         Object.Destroy(staticCoroutine.gameObject);
-        staticCoroutine = null;
+        GC.SuppressFinalize(staticCoroutine.gameObject);
+        GC.SuppressFinalize(staticCoroutine);
     }
     
     internal static void OnUpdate() {

@@ -109,15 +109,11 @@ public abstract class JASetting : IDisposable {
 
     protected virtual void Dispose0() {
         try {
-            fieldValueCache.Clear();
-            fieldValueCache = null;
-            JsonObject.RemoveAll();
-            JsonObject = null;
-            foreach(FieldInfo field in jsonFields) {
-                if(field.GetValue(this) is JASetting setting) setting.Dispose();
-                field.SetValue(this, default);
-            }
-            jsonFields = null;
+            GC.SuppressFinalize(fieldValueCache);
+            GC.SuppressFinalize(JsonObject);
+            foreach(FieldInfo field in jsonFields) if(field.GetValue(this) is JASetting setting) setting.Dispose();
+            GC.SuppressFinalize(jsonFields);
+            GC.SuppressFinalize(this);
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }

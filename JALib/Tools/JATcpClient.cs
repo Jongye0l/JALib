@@ -316,11 +316,4 @@ public class JATcpClient : TcpClient {
     public new void Close() {
         Dispose();
     }
-
-    public new void Dispose() {
-        stream = null;
-        thread = null;
-        onClose = null;
-        base.Dispose();
-    }
 }

@@ -17,8 +17,7 @@ public class ByteArrayDataInput : IDisposable {
     }
 
     public void Dispose() {
-        data = null;
-        mod = null;
+        GC.SuppressFinalize(this);
     }
     
     public string ReadUTF() {

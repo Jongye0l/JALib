@@ -124,8 +124,7 @@ public class JAPatcher : IDisposable {
 
     public void Dispose() {
         Unpatch();
-        patchData.Clear();
-        patchData = null;
-        mod = null;
+        GC.SuppressFinalize(patchData);
+        GC.SuppressFinalize(this);
     }
 }

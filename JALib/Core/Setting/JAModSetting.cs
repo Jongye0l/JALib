@@ -62,14 +62,8 @@ internal class JAModSetting : JASetting {
     
     protected override void Dispose0() {
         try {
-            base.Dispose0();
-            Mod = null;
-            path = null;
-            LatestVersion = null;
-            AvailableLanguages = null;
-            Homepage = null;
             Setting.Dispose();
-            Setting = null;
+            base.Dispose0();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }

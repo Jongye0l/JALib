@@ -17,8 +17,7 @@ public class ByteArrayDataOutput : IDisposable {
     }
 
     public void Dispose() {
-        buf = null;
-        mod = null;
+        GC.SuppressFinalize(this);
     }
 
     private void EnsureCapacity(int minCapacity) {

@@ -25,8 +25,7 @@ internal class JAFeatureSetting : JASetting {
     }
 
     protected override void Dispose0() {
-        base.Dispose0();
         Setting.Dispose();
-        Setting = null;
+        base.Dispose0();
     }
 }

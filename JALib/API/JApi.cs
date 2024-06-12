@@ -182,10 +182,9 @@ internal static class JApi {
 
     internal static void Dispose() {
         _client.Dispose();
-        _client = null;
-        _requests.Clear();
+        GC.SuppressFinalize(_requests);
         _requests = null;
-        _queue.Clear();
+        GC.SuppressFinalize(_queue);
         _queue = null;
         discord = null;
     }
