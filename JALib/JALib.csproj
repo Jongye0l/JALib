@@ -543,6 +543,7 @@
         <Compile Include="Tools\JARandom.cs" />
         <Compile Include="Tools\JATask.cs" />
         <Compile Include="Tools\JATcpClient.cs" />
+        <Compile Include="Tools\JAWebSocketClient.cs" />
         <Compile Include="Tools\MainThread.cs" />
         <Compile Include="Tools\SimpleHttp.cs" />
         <Compile Include="Tools\SimpleReflect.cs" />
