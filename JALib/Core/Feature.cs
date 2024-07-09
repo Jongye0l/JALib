@@ -36,8 +36,8 @@ public abstract class Feature {
     internal void Enable() {
         try {
             if(Active) return;
-            OnEnable();
             Patcher.Patch();
+            OnEnable();
             Active = true;
         } catch (Exception e) {
             Mod.LogException(e);
@@ -47,8 +47,8 @@ public abstract class Feature {
     internal void Disable() {
         try {
             if(!Active) return;
-            OnDisable();
             Patcher.Unpatch();
+            OnDisable();
             Active = false;
         } catch (Exception e) {
             Mod.LogException(e);
