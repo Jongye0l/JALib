@@ -539,6 +539,7 @@
         <Compile Include="Tools\ByteTool\ByteTools.cs" />
         <Compile Include="Tools\ByteTool\DataExcludeAttribute.cs" />
         <Compile Include="Tools\ForceApplyMod.cs" />
+        <Compile Include="Tools\SettingGUI.cs" />
         <Compile Include="Tools\JAction.cs" />
         <Compile Include="Tools\JARandom.cs" />
         <Compile Include="Tools\JATask.cs" />
