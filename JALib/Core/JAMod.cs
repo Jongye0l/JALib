@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using JALib.API;
 using JALib.API.Packets;
 using JALib.Core.Setting;
@@ -67,9 +68,7 @@ public abstract class JAMod {
             modEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            if(CheckGUIRequire()) modEntry.OnGUI = OnGUI0;
-            if(CheckGUIEventRequire(nameof(OnShowGUI))) modEntry.OnShowGUI = OnShowGUI0;
-            if(CheckGUIEventRequire(nameof(OnHideGUI))) modEntry.OnHideGUI = OnHideGUI0;
+            InitializeGUI();
             if(IsExistMethod(nameof(OnUpdate))) modEntry.OnUpdate = OnUpdate0;
             if(IsExistMethod(nameof(OnFixedUpdate))) modEntry.OnFixedUpdate = OnFixedUpdate0;
             if(IsExistMethod(nameof(OnLateUpdate))) modEntry.OnLateUpdate = OnLateUpdate0;
@@ -85,6 +84,14 @@ public abstract class JAMod {
             throw;
         }
     }
+
+    private async void InitializeGUI() {
+        await Task.Yield();
+        if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
+        if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
+        if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
+    }
+    
 
     private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
 

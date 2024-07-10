@@ -101,7 +101,7 @@ public abstract class Feature {
             margin = new RectOffset(0, 4, 4, 4)
         };
         bool enabled;
-        if(CanEnable) {
+        if(!CanEnable) {
             enabled = Enabled;
             GUILayout.Label(Name, guiStyle);
         } else enabled = GUILayout.Toggle(Enabled, Name, guiStyle);
