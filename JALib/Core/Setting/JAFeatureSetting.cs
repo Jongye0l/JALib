@@ -6,6 +6,7 @@ namespace JALib.Core.Setting;
 
 internal class JAFeatureSetting : JASetting {
     public bool Enabled = true;
+    
     internal JASetting Setting;
     
     public JAFeatureSetting(Feature feature, Type type = null) : base(feature.Mod, (feature.Mod.ModSetting[nameof(Feature)]![feature.Name] ??= new JObject()) as JObject) {

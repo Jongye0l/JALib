@@ -67,9 +67,9 @@ public abstract class JAMod {
             modEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            if(IsExistMethod(nameof(OnGUI))) modEntry.OnGUI = OnGUI0;
-            if(IsExistMethod(nameof(OnShowGUI))) modEntry.OnShowGUI = OnShowGUI0;
-            if(IsExistMethod(nameof(OnHideGUI))) modEntry.OnHideGUI = OnHideGUI0;
+            if(CheckGUIRequire()) modEntry.OnGUI = OnGUI0;
+            if(CheckGUIEventRequire(nameof(OnShowGUI))) modEntry.OnShowGUI = OnShowGUI0;
+            if(CheckGUIEventRequire(nameof(OnHideGUI))) modEntry.OnHideGUI = OnHideGUI0;
             if(IsExistMethod(nameof(OnUpdate))) modEntry.OnUpdate = OnUpdate0;
             if(IsExistMethod(nameof(OnFixedUpdate))) modEntry.OnFixedUpdate = OnFixedUpdate0;
             if(IsExistMethod(nameof(OnLateUpdate))) modEntry.OnLateUpdate = OnLateUpdate0;
@@ -86,6 +86,10 @@ public abstract class JAMod {
         }
     }
 
+    private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
+
+    private bool CheckGUIEventRequire(string name) => IsExistMethod(name) || Features.Any(feature => feature.IsExistMethod(name));
+    
     private bool IsExistMethod(string name) => GetType().Method(name).DeclaringType == GetType();
 
     public static JAMod GetMods(string name) => mods[name];
@@ -190,15 +194,23 @@ public abstract class JAMod {
 
     protected virtual void OnDisable() {
     }
-    
-    internal void OnGUI0(UnityModManager.ModEntry modEntry) => OnGUI();
+
+    internal void OnGUI0(UnityModManager.ModEntry modEntry) {
+        OnGUI();
+        foreach(Feature feature in Features) feature.OnGUI0();
+        OnGUIBehind();
+    }
 
     protected virtual void OnGUI() {
+    }
+
+    protected virtual void OnGUIBehind() {
     }
 
     private void OnShowGUI0(UnityModManager.ModEntry modEntry) {
         try {
             OnShowGUI();
+            foreach(Feature feature in Features.Where(feature => feature.Enabled && feature._expanded)) feature.OnShowGUI0();
         } catch (Exception e) {
             LogException(e);
         }
@@ -210,6 +222,7 @@ public abstract class JAMod {
     internal void OnHideGUI0(UnityModManager.ModEntry modEntry) {
         try {
             OnHideGUI();
+            foreach(Feature feature in Features.Where(feature => feature.Enabled && feature._expanded)) feature.OnHideGUI0();
         } catch (Exception e) {
             LogException(e);
         }
