@@ -90,26 +90,21 @@ public abstract class Feature {
 
     internal void OnGUI0() {
         GUILayout.BeginHorizontal();
-        string text1 = Enabled && _canExpand ? _expanded ? "◢" : "▶" : "";
-        GUIStyle style1 = new() {
+        bool expanded = GUILayout.Toggle(_expanded, Enabled && _canExpand ? _expanded ? "◢" : "▶" : "", new GUIStyle {
             fixedWidth = 10f,
-            normal = new GUIStyleState {
-                textColor = Color.white
-            },
+            normal = new GUIStyleState { textColor = Color.white },
             fontSize = 15,
             margin = new RectOffset(4, 2, 6, 6)
-        };
-        bool expanded = GUILayout.Toggle(_expanded, text1, style1);
-        string moduleName = Name;
-        GUIStyle style2 = new(GUI.skin.toggle) {
+        });
+        GUIStyle guiStyle = new(GUI.skin.toggle) {
             fontStyle = FontStyle.Normal,
             margin = new RectOffset(0, 4, 4, 4)
         };
         bool enabled;
         if(CanEnable) {
             enabled = Enabled;
-            GUILayout.Label(moduleName, style2);
-        } else enabled = GUILayout.Toggle(Enabled, moduleName, style2);
+            GUILayout.Label(Name, guiStyle);
+        } else enabled = GUILayout.Toggle(Enabled, Name, guiStyle);
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
         if(enabled != Enabled) {

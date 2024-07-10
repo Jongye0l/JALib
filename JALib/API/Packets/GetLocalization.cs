@@ -2,6 +2,7 @@
 using System.IO;
 using JALib.Core;
 using JALib.Stream;
+using JALib.Tools;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -30,6 +31,7 @@ internal class GetLocalization : RequestPacket {
         if(!File.Exists(path)) File.Create(path);
         File.WriteAllTextAsync(Path.Combine(localization._jaMod.Path, "localization", language + ".json"), 
             JsonConvert.SerializeObject(localization._localizations, Formatting.Indented));
+        MainThread.Run(new JAction(localization._jaMod, () => localization._jaMod.OnLocalizationUpdate0()));
     }
 
     public override byte[] GetBinary() {

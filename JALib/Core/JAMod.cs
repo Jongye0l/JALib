@@ -265,6 +265,13 @@ public abstract class JAMod {
     
     protected virtual void OnSessionStop() {
     }
+    
+    internal void OnLocalizationUpdate0() {
+        OnLocalizationUpdate();
+    }
+
+    protected virtual void OnLocalizationUpdate() {
+    }
 
     public void Log(object o) => Logger.Log(o?.ToString());
     

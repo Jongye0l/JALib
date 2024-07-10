@@ -30,6 +30,7 @@ public class JALocalization {
         if(File.Exists(localizationDataPath)) {
             _localizations?.Clear();
             _localizations = JsonConvert.DeserializeObject<SortedDictionary<string, string>>(await File.ReadAllTextAsync(localizationDataPath));
+            _jaMod.OnLocalizationUpdate0();
         }
         JApi.Send(new GetLocalization(this, language));
     }
