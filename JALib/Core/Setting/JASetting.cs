@@ -20,7 +20,7 @@ public abstract class JASetting : IDisposable {
         Mod = mod;
         JsonObject = jsonObject ?? new JObject();
         jsonFields = GetType().Fields().Where(field => {
-            if(field.IsStatic) return false;
+            if(field.IsStatic || field.DeclaringType == typeof(JASetting)) return false;
             SettingIncludeAttribute include = field.GetCustomAttribute<SettingIncludeAttribute>();
             SettingIgnoreAttribute ignore = field.GetCustomAttribute<SettingIgnoreAttribute>();
             return ignore == null && (field.IsPublic || include != null);
