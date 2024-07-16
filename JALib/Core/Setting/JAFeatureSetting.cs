@@ -17,16 +17,16 @@ internal class JAFeatureSetting : JASetting {
 
     public new void PutFieldData() {
         base.PutFieldData();
-        Setting.PutFieldData();
+        Setting?.PutFieldData();
     }
 
     public new void RemoveFieldData() {
         base.RemoveFieldData();
-        Setting.RemoveFieldData();
+        Setting?.RemoveFieldData();
     }
 
     protected override void Dispose0() {
-        Setting.Dispose();
+        Setting?.Dispose();
         base.Dispose0();
     }
 }

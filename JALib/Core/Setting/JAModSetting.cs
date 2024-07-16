@@ -32,7 +32,7 @@ internal class JAModSetting : JASetting {
 
     public new void PutFieldData() {
         try {
-            Setting.PutFieldData();
+            Setting?.PutFieldData();
             JArray features = new();
             foreach (Feature f in Mod.Features) {
                 f.FeatureSetting.PutFieldData();
@@ -47,7 +47,7 @@ internal class JAModSetting : JASetting {
     
     public new void RemoveFieldData() {
         try {
-            Setting.RemoveFieldData();
+            Setting?.RemoveFieldData();
             foreach(Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();
             JsonObject.Remove(nameof(Feature));
             base.RemoveFieldData();
@@ -68,7 +68,7 @@ internal class JAModSetting : JASetting {
     
     protected override void Dispose0() {
         try {
-            Setting.Dispose();
+            Setting?.Dispose();
             base.Dispose0();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
