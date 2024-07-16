@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 
 namespace JALib.Core.Setting;
 
-public abstract class JASetting : IDisposable {
+public class JASetting : IDisposable {
 
     private static readonly JValue NullValue = JValue.CreateNull();
     protected JAMod Mod;
