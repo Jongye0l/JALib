@@ -33,10 +33,10 @@ internal class JAModSetting : JASetting {
     public new void PutFieldData() {
         try {
             Setting?.PutFieldData();
-            JArray features = new();
+            JObject features = new();
             foreach (Feature f in Mod.Features) {
                 f.FeatureSetting.PutFieldData();
-                features.Add(f.FeatureSetting.JsonObject);
+                features.Add(f.Name, f.FeatureSetting.JsonObject);
             }
             JsonObject[nameof(Feature)] = features;
             base.PutFieldData();
