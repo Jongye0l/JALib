@@ -10,7 +10,7 @@ using UnityModManagerNet;
 namespace JALib;
 
 public class JALib : JAMod {
-    internal static JALib Instance { get; private set; }
+    internal static JALib Instance;
     internal static Harmony Harmony;
     private readonly Assembly _assembly;
     internal static bool Active => Instance.ModEntry.Active;
