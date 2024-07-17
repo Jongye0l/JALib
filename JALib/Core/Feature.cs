@@ -9,7 +9,7 @@ namespace JALib.Core;
 public abstract class Feature {
     public bool Enabled {
         get => FeatureSetting.Enabled;
-        private set {
+        protected set {
             if(FeatureSetting.Enabled != value) {
                 FeatureSetting.Enabled = value;
                 Mod.SaveSetting();
