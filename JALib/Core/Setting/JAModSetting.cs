@@ -33,11 +33,7 @@ internal class JAModSetting : JASetting {
     public new void PutFieldData() {
         try {
             Setting?.PutFieldData();
-            JObject features = JsonObject[nameof(Feature)] as JObject;
-            foreach (Feature f in Mod.Features) {
-                f.FeatureSetting.PutFieldData();
-                features.Add(f.Name, f.FeatureSetting.JsonObject);
-            }
+            foreach (Feature f in Mod.Features) f.FeatureSetting.PutFieldData();
             base.PutFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
@@ -47,11 +43,7 @@ internal class JAModSetting : JASetting {
     public new void RemoveFieldData() {
         try {
             Setting?.RemoveFieldData();
-            JObject features = JsonObject[nameof(Feature)] as JObject;
-            foreach (Feature f in Mod.Features) {
-                f.FeatureSetting.RemoveFieldData();
-                features.Remove(f.Name);
-            }
+            foreach (Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();
             base.RemoveFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);

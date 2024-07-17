@@ -9,10 +9,19 @@ internal class JAFeatureSetting : JASetting {
     
     internal JASetting Setting;
     
-    public JAFeatureSetting(Feature feature, Type type = null) : base(feature.Mod, (feature.Mod.ModSetting[nameof(Feature)]![feature.Name] ??= new JObject()) as JObject) {
+    public JAFeatureSetting(Feature feature, Type type = null) : base(feature.Mod, GetFeatureSetting(feature)) {
         if(type == null) return;
         if(!JsonObject.ContainsKey(nameof(Setting))) JsonObject[nameof(Setting)] = new JObject();
         Setting = SetupJASetting(type, JsonObject[nameof(Setting)]);
+    }
+
+    private static JObject GetFeatureSetting(Feature feature) {
+        JObject jObject = feature.Mod.ModSetting[nameof(Feature)][feature.Name] as JObject;
+        if(jObject == null) {
+            jObject = new JObject();
+            feature.Mod.ModSetting[nameof(Feature)][feature.Name] = jObject;
+        }
+        return jObject;
     }
 
     public new void PutFieldData() {
