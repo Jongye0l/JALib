@@ -12,7 +12,6 @@ namespace JALib;
 public class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
-    internal static bool Active => Instance.ModEntry.Active;
     private static JAPatcher patcher;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true) {

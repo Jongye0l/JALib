@@ -22,7 +22,6 @@ public abstract class JAMod {
     protected bool ForceUpdate => ModSetting.ForceUpdate;
     protected Version LatestVersion => ModSetting.LatestVersion;
     public bool IsLatest => LatestVersion <= Version;
-    public readonly bool IsBeta;
     public bool IsBetaBranch => ModSetting.IsBetaBranch;
     protected Dependency[] Dependencies { get; private set; }
     protected internal List<Feature> Features { get; private set; }
@@ -53,7 +52,6 @@ public abstract class JAMod {
                 if(index == -1) index = version.IndexOf(' ');
                 onlyVersion = version[..index];
                 behindVersion = version[index..];
-                IsBeta = true;
                 if(!ModSetting.IsBetaBranch) {
                     ModSetting.IsBetaBranch = true;
                     SaveSetting();
@@ -152,7 +150,7 @@ public abstract class JAMod {
     }
 
     private bool OnToggle(UnityModManager.ModEntry modEntry, bool value) {
-        if(this != JALib.Instance && !JALib.Active) {
+        if(this != JALib.Instance && !JALib.Instance.ModEntry.Active) {
             Error("JALib is Disabled");
             return false;
         }
