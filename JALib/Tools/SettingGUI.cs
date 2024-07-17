@@ -181,15 +181,18 @@ public class SettingGUI {
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
     }
-    public void AddSettingEnum<T>(ref T value, string text, T[] values = null, Action onChanged = null) where T : Enum {
+
+    public void AddSettingEnum<T>(ref T value, string text, T[] values, Action onChanged = null) where T : Enum {
         GUILayout.BeginHorizontal();
         GUILayout.Label(text);
         GUILayout.Space(4f);
-        values ??= (T[]) Enum.GetValues(typeof(T));
-        foreach(T current in values)
-            AddEnumButton(ref value, current.ToString(), current, onChanged);
+        foreach(T current in values) AddEnumButton(ref value, current.ToString(), current, onChanged);
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
+    }
+
+    public void AddSettingEnum<T>(ref T value, string text, Action onChanged = null) where T : Enum {
+        AddSettingEnum(ref value, text, (T[]) Enum.GetValues(typeof(T)), onChanged);
     }
 
     private void AddEnumButton<T>(ref T value, string text, T current, Action onChanged) {
