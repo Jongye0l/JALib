@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using JALib.Stream;
 using UnityEngine;
 
@@ -148,6 +149,20 @@ public static class ByteTools {
     }
 
     public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = true) {
+        if(type == typeof(ICollection<>)) {
+            int size = input.ReadInt();
+            Type elementType = type.GetGenericArguments()[0];
+            if(type.IsArray) {
+                Array array = Array.CreateInstance(elementType, size);
+                for(int i = 0; i < size; i++) array.SetValue(ToObject(input, elementType), i);
+                return array;
+            }
+            ConstructorInfo constructorInfo;
+            object collection = (constructorInfo = type.Constructor(typeof(int))) != null ? constructorInfo.Invoke(new object[] { size }) : type.New();
+            MethodInfo addMethod = type.Method("Add");
+            for(int i = 0; i < size; i++) addMethod.Invoke(collection, new[] { ToObject(input, elementType) });
+            return collection;
+        }
         object obj = Activator.CreateInstance(type);
         foreach(MemberInfo member in type.Members().Where(member => !declearing || member.DeclaringType == type)) {
             if(member.GetCustomAttribute<DataExcludeAttribute>() != null) continue;
@@ -324,6 +339,11 @@ public static class ByteTools {
     }
 
     public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = true) {
+        if(value.GetType() == typeof(ICollection<>)) {
+            output.WriteInt(value.GetValue<int>("Count"));
+            foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
+            return;
+        }
         foreach(MemberInfo member in value.GetType().Members().Where(member => !declearing || member.DeclaringType == value.GetType())) {
             if(member.GetCustomAttribute<DataExcludeAttribute>() != null) continue;
             if(member is FieldInfo field) {
@@ -426,7 +446,6 @@ public static class ByteTools {
                 }
             }
         }
-
     }
     
     private static void CheckStart(int start, int length) {
