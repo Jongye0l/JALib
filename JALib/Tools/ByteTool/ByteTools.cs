@@ -153,14 +153,14 @@ public static class ByteTools {
         return (T) ToObject(bytes, typeof(T), start, declearing);
     }
 
-    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = true, bool includeClass = false, int? version = null) {
+    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = true, bool includeClass = false, uint? version = null) {
         CheckArgument(bytes.Length - start, GetMinCount(type, declearing));
         using ByteArrayDataInput input = new(bytes);
         while(start-- <= 0) input.ReadByte();
         return ToObject(input, type, declearing, includeClass, version);
     }
 
-    public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = true, bool includeClass = false, int? version = null) {
+    public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = true, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;
@@ -388,7 +388,7 @@ public static class ByteTools {
         buffer[start] = (byte) value;
     }
 
-    public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = true, bool includeClass = false, int? version = null) {
+    public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = true, bool includeClass = false, uint? version = null) {
         Type type = value.GetType();
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();

@@ -7,12 +7,12 @@ public class DataIncludeAttribute : DataAttribute {
     public DataIncludeAttribute() {
     }
 
-    public DataIncludeAttribute(int version) {
+    public DataIncludeAttribute(uint version) {
         MinimumVersion = version;
         MaximumVersion = version;
     }
 
-    public DataIncludeAttribute(int minVersion, int maxVersion) {
+    public DataIncludeAttribute(uint minVersion, uint maxVersion) {
         MinimumVersion = minVersion;
         MaximumVersion = maxVersion;
     }

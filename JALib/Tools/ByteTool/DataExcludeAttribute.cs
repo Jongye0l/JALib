@@ -7,12 +7,12 @@ public class DataExcludeAttribute : DataAttribute {
     public DataExcludeAttribute() {
     }
 
-    public DataExcludeAttribute(int version) {
+    public DataExcludeAttribute(uint version) {
         MinimumVersion = version;
         MaximumVersion = version;
     }
 
-    public DataExcludeAttribute(int minVersion, int maxVersion) {
+    public DataExcludeAttribute(uint minVersion, uint maxVersion) {
         MinimumVersion = minVersion;
         MaximumVersion = maxVersion;
     }

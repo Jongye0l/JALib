@@ -4,9 +4,9 @@ namespace JALib.Tools.ByteTool;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class VersionAttribute : Attribute {
-    public int Version;
+    public uint Version;
 
-    public VersionAttribute(int version) {
+    public VersionAttribute(uint version) {
         Version = version;
     }
 }

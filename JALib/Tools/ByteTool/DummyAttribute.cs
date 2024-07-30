@@ -10,13 +10,13 @@ public class DummyAttribute : DataAttribute {
         Count = count;
     }
 
-    public DummyAttribute(int count, int version) {
+    public DummyAttribute(int count, uint version) {
         Count = count;
         MinimumVersion = version;
         MaximumVersion = version;
     }
 
-    public DummyAttribute(int count, int minVersion, int maxVersion) {
+    public DummyAttribute(int count, uint minVersion, uint maxVersion) {
         Count = count;
         MinimumVersion = minVersion;
         MaximumVersion = maxVersion;
