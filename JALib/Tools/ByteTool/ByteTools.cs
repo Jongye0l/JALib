@@ -78,9 +78,21 @@ public static class ByteTools {
     }
 
     public static int GetMinCount(Type type, bool declearing) {
+        VersionAttribute version = type.GetCustomAttribute<VersionAttribute>();
         int count = 0;
         foreach(MemberInfo member in type.Members().Where(member => !declearing || member.DeclaringType == type)) {
-            if(member.GetCustomAttribute<DataExcludeAttribute>() != null) continue;
+            bool skip = false;
+            foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
+                switch(dataAttribute) {
+                    case DataIncludeAttribute include:
+                        if(version == null || version.Version < include.MinimumVersion || version.Version > include.MaximumVersion) skip = false;
+                        break;
+                    case DataExcludeAttribute exclude:
+                        if(version == null || version.Version < exclude.MinimumVersion || version.Version > exclude.MaximumVersion) skip = true;
+                        break;
+                }
+            }
+            if(skip) continue;
             switch(member) {
                 case FieldInfo field:
                     if(field.IsStatic || field.IsInitOnly) continue;
@@ -141,14 +153,20 @@ public static class ByteTools {
         return (T) ToObject(bytes, typeof(T), start, declearing);
     }
 
-    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = true) {
+    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = true, bool includeClass = false) {
         CheckArgument(bytes.Length - start, GetMinCount(type, declearing));
         using ByteArrayDataInput input = new(bytes);
         while(start-- <= 0) input.ReadByte();
-        return ToObject(input, type, declearing);
+        return ToObject(input, type, declearing, includeClass);
     }
 
-    public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = true) {
+    public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = true, bool includeClass = false) {
+        VersionAttribute version = type.GetCustomAttribute<VersionAttribute>();
+        IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
+        DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
+        if(includeCl != null && includeCl.CheckCondition(version?.Version)) includeClass = true;
+        if(declear != null && declear.CheckCondition(version?.Version)) declearing = declear.Declearing;
+        if(includeClass) type = Type.GetType(input.ReadUTF());
         if(type == typeof(ICollection<>)) {
             int size = input.ReadInt();
             Type elementType = type.GetGenericArguments()[0];
@@ -165,46 +183,73 @@ public static class ByteTools {
         }
         object obj = Activator.CreateInstance(type);
         foreach(MemberInfo member in type.Members().Where(member => !declearing || member.DeclaringType == type)) {
-            if(member.GetCustomAttribute<DataExcludeAttribute>() != null) continue;
+            bool skip = false;
+            bool memberDeclearing = declearing;
+            foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
+                switch(dataAttribute) {
+                    case DataIncludeAttribute include:
+                        if(include.CheckCondition(version?.Version)) skip = false;
+                        break;
+                    case DataExcludeAttribute exclude:
+                        if(exclude.CheckCondition(version?.Version)) skip = true;
+                        break;
+                    case DummyAttribute dummy:
+                        if(dummy.CheckCondition(version?.Version)) for(int i = 0; i < dummy.Count; i++) input.ReadByte();
+                        break;
+                    case DeclearingAttribute declea:
+                        if(declea.CheckCondition(version?.Version)) memberDeclearing = declea.Declearing;
+                        break;
+                }
+            }
+            if(skip) continue;
+            Type memberType = null;
             if(member is FieldInfo field) {
                 if(field.IsStatic || field.IsInitOnly) continue;
-                field.SetValue(obj, field.FieldType switch {
-                    { } t when t == typeof(long) => input.ReadLong(),
-                    { } t when t == typeof(int) => input.ReadInt(),
-                    { } t when t == typeof(short) => input.ReadShort(),
-                    { } t when t == typeof(byte) => input.ReadByte(),
-                    { } t when t == typeof(bool) => input.ReadBoolean(),
-                    { } t when t == typeof(string) => input.ReadUTF(),
-                    { } t when t == typeof(byte[]) => input.ReadBytes(),
-                    { } t when t == typeof(decimal) => input.ReadDecimal(),
-                    { } t when t == typeof(float) => input.ReadFloat(),
-                    { } t when t == typeof(double) => input.ReadDouble(),
-                    { } t when t == typeof(ushort) => input.ReadUShort(),
-                    { } t when t == typeof(uint) => input.ReadUInt(),
-                    { } t when t == typeof(ulong) => input.ReadULong(),
-                    { } t when t == typeof(sbyte) => input.ReadSByte(),
-                    _ => ToObject(input, field.FieldType)
-                });
+                memberType = field.FieldType;
             } else if(member is PropertyInfo property) {
                 if(!property.CanWrite || property.GetSetMethod(true).IsStatic || property.Name == "Item") continue;
-                property.SetValue(obj, property.PropertyType switch {
-                    { } t when t == typeof(long) => input.ReadLong(),
-                    { } t when t == typeof(int) => input.ReadInt(),
-                    { } t when t == typeof(short) => input.ReadShort(),
-                    { } t when t == typeof(byte) => input.ReadByte(),
-                    { } t when t == typeof(bool) => input.ReadBoolean(),
-                    { } t when t == typeof(string) => input.ReadUTF(),
-                    { } t when t == typeof(byte[]) => input.ReadBytes(),
-                    { } t when t == typeof(decimal) => input.ReadDecimal(),
-                    { } t when t == typeof(float) => input.ReadFloat(),
-                    { } t when t == typeof(double) => input.ReadDouble(),
-                    { } t when t == typeof(ushort) => input.ReadUShort(),
-                    { } t when t == typeof(uint) => input.ReadUInt(),
-                    { } t when t == typeof(ulong) => input.ReadULong(),
-                    { } t when t == typeof(sbyte) => input.ReadSByte(),
-                    _ => ToObject(input, property.PropertyType)
-                });
+                memberType = property.PropertyType;
             }
+            Type castType = memberType;
+            CastAttribute cast = member.GetCustomAttribute<CastAttribute>();
+            if(cast != null) {
+                if(cast.Type == null) continue;
+                castType = cast.Type;
+            }
+            IncludeClassAttribute inc = member.GetCustomAttribute<IncludeClassAttribute>();
+            if(inc != null && inc.CheckCondition(version?.Version)) memberType = Type.GetType(input.ReadUTF());
+            object value = castType switch {
+                not null when castType == typeof(long) => input.ReadLong(),
+                not null when castType == typeof(int) => input.ReadInt(),
+                not null when castType == typeof(short) => input.ReadShort(),
+                not null when castType == typeof(byte) => input.ReadByte(),
+                not null when castType == typeof(bool) => input.ReadBoolean(),
+                not null when castType == typeof(string) => input.ReadUTF(),
+                not null when castType == typeof(byte[]) => input.ReadBytes(),
+                not null when castType == typeof(decimal) => input.ReadDecimal(),
+                not null when castType == typeof(float) => input.ReadFloat(),
+                not null when castType == typeof(double) => input.ReadDouble(),
+                not null when castType == typeof(ushort) => input.ReadUShort(),
+                not null when castType == typeof(uint) => input.ReadUInt(),
+                not null when castType == typeof(ulong) => input.ReadULong(),
+                not null when castType == typeof(sbyte) => input.ReadSByte(),
+                _ => ToObject(input, castType, memberDeclearing)
+            };
+            if(castType != memberType) {
+                MethodInfo explicitCast = memberType.Method("op_Explicit", castType);
+                MethodInfo implicitCast = castType.Method("op_Implicit", memberType);
+                if(explicitCast != null && implicitCast != null) {
+                    value = cast.FirstCast switch {
+                        FirstCast.Implicit => explicitCast.Invoke(null, value),
+                        FirstCast.Explicit => implicitCast.Invoke(null, value),
+                        _ => value
+                    };
+                } else if(explicitCast != null) value = explicitCast.Invoke(null, value);
+                else if(implicitCast != null) value = implicitCast.Invoke(null, value);
+                else value = Convert.ChangeType(value, memberType);
+            }
+            if(member is FieldInfo field2) field2.SetValue(obj, value);
+            else if(member is PropertyInfo property) property.SetValue(obj, value);
         }
         return obj;
     }
@@ -338,112 +383,113 @@ public static class ByteTools {
         buffer[start] = (byte) value;
     }
 
-    public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = true) {
-        if(value.GetType() == typeof(ICollection<>)) {
+    public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = true, bool includeClass = false) {
+        Type type = value.GetType();
+        VersionAttribute version = type.GetCustomAttribute<VersionAttribute>();
+        IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
+        DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
+        if(includeCl != null && includeCl.CheckCondition(version?.Version)) includeClass = true;
+        if(includeClass) output.WriteUTF(type.FullName);
+        if(declear != null && declear.CheckCondition(version?.Version)) declearing = declear.Declearing;
+        if(type == typeof(ICollection<>)) {
             output.WriteInt(value.GetValue<int>("Count"));
             foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
             return;
         }
         foreach(MemberInfo member in value.GetType().Members().Where(member => !declearing || member.DeclaringType == value.GetType())) {
-            if(member.GetCustomAttribute<DataExcludeAttribute>() != null) continue;
+            bool skip = false;
+            foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
+                switch(dataAttribute) {
+                    case DataIncludeAttribute include:
+                        if(include.CheckCondition(version?.Version)) skip = false;
+                        break;
+                    case DataExcludeAttribute exclude:
+                        if(exclude.CheckCondition(version?.Version)) skip = true;
+                        break;
+                    case DummyAttribute dummy:
+                        if(dummy.CheckCondition(version?.Version)) for(int i = 0; i < dummy.Count; i++) output.WriteByte(0);
+                        break;
+                }
+            }
+            if(skip) continue;
+            Type memberType = null;
+            object memberValue = null;
             if(member is FieldInfo field) {
                 if(field.IsStatic || field.IsInitOnly) continue;
-                switch(field.GetValue(value)) {
-                    case long l:
-                        output.WriteLong(l);
-                        break;
-                    case int i:
-                        output.WriteInt(i);
-                        break;
-                    case short s:
-                        output.WriteShort(s);
-                        break;
-                    case byte b:
-                        output.WriteByte(b);
-                        break;
-                    case bool b:
-                        output.WriteBoolean(b);
-                        break;
-                    case string s:
-                        output.WriteUTF(s);
-                        break;
-                    case byte[] b:
-                        output.WriteBytes(b);
-                        break;
-                    case decimal d:
-                        output.WriteDecimal(d);
-                        break;
-                    case float f:
-                        output.WriteFloat(f);
-                        break;
-                    case double d:
-                        output.WriteDouble(d);
-                        break;
-                    case ushort u:
-                        output.WriteUShort(u);
-                        break;
-                    case uint u:
-                        output.WriteUInt(u);
-                        break;
-                    case ulong u:
-                        output.WriteULong(u);
-                        break;
-                    case sbyte s:
-                        output.WriteSByte(s);
-                        break;
-                    default:
-                        ToBytes(field.GetValue(value), output, declearing);
-                        break;
-                }
+                memberType = field.FieldType;
+                memberValue = field.GetValue(value);
             } else if(member is PropertyInfo property) {
                 if(!property.CanWrite || property.GetSetMethod(true).IsStatic || property.Name == "Item") continue;
-                switch(property.GetValue(value)) {
-                    case long l:
-                        output.WriteLong(l);
-                        break;
-                    case int i:
-                        output.WriteInt(i);
-                        break;
-                    case short s:
-                        output.WriteShort(s);
-                        break;
-                    case byte b:
-                        output.WriteByte(b);
-                        break;
-                    case bool b:
-                        output.WriteBoolean(b);
-                        break;
-                    case string s:
-                        output.WriteUTF(s);
-                        break;
-                    case byte[] b:
-                        output.WriteBytes(b);
-                        break;
-                    case decimal d:
-                        output.WriteDecimal(d);
-                        break;
-                    case float f:
-                        output.WriteFloat(f);
-                        break;
-                    case double d:
-                        output.WriteDouble(d);
-                        break;
-                    case ushort u:
-                        output.WriteUShort(u);
-                        break;
-                    case uint u:
-                        output.WriteUInt(u);
-                        break;
-                    case ulong u:
-                        output.WriteULong(u);
-                        break;
-                    case sbyte s:
-                        output.WriteSByte(s);
-                        break;
-                    default:
-                        ToBytes(property.GetValue(value), output, declearing);
-                        break;
-                }
+                memberType = property.PropertyType;
+                memberValue = property.GetValue(value);
+            }
+            Type castType = memberType;
+            CastAttribute cast = member.GetCustomAttribute<CastAttribute>();
+            if(cast != null) {
+                if(cast.Type == null) continue;
+                castType = cast.Type;
+            }
+            IncludeClassAttribute inc = member.GetCustomAttribute<IncludeClassAttribute>();
+            if(inc != null && inc.CheckCondition(version?.Version)) output.WriteUTF(memberType.FullName);
+            if(castType != memberType) {
+                MethodInfo explicitCast = castType.Method("op_Explicit", memberType);
+                MethodInfo implicitCast = memberType.Method("op_Implicit", castType);
+                if(explicitCast != null && implicitCast != null) {
+                    memberValue = cast.FirstCast switch {
+                        FirstCast.Implicit => implicitCast.Invoke(null, memberValue),
+                        FirstCast.Explicit => explicitCast.Invoke(null, memberValue),
+                        _ => memberValue
+                    };
+                } else if(explicitCast != null) memberValue = explicitCast.Invoke(null, memberValue);
+                else if(implicitCast != null) memberValue = implicitCast.Invoke(null, memberValue);
+                else memberValue = Convert.ChangeType(memberValue, castType);
+            }
+            switch(memberValue) {
+                case long l:
+                    output.WriteLong(l);
+                    break;
+                case int i:
+                    output.WriteInt(i);
+                    break;
+                case short s:
+                    output.WriteShort(s);
+                    break;
+                case byte b:
+                    output.WriteByte(b);
+                    break;
+                case bool b:
+                    output.WriteBoolean(b);
+                    break;
+                case string s:
+                    output.WriteUTF(s);
+                    break;
+                case byte[] b:
+                    output.WriteBytes(b);
+                    break;
+                case decimal d:
+                    output.WriteDecimal(d);
+                    break;
+                case float f:
+                    output.WriteFloat(f);
+                    break;
+                case double d:
+                    output.WriteDouble(d);
+                    break;
+                case ushort u:
+                    output.WriteUShort(u);
+                    break;
+                case uint u:
+                    output.WriteUInt(u);
+                    break;
+                case ulong u:
+                    output.WriteULong(u);
+                    break;
+                case sbyte s:
+                    output.WriteSByte(s);
+                    break;
+                default:
+                    ToBytes(memberValue, output, declearing);
+                    break;
             }
         }
     }

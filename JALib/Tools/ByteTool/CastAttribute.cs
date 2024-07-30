@@ -1,0 +1,23 @@
+﻿using System;
+
+namespace JALib.Tools.ByteTool;
+
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+public class CastAttribute : Attribute {
+    public Type Type;
+    public FirstCast FirstCast = FirstCast.Explicit;
+
+    public CastAttribute(Type type) {
+        Type = type;
+    }
+
+    public CastAttribute(Type type, FirstCast firstCast) {
+        Type = type;
+        FirstCast = firstCast;
+    }
+}
+
+public enum FirstCast {
+    Implicit,
+    Explicit
+}

@@ -3,16 +3,16 @@
 namespace JALib.Tools.ByteTool;
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
-public class DataExcludeAttribute : DataAttribute {
-    public DataExcludeAttribute() {
+public class DataIncludeAttribute : DataAttribute {
+    public DataIncludeAttribute() {
     }
 
-    public DataExcludeAttribute(int version) {
+    public DataIncludeAttribute(int version) {
         MinimumVersion = version;
         MaximumVersion = version;
     }
 
-    public DataExcludeAttribute(int minVersion, int maxVersion) {
+    public DataIncludeAttribute(int minVersion, int maxVersion) {
         MinimumVersion = minVersion;
         MaximumVersion = maxVersion;
     }
