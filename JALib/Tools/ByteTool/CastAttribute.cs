@@ -3,7 +3,7 @@
 namespace JALib.Tools.ByteTool;
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-public class CastAttribute : Attribute {
+public class CastAttribute : DataAttribute {
     public Type Type;
     public FirstCast FirstCast = FirstCast.Explicit;
 
