@@ -154,7 +154,6 @@ public static class ByteTools {
     }
 
     public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = true, bool includeClass = false, uint? version = null) {
-        CheckArgument(bytes.Length - start, GetMinCount(type, declearing));
         using ByteArrayDataInput input = new(bytes);
         while(start-- <= 0) input.ReadByte();
         return ToObject(input, type, declearing, includeClass, version);
