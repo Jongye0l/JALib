@@ -1,6 +1,10 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using JALib.Tools.ByteTool;
 
 namespace JALib.Tools;
 
@@ -58,4 +62,36 @@ public static class SimpleHttp {
     
     public static async Task<string> SendString(this HttpClient httpClient, HttpRequestMessage request, CancellationToken cancellationToken) => 
         await (await httpClient.SendAsync(request, cancellationToken)).Content.ReadAsStringAsync();
+
+    public static async Task<byte[]> Get(this WebClient webClient, string url) => await webClient.DownloadDataTaskAsync(url);
+
+    public static async Task<string> GetString(this WebClient webClient, string url) => await webClient.DownloadStringTaskAsync(url);
+
+    public static async Task<byte[]> Post(this WebClient webClient, string url, byte[] data) => await webClient.UploadDataTaskAsync(url, data);
+
+    public static async Task<string> PostString(this WebClient webClient, string url, byte[] data) => Encoding.UTF8.GetString(await webClient.UploadDataTaskAsync(url, data));
+
+    public static async Task<byte[]> Post(this WebClient webClient, string url, string data) => (await webClient.UploadStringTaskAsync(url, data)).ToBytes();
+
+    public static async Task<string> PostString(this WebClient webClient, string url, string data) => await webClient.UploadStringTaskAsync(url, data);
+
+    public static async Task<byte[]> Put(this WebClient webClient, string url, byte[] data) => await webClient.UploadDataTaskAsync(url, "PUT", data);
+
+    public static async Task<string> PutString(this WebClient webClient, string url, byte[] data) => Encoding.UTF8.GetString(await webClient.UploadDataTaskAsync(url, "PUT", data));
+
+    public static async Task<byte[]> Put(this WebClient webClient, string url, string data) => (await webClient.UploadStringTaskAsync(url, "PUT", data)).ToBytes();
+
+    public static async Task<string> PutString(this WebClient webClient, string url, string data) => await webClient.UploadStringTaskAsync(url, "PUT", data);
+
+    public static async Task<byte[]> Delete(this WebClient webClient, string url) => await webClient.UploadDataTaskAsync(url, "DELETE", Array.Empty<byte>());
+
+    public static async Task<string> DeleteString(this WebClient webClient, string url) => Encoding.UTF8.GetString(await webClient.UploadDataTaskAsync(url, "DELETE", Array.Empty<byte>()));
+
+    public static async Task<byte[]> Send(this WebClient webClient, string method, string url, byte[] data) => await webClient.UploadDataTaskAsync(url, method, data);
+
+    public static async Task<string> SendString(this WebClient webClient, string method, string url, byte[] data) => Encoding.UTF8.GetString(await webClient.UploadDataTaskAsync(url, method, data));
+
+    public static async Task<byte[]> Send(this WebClient webClient, string method, string url, string data) => (await webClient.UploadStringTaskAsync(url, method, data)).ToBytes();
+
+    public static async Task<string> SendString(this WebClient webClient, string method, string url, string data) => await webClient.UploadStringTaskAsync(url, method, data);
 }
