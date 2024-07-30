@@ -77,8 +77,12 @@ public static class ByteTools {
         });
     }
 
-    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declearing = false) {
-        return (T) ToObject(bytes, typeof(T), start, declearing);
+    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declearing = true, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(bytes, typeof(T), start, declearing, includeClass, version);
+    }
+
+    public static T ToObject<T>(this ByteArrayDataInput input, bool declearing = true, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(input, typeof(T), declearing, includeClass, version);
     }
 
     public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = true, bool includeClass = false, uint? version = null) {
