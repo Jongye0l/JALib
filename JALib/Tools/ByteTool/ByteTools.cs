@@ -335,7 +335,7 @@ public static class ByteTools {
             foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
             return;
         }
-        foreach(MemberInfo member in value.GetType().Members().Where(member => !declearing || member.DeclaringType == value.GetType())) {
+        foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == value.GetType()))) {
             bool skip = false;
             bool memberDeclearing = true;
             foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
