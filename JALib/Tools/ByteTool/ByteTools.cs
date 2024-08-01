@@ -117,7 +117,7 @@ public static class ByteTools {
             for(int i = 0; i < size; i++) addMethod.Invoke(collection, new[] { ToObject(input, elementType) });
             return collection;
         }
-        if(!type.IsValueType && type.GetCustomAttribute<NotNullAttribute>() == null) {
+        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
             if(!input.ReadBoolean()) return null;
         }
         object obj = Activator.CreateInstance(type);
@@ -347,7 +347,7 @@ public static class ByteTools {
             foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
             return;
         }
-        if(!type.IsValueType && type.GetCustomAttribute<NotNullAttribute>() == null) {
+        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
             if(value == null) {
                 output.WriteBoolean(false);
                 return;
