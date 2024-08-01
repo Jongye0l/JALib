@@ -12,7 +12,7 @@ public class JAction {
     private readonly JAMod mod;
     public MethodInfo Method => action.Method;
     public object Target => action.Target;
-    
+
     public JAction(JAMod mod, Action action) {
         this.mod = mod;
         this.action = action;
@@ -20,11 +20,11 @@ public class JAction {
 
     public void Invoke() {
         if(mod == null) {
-            action.Invoke();
+            action();
             return;
         }
         try {
-            action.Invoke();
+            action();
         } catch (Exception e) {
             mod.Error("An error occurred while invoking an action.");
             mod.LogException(e);

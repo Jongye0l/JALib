@@ -21,7 +21,8 @@ public class ByteArrayDataInput : IDisposable {
     }
     
     public string ReadUTF() {
-        return Encoding.UTF8.GetString(ReadBytes());
+        byte[] buffer = ReadBytes();
+        return buffer == null ? null : Encoding.UTF8.GetString(buffer);
     }
 
     public int ReadInt() {

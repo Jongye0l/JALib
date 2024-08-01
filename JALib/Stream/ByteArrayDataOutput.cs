@@ -30,7 +30,7 @@ public class ByteArrayDataOutput : IDisposable {
     }
     
     public void WriteUTF(string value) {
-        WriteBytes(Encoding.UTF8.GetBytes(value));
+        WriteBytes(value == null ? null : Encoding.UTF8.GetBytes(value));
     }
 
     public void WriteInt(int value) {
@@ -108,7 +108,11 @@ public class ByteArrayDataOutput : IDisposable {
     }
 
     public void WriteBytes(byte[] value) {
-        EnsureCapacity(count + value.Length + 4);
+        EnsureCapacity(value == null ? 4 : count + value.Length + 4);
+        if(value == null) {
+            WriteIntBypass(-1);
+            return;
+        }
         WriteIntBypass(value.Length);
         foreach(byte b in value) buf[count++] = b;
     }

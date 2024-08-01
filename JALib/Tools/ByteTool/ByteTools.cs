@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using JALib.Stream;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace JALib.Tools.ByteTool;
@@ -101,8 +102,9 @@ public static class ByteTools {
             if(declear != null && declear.CheckCondition(version)) declearing = declear.Declearing;
         }
         if(includeClass) type = Type.GetType(input.ReadUTF());
-        if(type == typeof(ICollection<>)) {
+        if(type == typeof(ICollection<>) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             int size = input.ReadInt();
+            if(size == -1) return null;
             Type elementType = type.GetGenericArguments()[0];
             if(type.IsArray) {
                 Array array = Array.CreateInstance(elementType, size);
@@ -114,6 +116,9 @@ public static class ByteTools {
             MethodInfo addMethod = type.Method("Add");
             for(int i = 0; i < size; i++) addMethod.Invoke(collection, new[] { ToObject(input, elementType) });
             return collection;
+        }
+        if(!type.IsValueType && type.GetCustomAttribute<NotNullAttribute>() == null) {
+            if(!input.ReadBoolean()) return null;
         }
         object obj = Activator.CreateInstance(type);
         foreach(MemberInfo member in type.Members().Where(member => !declearing || member.DeclaringType == type)) {
@@ -320,7 +325,10 @@ public static class ByteTools {
     }
 
     public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = true, bool includeClass = false, uint? version = null) {
-        Type type = value.GetType();
+        ToBytes(value, output, value.GetType(), declearing, includeClass, version);
+    }
+
+    public static void ToBytes(this object value, ByteArrayDataOutput output, Type type, bool declearing = true, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;
@@ -330,10 +338,21 @@ public static class ByteTools {
             if(declear != null && declear.CheckCondition(version)) declearing = declear.Declearing;
         }
         if(includeClass) output.WriteUTF(type.FullName);
-        if(type == typeof(ICollection<>)) {
+        if(type == typeof(ICollection<>) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+            if(value == null) {
+                output.WriteInt(-1);
+                return;
+            }
             output.WriteInt(value.GetValue<int>("Count"));
             foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
             return;
+        }
+        if(!type.IsValueType && type.GetCustomAttribute<NotNullAttribute>() == null) {
+            if(value == null) {
+                output.WriteBoolean(false);
+                return;
+            }
+            output.WriteBoolean(true);
         }
         foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == value.GetType()))) {
             bool skip = false;
