@@ -354,7 +354,7 @@ public static class ByteTools {
             }
             output.WriteBoolean(true);
         }
-        foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == value.GetType()))) {
+        foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == type))) {
             bool skip = false;
             bool memberDeclearing = true;
             foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
@@ -408,53 +408,21 @@ public static class ByteTools {
                 else if(implicitCast != null) memberValue = implicitCast.Invoke(null, memberValue);
                 else memberValue = Convert.ChangeType(memberValue, castType);
             }
-            switch(memberValue) {
-                case long l:
-                    output.WriteLong(l);
-                    break;
-                case int i:
-                    output.WriteInt(i);
-                    break;
-                case short s:
-                    output.WriteShort(s);
-                    break;
-                case byte b:
-                    output.WriteByte(b);
-                    break;
-                case bool b:
-                    output.WriteBoolean(b);
-                    break;
-                case string s:
-                    output.WriteUTF(s);
-                    break;
-                case byte[] b:
-                    output.WriteBytes(b);
-                    break;
-                case decimal d:
-                    output.WriteDecimal(d);
-                    break;
-                case float f:
-                    output.WriteFloat(f);
-                    break;
-                case double d:
-                    output.WriteDouble(d);
-                    break;
-                case ushort u:
-                    output.WriteUShort(u);
-                    break;
-                case uint u:
-                    output.WriteUInt(u);
-                    break;
-                case ulong u:
-                    output.WriteULong(u);
-                    break;
-                case sbyte s:
-                    output.WriteSByte(s);
-                    break;
-                default:
-                    ToBytes(memberValue, output, memberDeclearing, false, version);
-                    break;
-            }
+            if(castType == typeof(long)) output.WriteLong((long) memberValue);
+            else if(castType == typeof(int)) output.WriteInt((int) memberValue);
+            else if(castType == typeof(short)) output.WriteShort((short) memberValue);
+            else if(castType == typeof(byte)) output.WriteByte((byte) memberValue);
+            else if(castType == typeof(bool)) output.WriteBoolean((bool) memberValue);
+            else if(castType == typeof(string)) output.WriteUTF((string) memberValue);
+            else if(castType == typeof(byte[])) output.WriteBytes((byte[]) memberValue);
+            else if(castType == typeof(decimal)) output.WriteDecimal((decimal) memberValue);
+            else if(castType == typeof(float)) output.WriteFloat((float) memberValue);
+            else if(castType == typeof(double)) output.WriteDouble((double) memberValue);
+            else if(castType == typeof(ushort)) output.WriteUShort((ushort) memberValue);
+            else if(castType == typeof(uint)) output.WriteUInt((uint) memberValue);
+            else if(castType == typeof(ulong)) output.WriteULong((ulong) memberValue);
+            else if(castType == typeof(sbyte)) output.WriteSByte((sbyte) memberValue);
+            else ToBytes(memberValue, output, castType, memberDeclearing, false, version);
         }
     }
     

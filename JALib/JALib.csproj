@@ -543,6 +543,7 @@
         <Compile Include="Tools\ByteTool\DataIncludeAttribute.cs" />
         <Compile Include="Tools\ByteTool\DeclearingAttribute.cs" />
         <Compile Include="Tools\ByteTool\DummyAttribute.cs" />
+        <Compile Include="Tools\ByteTool\IgnoreArrayAttribute.cs" />
         <Compile Include="Tools\ByteTool\IncludeClassAttribute.cs" />
         <Compile Include="Tools\ByteTool\VersionAttribute.cs" />
         <Compile Include="Tools\ForceApplyMod.cs" />
