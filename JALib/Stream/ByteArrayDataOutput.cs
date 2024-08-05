@@ -108,11 +108,11 @@ public class ByteArrayDataOutput : IDisposable {
     }
 
     public void WriteBytes(byte[] value) {
-        EnsureCapacity(value == null ? 4 : count + value.Length + 4);
         if(value == null) {
-            WriteIntBypass(-1);
+            WriteInt(-1);
             return;
         }
+        EnsureCapacity(count + value.Length + 4);
         WriteIntBypass(value.Length);
         foreach(byte b in value) buf[count++] = b;
     }

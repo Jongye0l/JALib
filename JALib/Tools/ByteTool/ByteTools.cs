@@ -78,28 +78,28 @@ public static class ByteTools {
         });
     }
 
-    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declearing = true, bool includeClass = false, uint? version = null) {
+    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
         return (T) ToObject(bytes, typeof(T), start, declearing, includeClass, version);
     }
 
-    public static T ToObject<T>(this ByteArrayDataInput input, bool declearing = true, bool includeClass = false, uint? version = null) {
+    public static T ToObject<T>(this ByteArrayDataInput input, bool declearing = false, bool includeClass = false, uint? version = null) {
         return (T) ToObject(input, typeof(T), declearing, includeClass, version);
     }
 
-    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = true, bool includeClass = false, uint? version = null) {
+    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
         using ByteArrayDataInput input = new(bytes);
         while(start-- <= 0) input.ReadByte();
         return ToObject(input, type, declearing, includeClass, version);
     }
 
-    public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = true, bool includeClass = false, uint? version = null) {
+    public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;
             IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
             DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
             if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
-            if(declear != null && declear.CheckCondition(version)) declearing = declear.Declearing;
+            if(declear != null && declear.CheckCondition(version)) declearing = true;
         }
         if(includeClass) type = Type.GetType(input.ReadUTF());
         if(type == typeof(ICollection<>) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
@@ -117,13 +117,24 @@ public static class ByteTools {
             for(int i = 0; i < size; i++) addMethod.Invoke(collection, new[] { ToObject(input, elementType) });
             return collection;
         }
+        if(type.IsSubclassOf(typeof(Delegate))) {
+            if(!includeClass) type = Type.GetType(input.ReadUTF());
+            Type declaringType = Type.GetType(input.ReadUTF());
+            MethodInfo method = declaringType.Method(input.ReadUTF());
+            object target = null;
+            if(input.ReadBoolean()) {
+                Type targetType = Type.GetType(input.ReadUTF());
+                target = ToObject(input, targetType, declearing);
+            }
+            return Delegate.CreateDelegate(type, target, method);
+        }
         if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
             if(!input.ReadBoolean()) return null;
         }
         object obj = Activator.CreateInstance(type);
         foreach(MemberInfo member in type.Members().Where(member => !declearing || member.DeclaringType == type)) {
             bool skip = false;
-            bool memberDeclearing = true;
+            bool memberDeclearing = false;
             foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
                 switch(dataAttribute) {
                     case DataIncludeAttribute include:
@@ -136,7 +147,7 @@ public static class ByteTools {
                         if(dummy.CheckCondition(version)) for(int i = 0; i < dummy.Count; i++) input.ReadByte();
                         break;
                     case DeclearingAttribute declea:
-                        if(declea.CheckCondition(version)) memberDeclearing = declea.Declearing;
+                        if(declea.CheckCondition(version)) memberDeclearing = true;
                         break;
                 }
             }
@@ -249,7 +260,7 @@ public static class ByteTools {
         return buffer;
     }
 
-    public static byte[] ToBytes(this object value, bool declearing = true) {
+    public static byte[] ToBytes(this object value, bool declearing = false) {
         using ByteArrayDataOutput output = new();
         ToBytes(value, output, declearing);
         return output.ToByteArray();
@@ -324,27 +335,41 @@ public static class ByteTools {
         buffer[start] = (byte) value;
     }
 
-    public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = true, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = false, bool includeClass = false, uint? version = null) {
         ToBytes(value, output, value.GetType(), declearing, includeClass, version);
     }
 
-    public static void ToBytes(this object value, ByteArrayDataOutput output, Type type, bool declearing = true, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, ByteArrayDataOutput output, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;
             IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
             DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
             if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
-            if(declear != null && declear.CheckCondition(version)) declearing = declear.Declearing;
+            if(declear != null && declear.CheckCondition(version)) declearing = true;
         }
         if(includeClass) output.WriteUTF(type.FullName);
-        if(type == typeof(ICollection<>) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+        if(type.IsSubclassOf(typeof(ICollection<>)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             if(value == null) {
                 output.WriteInt(-1);
                 return;
             }
             output.WriteInt(value.GetValue<int>("Count"));
             foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
+            return;
+        }
+        if(type.IsSubclassOf(typeof(Delegate))) {
+            if(!includeClass) output.WriteUTF(type.FullName);
+            Delegate del = (Delegate) value;
+            output.WriteUTF(del.Method.DeclaringType.FullName);
+            output.WriteUTF(del.Method.Name);
+            if(del.Target == null) {
+                output.WriteBoolean(false);
+                return;
+            }
+            output.WriteBoolean(true);
+            output.WriteUTF(del.Target.GetType().FullName);
+            del.Target.ToBytes(output, declearing);
             return;
         }
         if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
@@ -356,7 +381,7 @@ public static class ByteTools {
         }
         foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == type))) {
             bool skip = false;
-            bool memberDeclearing = true;
+            bool memberDeclearing = false;
             foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
                 switch(dataAttribute) {
                     case DataIncludeAttribute include:
@@ -369,7 +394,7 @@ public static class ByteTools {
                         if(dummy.CheckCondition(version)) for(int i = 0; i < dummy.Count; i++) output.WriteByte(0);
                         break;
                     case DeclearingAttribute declea:
-                        if(declea.CheckCondition(version)) memberDeclearing = declea.Declearing;
+                        if(declea.CheckCondition(version)) memberDeclearing = true;
                         break;
                 }
             }
