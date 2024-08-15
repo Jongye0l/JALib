@@ -11,6 +11,7 @@ import lombok.Setter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Map;
 
 @Data
@@ -27,6 +28,7 @@ public class DiscordUserData {
 
     public long steamID;
     public RawMod[] requestMods = new RawMod[0];
+    public transient boolean saveRequest = true;
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     private final transient Object requestLocker = new Object();
 
@@ -36,6 +38,10 @@ public class DiscordUserData {
 
     public static DiscordUserData getUserData(long id) {
         return userDataMap.computeIfAbsent(id, k -> new DiscordUserData());
+    }
+
+    public static Collection<DiscordUserData> getUserData() {
+        return userDataMap.values();
     }
 
     public static boolean hasUserData(long id) {
@@ -50,7 +56,7 @@ public class DiscordUserData {
             newRequestMods[requestMods.length] = mod;
             requestMods = newRequestMods;
         }
-        save();
+        if(saveRequest) save();
     }
 
     public void removeRequestMod(int i) throws IOException {
@@ -60,14 +66,14 @@ public class DiscordUserData {
             System.arraycopy(requestMods, i + 1, newRequestMods, i, requestMods.length - i - 1);
             requestMods = newRequestMods;
         }
-        save();
+        if(saveRequest) save();
     }
 
     public void changeRequestMod(int i, RawMod mod) throws IOException {
         synchronized(requestLocker) {
             requestMods[i] = mod;
         }
-        save();
+        if(saveRequest) save();
     }
 
     public boolean hasRequestMod(RawMod mod) {
@@ -79,7 +85,7 @@ public class DiscordUserData {
         synchronized(requestLocker) {
             RawMod[] requestMods = this.requestMods;
             this.requestMods = new RawMod[0];
-            save();
+            if(saveRequest) save();
             return requestMods;
         }
     }
@@ -87,7 +93,7 @@ public class DiscordUserData {
     public void resetRequestMods() throws IOException {
         synchronized(requestLocker) {
             requestMods = new RawMod[0];
-            save();
+            if(saveRequest) save();
         }
     }
 }

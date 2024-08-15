@@ -504,7 +504,7 @@
     <ItemGroup>
         <Compile Include="API\AsyncRequestPacket.cs" />
         <Compile Include="API\JApi.cs" />
-        <Compile Include="API\JAWebApi.cs" />
+        <Compile Include="API\JAWebAPI.cs" />
         <Compile Include="API\Packets\DownloadModRequest.cs" />
         <Compile Include="API\Packets\ConnectInfo.cs" />
         <Compile Include="API\Packets\DiscordUpdate.cs" />
@@ -512,7 +512,8 @@
         <Compile Include="API\Packets\GetModInfo.cs" />
         <Compile Include="API\Packets\PacketResponseError.cs" />
         <Compile Include="API\Packets\Ping.cs" />
-        <Compile Include="API\Packets\Status.cs" />
+        <Compile Include="API\Request.cs" />
+        <Compile Include="API\RequestAPI.cs" />
         <Compile Include="API\RequestPacket.cs" />
         <Compile Include="API\ResponsePacket.cs" />
         <Compile Include="Core\Dependency.cs" />

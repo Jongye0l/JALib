@@ -2,93 +2,92 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using JALib.API.Packets;
 using JALib.JAException;
+using JALib.Stream;
 using JALib.Tools;
 using UnityEngine;
-using Ping = JALib.API.Packets.Ping;
 
 namespace JALib.API;
 
-internal static class JApi {
-    private const string Domain = "jongyeol.kr";
-    private const int Port1 = 43910;
-    private const int Port2 = 43911;
-    private const string Service = "jalib";
-    private static JATcpClient _client;
-    public static bool Connected => _client is { Connected: true };
+internal class JApi {
+    public static JApi Instance {
+        get {
+            _instance ??= new JApi();
+            return _instance;
+        }
+    }
+    private static JApi _instance;
+    private const string Domain1 = "jalib.jongyeol.kr";
+    private const string Domain2 = "jalib2.jongyeol.kr";
+    private readonly HttpClient _httpClient = new();
+    private JAWebSocketClient _client;
+    private string domain;
+    public static bool Connected => Instance?._client is { Connected: true };
     private static bool _adofaiEnable;
-    private static bool _connectInfo;
-    private static bool _statusExist;
-    private static bool _connectFailed;
-    private static Dictionary<long, RequestPacket> _requests = new();
+    private bool _connectInfo;
+    private readonly Dictionary<long, RequestPacket> _requests = new();
+    private static ConcurrentQueue<Request> _queue = new();
     private static Discord.Discord discord;
-    private static ConcurrentQueue<RequestPacket> _queue = new();
     
-    internal static void Initialize() {
-        _requests ??= new Dictionary<long, RequestPacket>();
-        _queue ??= new ConcurrentQueue<RequestPacket>();
+    public static void Initialize() {
+        if(ADOBase.platform != Platform.None) OnAdofaiStart();
+        _instance ??= new JApi();
+    }
+
+    private JApi() {
         TryConnect();
     }
 
-    private static void TryConnect() {
-        _connectFailed = false;
-        JATask.Run(JALib.Instance, () => Connect(Port1));
-        JATask.Run(JALib.Instance, () => Connect(Port2));
+    private void TryConnect() {
+        PingTest pingTest = new();
+        JATask.Run(JALib.Instance, () => Connect(Domain1, pingTest));
+        JATask.Run(JALib.Instance, () => Connect(Domain2, pingTest));
     }
 
-    private static void Connect(int port) {
-        JATcpClient client = new(new JAction(JALib.Instance, Read), false);
-        client.SetConnectAction(new JAction(JALib.Instance, () => {
-            JALib.Instance.Log("Successfully connected to the server port " + port);
-            if(_client != null) {
-                client.Dispose();
-                return;
-            }
-            _client = client;
-            OnConnect();
-        }));
-        client.SetCloseAction(new JAction(JALib.Instance, () => {
-            if(_client != client) return;
-            _client = null;
-            OnClose();
-        }));
+    private async void Connect(string domain, PingTest pingTest) {
         try {
-            client.Connect(Domain, port, Service, true);
+            long currentTime = DateTimeOffset.UtcNow.Ticks;
+            await _httpClient.GetAsync($"https://{domain}/ping");
+            int ping = (int) (DateTimeOffset.UtcNow.Ticks - currentTime);
+            if(pingTest.ping == -1) {
+                pingTest.ping = ping;
+                if(!pingTest.otherError) await Task.Delay(Math.Min(ping + 10, 300));
+                if(pingTest.ping != ping) return;
+            } else if(pingTest.ping > ping) pingTest.ping = ping;
+            else return;
+            this.domain = domain;
+            _client = new JAWebSocketClient(new JAction(JALib.Instance, Read));
+            await _client.ConnectAsync($"wss://{domain}/ws");
+            OnConnect();
         } catch (Exception e) {
-            JALib.Instance.Error("Failed to connect to the server port " + port);
+            JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
-            if(!_connectFailed) {
-                _connectFailed = true;
-                return;
-            }
-            Thread.Sleep(60000);
-            TryConnect();
+            if(pingTest.otherError) Dispose();
+            else pingTest.otherError = true;
         }
     }
 
-    private static void Read() {
-        byte[] data;
-        if(_client.ReadBoolean()) {
+    private void Read() {
+        using ByteArrayDataInput input = new(_client.ReadBytes(1024, false), JALib.Instance);
+        if(input.ReadBoolean()) {
             long id = _client.ReadLong();
-            data = _client.ReadBytesAndCount();
             if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;
-            requestPacket.ReceiveData(data);
+            requestPacket.ReceiveData(input);
             if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
             _requests.Remove(id);
             return;
         }
-        string packetName = _client.ReadUTF();
+        string packetName = input.ReadUTF();
         Type type = Type.GetType("JALib.API.Packets." + packetName);
-        data = _client.ReadBytesAndCount();
         if(type == null) throw new NullReferenceException();
-        type.New<ResponsePacket>().ReceiveData(data);
+        type.New<ResponsePacket>().ReceiveData(input);
     }
 
-    internal static void ResponseError(long id, string message) {
+    internal void ResponseError(long id, string message) {
         if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;
         Exception exception = new ResponseException(requestPacket.GetType().Name, message);
         JALib.Instance.LogException(exception);
@@ -96,50 +95,42 @@ internal static class JApi {
         _requests.Remove(id);
     }
     
-    internal static void Send(RequestPacket packet) {
+    internal static void Send(Request request) {
         if(!Connected) {
-            _queue.Enqueue(packet);
+            _queue.Enqueue(request);
             return;
         }
         if(Thread.CurrentThread == MainThread.Thread) {
-            JATask.Run(JALib.Instance, () => Send(packet));
+            JATask.Run(JALib.Instance, () => Send(request));
             return;
         }
-        lock(_client) {
-            do {
-                packet.ID = JARandom.Instance.NextLong();
-            } while(_requests.ContainsKey(packet.ID));
-            byte[] data = packet.GetBinary();
-            _requests.Add(packet.ID, packet);
-            _client.WriteUTF(packet.GetType().Name);
-            _client.WriteLong(packet.ID);
-            _client.WriteBytesAndCount(data);
-        }
+        if(request is RequestPacket packet) {
+            lock(_instance._client) {
+                do {
+                    packet.ID = JARandom.Instance.NextLong();
+                } while(_instance._requests.ContainsKey(packet.ID));
+                using ByteArrayDataOutput output = new(JALib.Instance);
+                output.WriteUTF(packet.GetType().Name);
+                output.WriteLong(packet.ID);
+                packet.GetBinary(output);
+                _instance._requests.Add(packet.ID, packet);
+                _instance._client.WriteBytes(output.ToByteArray());
+            }
+        } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }
 
-    internal async static Task<T> SendAsync<T> (T packet) where T : AsyncRequestPacket {
+    internal async Task<T> SendAsync<T> (T packet) where T : AsyncRequestPacket {
         await JATask.Run(JALib.Instance, () => Send(packet));
         await packet.WaitResponse();
         return packet;
     }
 
-    private static void OnConnect() {
+    private void OnConnect() {
         ConnectInfo();
-        if(!_statusExist) JATask.Run(JALib.Instance, Status);
-        while(Connected && _queue.TryDequeue(out RequestPacket packet)) Send(packet);
+        while(_queue.TryDequeue(out Request request)) Send(request);
     }
     
-    private async static void Status() {
-        _statusExist = true;
-        while(Connected) {
-            int ping = (await SendAsync(new Ping())).ping;
-            Send(new Status(ping, _requests.Keys.ToArray()));
-            await Task.Delay(60000);
-        }
-        _statusExist = false;
-    }
-    
-    private static void ConnectInfo() {
+    private void ConnectInfo() {
         if(_connectInfo || !_adofaiEnable) return;
         _connectInfo = true;
         Send(new ConnectInfo());
@@ -147,22 +138,13 @@ internal static class JApi {
         if(discord != null) discord.GetUserManager().OnCurrentUserUpdate += OnUserUpdate;
     }
 
-    private static void OnClose() {
-        foreach(RequestPacket value in _requests.Values) if(value is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
-        _requests.Clear();
-        _connectInfo = false;
-        if(discord != null) discord.GetUserManager().OnCurrentUserUpdate -= OnUserUpdate;
-        JALib.Instance.Log("Disconnected from the server, trying to reconnect...");
-        TryConnect();
-    }
-
     private static void OnUserUpdate() {
-        Send(new DiscordUpdate(discord.GetUserManager().GetCurrentUser().Id));
+        if(Instance != null) Send(new DiscordUpdate(discord.GetUserManager().GetCurrentUser().Id));
     }
     
     internal static void OnAdofaiStart() {
         _adofaiEnable = true;
-        if(!_connectInfo && Connected) ConnectInfo();
+        if(Connected && !Instance._connectInfo) Instance.ConnectInfo();
         if(discord == null) MainThread.StartCoroutine(CheckDiscordCo());
     }
 
@@ -175,17 +157,20 @@ internal static class JApi {
             discord = controller.GetValue<Discord.Discord>(nameof(discord));
             if(discord == null) continue;
             if(Connected) discord.GetUserManager().OnCurrentUserUpdate += OnUserUpdate;
-            if(_connectInfo) OnUserUpdate();
+            if(Instance._connectInfo) OnUserUpdate();
             break;
         }
     }
 
-    internal static void Dispose() {
+    internal void Dispose() {
         _client.Dispose();
         GC.SuppressFinalize(_requests);
-        _requests = null;
-        GC.SuppressFinalize(_queue);
-        _queue = null;
-        discord = null;
+        _instance = null;
+        GC.SuppressFinalize(this);
+    }
+
+    private class PingTest {
+        public int ping = -1;
+        public bool otherError;
     }
 }

@@ -1,6 +1,8 @@
-﻿namespace JALib.API;
+﻿using JALib.Stream;
 
-internal abstract class RequestPacket : ResponsePacket {
+namespace JALib.API;
+
+internal abstract class RequestPacket : Request {
     public long ID;
-    public abstract byte[] GetBinary();
+    public abstract void GetBinary(ByteArrayDataOutput output);
 }

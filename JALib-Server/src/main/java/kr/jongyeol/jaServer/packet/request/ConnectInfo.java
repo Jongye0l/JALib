@@ -3,6 +3,7 @@ package kr.jongyeol.jaServer.packet.request;
 import kr.jongyeol.jaServer.Connection;
 import kr.jongyeol.jaServer.data.UserData;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
+import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import kr.jongyeol.jaServer.packet.RequestPacket;
 import lombok.Cleanup;
 
@@ -15,8 +16,7 @@ public class ConnectInfo extends RequestPacket {
     public long steamID;
 
     @Override
-    public void getData(Connection connection, byte[] data) throws Exception {
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+    public void getData(Connection connection, ByteArrayDataInput input) throws Exception {
         libVer = input.readUTF();
         adofaiVer = input.readUTF();
         releaseNumber = input.readInt();
@@ -30,7 +30,6 @@ public class ConnectInfo extends RequestPacket {
     }
 
     @Override
-    public byte[] getBinary() {
-        return new byte[0];
+    public void getBinary(ByteArrayDataOutput output) {
     }
 }

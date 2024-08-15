@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import kr.jongyeol.jaServer.Settings;
 import kr.jongyeol.jaServer.Variables;
+import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import lombok.*;
 
 import java.io.File;
@@ -49,7 +50,32 @@ public class ModData {
     public static void LoadModData(Class<? extends ModData> cl) throws IOException {
         clazz = cl;
         File folder = new File(Settings.instance.modDataPath);
-        for(File file : folder.listFiles()) Variables.gson.fromJson(Files.readString(file.toPath()), cl);
+        for(File file : folder.listFiles()) {
+            Path path = file.toPath();
+            if(path.endsWith(".old") && Files.exists(Path.of(path.toString().replace(".old", "")))) continue;
+            Variables.gson.fromJson(Files.readString(path), cl);
+        }
+    }
+
+    public static ModData createMod() throws Exception {
+        return ModData.clazz.getConstructor().newInstance();
+    }
+
+    public static ModData createMod(String name, ByteArrayDataInput input) throws Exception {
+        ModData modData = ModData.getModData(name);
+        if(modData == null) modData = ModData.createMod();
+        modData.setName(name);
+        modData.setVersion(new Version(input.readUTF()));
+        modData.setBetaVersion(new Version(input.readUTF()));
+        modData.setForceUpdate(input.readBoolean());
+        ForceUpdateHandle[] handles = new ForceUpdateHandle[input.readInt()];
+        for(int j = 0; j < handles.length; j++) handles[j] = new ForceUpdateHandle(input);
+        modData.setForceUpdateHandles(handles);
+        modData.setHomepage(input.readUTF());
+        modData.setDiscord(input.readUTF());
+        modData.setDownloadLink(DownloadLink.createDownloadLink(modData, input));
+        modData.setGid(input.readInt());
+        return modData;
     }
 
     public static ModData[] getModDataList() {
@@ -58,8 +84,15 @@ public class ModData {
 
     public void save() throws IOException {
         Path path = Path.of(Settings.instance.modDataPath, name);
+        boolean exists = Files.exists(path);
+        Path copyPath = null;
+        if(exists) {
+            copyPath = Path.of(Settings.instance.modDataPath, name + ".old");
+            Files.move(path, copyPath);
+        }
         String json = Variables.gson.toJson(this);
         Files.writeString(path, json);
+        if(exists) Files.delete(copyPath);
     }
 
     public void setName(String name) throws IOException {

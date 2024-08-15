@@ -146,7 +146,7 @@ public abstract class JAMod {
         Log($"JAMod {Name} is Outdated (current: {Version}, latest: {LatestVersion})");
         if(!ForceUpdate) return;
         Log("JAMod " + Name + " is Forced to Update");
-        JAWebApi.DownloadMod(this, true);
+        JAWebAPI.DownloadMod(this, true);
     }
 
     private bool OnToggle(UnityModManager.ModEntry modEntry, bool value) {

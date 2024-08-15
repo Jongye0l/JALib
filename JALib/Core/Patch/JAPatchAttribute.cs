@@ -20,6 +20,8 @@ public class JAPatchAttribute : Attribute {
     internal MethodInfo Method;
     internal HarmonyMethod HarmonyMethod;
     internal MethodInfo Patch;
+    public string GenericName;
+    public Type GenericType;
 
     public JAPatchAttribute(string @class, string methodName, PatchType patchType, bool disable) {
         Class = @class;

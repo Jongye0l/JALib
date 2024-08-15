@@ -12,10 +12,8 @@ public class DownloadModRequest extends ResponsePacket {
     public RawMod mod;
 
     @Override
-    public byte[] getBinary() {
-        @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+    public void getBinary(ByteArrayDataOutput output) {
         output.writeUTF(mod.mod.getName());
         output.writeUTF(mod.version.toString());
-        return output.toByteArray();
     }
 }

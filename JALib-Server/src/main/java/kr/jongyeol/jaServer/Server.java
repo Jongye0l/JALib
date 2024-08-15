@@ -1,20 +1,37 @@
 package kr.jongyeol.jaServer;
 
-import java.net.ServerSocket;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
+
+@SpringBootApplication
 public class Server {
-    public static ServerSocket serverSocket;
+    public static boolean loaded = false;
 
-    public static void main(String[] args) {
-        try {
-            System.setErr(new ErrorStream(System.err));
-            int port = Settings.instance.port;
-            serverSocket = new ServerSocket(port);
-            Logger.MAIN_LOGGER.info("서버가 " + port + " 포트로 열렸습니다.");
-            while(true) Connection.connect(serverSocket.accept());
-        } catch (Exception e) {
-            e.printStackTrace();
-            Logger.MAIN_LOGGER.error(e);
+    public static void main(String[] args) throws Exception {
+        System.setErr(new ErrorStream(System.err));
+        SpringApplication.run(Server.class, args);
+    }
+
+    public static void BootstrapRun(String[] args) throws Exception {
+        if(loaded) return;
+        File file = new File("library");
+        if(!file.exists()) file.mkdir();
+        List<URL> urls = new ArrayList<>();
+        for(File f : file.listFiles()) {
+            try {
+                urls.add(f.toURI().toURL());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[0]), Server.class.getClassLoader());
+        loader.loadClass("kr.jongyeol.jaServer.Boot").getMethod("run", String[].class).invoke(null, (Object) args);
+        loaded = true;
     }
 }

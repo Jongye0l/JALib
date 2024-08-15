@@ -20,7 +20,7 @@ public class ByteArrayDataOutput {
     }
 
     public void writeUTF(String value) {
-        writeBytes(value.getBytes(StandardCharsets.UTF_8));
+        writeBytes(value == null ? null : value.getBytes(StandardCharsets.UTF_8));
     }
 
     public void writeInt(int value) {
@@ -74,6 +74,10 @@ public class ByteArrayDataOutput {
 
     @SneakyThrows
     public void writeBytes(byte[] value) {
+        if(value == null) {
+            writeInt(-1);
+            return;
+        }
         ensureCapacity(count + value.length + 4);
         writeIntBypass(value.length);
         for(byte v : value) buf[count++] = v;

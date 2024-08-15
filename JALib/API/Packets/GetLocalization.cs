@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using JALib.Core;
 using JALib.Stream;
 using JALib.Tools;
@@ -8,7 +10,7 @@ using UnityEngine;
 
 namespace JALib.API.Packets;
 
-internal class GetLocalization : RequestPacket {
+internal class GetLocalization : RequestAPI {
 
     private JALocalization localization;
     private byte language;
@@ -19,8 +21,7 @@ internal class GetLocalization : RequestPacket {
         this.language = (byte) language;
     }
 
-    public override void ReceiveData(byte[] data) {
-        using ByteArrayDataInput input = new(data, JALib.Instance);
+    public override void ReceiveData(ByteArrayDataInput input) {
         SystemLanguage language = (SystemLanguage) input.ReadByte();
         Localizations = new SortedDictionary<string, string>();
         for(int i = 0; i < input.ReadInt(); i++) Localizations.Add(input.ReadUTF(), input.ReadUTF());
@@ -34,10 +35,14 @@ internal class GetLocalization : RequestPacket {
         MainThread.Run(new JAction(localization._jaMod, () => localization._jaMod.OnLocalizationUpdate0()));
     }
 
-    public override byte[] GetBinary() {
-        using ByteArrayDataOutput output = new(JALib.Instance);
-        output.WriteUTF(localization._jaMod.Name);
-        output.WriteByte(language);
-        return output.ToByteArray();
+    public override async void Run(HttpClient client, string url) {
+        try {
+            System.IO.Stream stream = await client.GetStreamAsync(url + $"/localization/{localization._jaMod.Name}/{language}");
+            using ByteArrayDataInput input = new(stream, JALib.Instance);
+            ReceiveData(input);
+        } catch (Exception e) {
+            JALib.Instance.Log("Failed to connect to the server: " + url);
+            JALib.Instance.LogException(e);
+        }
     }
 }

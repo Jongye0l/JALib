@@ -8,11 +8,17 @@ namespace JALib.Stream;
 
 public class ByteArrayDataInput : IDisposable {
     private byte[] data;
+    private System.IO.Stream stream;
     private int cur;
     private JAMod mod;
 
     public ByteArrayDataInput(byte[] data, JAMod mod = null) {
         this.data = data;
+        this.mod = mod;
+    }
+
+    public ByteArrayDataInput(System.IO.Stream stream, JAMod mod = null) {
+        this.stream = stream;
         this.mod = mod;
     }
 
@@ -26,44 +32,46 @@ public class ByteArrayDataInput : IDisposable {
     }
 
     public int ReadInt() {
-        return (data[cur++] << 24) + (data[cur++] << 16) + (data[cur++] << 8) + (data[cur++] << 0);
+        return (ReadByte() << 24) + (ReadByte() << 16) + (ReadByte() << 8) + (ReadByte() << 0);
     }
 
     public long ReadLong() {
-        return ((long) data[cur++] << 56) + 
-               ((long) (data[cur++]&255) << 48) + 
-               ((long) (data[cur++]&255) << 40) + 
-               ((long) (data[cur++]&255) << 32) + 
-               ((long) (data[cur++]&255) << 24) + 
-               (data[cur++]&255 << 16) + 
-               (data[cur++]&255 << 8) + 
-               (data[cur++]&255 << 0);
+        return ((long) ReadByte() << 56) +
+               ((long) (ReadByte()&255) << 48) +
+               ((long) (ReadByte()&255) << 40) +
+               ((long) (ReadByte()&255) << 32) +
+               ((long) (ReadByte()&255) << 24) +
+               (ReadByte()&255 << 16) +
+               (ReadByte()&255 << 8) +
+               (ReadByte()&255 << 0);
     }
 
     public bool ReadBoolean() {
-        return data[cur++] != 0;
+        return ReadByte() != 0;
     }
 
     public float ReadFloat() {
+        byte[] data = this.data ?? ReadBytes(4);
         Array.Reverse(data, cur, 4);
         float f = BitConverter.ToSingle(data, cur);
-        cur += 4;
+        if(this.data != null) cur += 4;
         return f;
     }
 
     public double ReadDouble() {
+        byte[] data = this.data ?? ReadBytes(8);
         Array.Reverse(data, cur, 8);
         double d = BitConverter.ToDouble(data, cur);
-        cur += 8;
+        if(this.data != null) cur += 8;
         return d;
     }
 
     public byte ReadByte() {
-        return data[cur++];
+        return data == null ? (byte) stream.ReadByte() : data[cur++];
     }
 
     public short ReadShort() {
-        return (short) ((data[cur++] << 8) + data[cur++]);
+        return (short) ((ReadByte() << 8) + ReadByte());
     }
 
     public decimal ReadDecimal() {
@@ -73,35 +81,41 @@ public class ByteArrayDataInput : IDisposable {
     }
     
     public ushort ReadUShort() {
-        return (ushort) ((data[cur++] << 8) + data[cur++]);
+        return (ushort) ((ReadByte() << 8) + ReadByte());
     }
     
     public uint ReadUInt() {
-        return (uint) ((data[cur++] << 24) + (data[cur++] << 16) + (data[cur++] << 8) + (data[cur++] << 0));
+        return (uint) ((ReadByte() << 24) + (ReadByte() << 16) + (ReadByte() << 8) + (ReadByte() << 0));
     }
     
     public ulong ReadULong() {
-        return ((ulong) data[cur++] << 56) + 
-               ((ulong) (data[cur++]&255) << 48) + 
-               ((ulong) (data[cur++]&255) << 40) + 
-               ((ulong) (data[cur++]&255) << 32) + 
-               ((ulong) (data[cur++]&255) << 24) + 
-               ((ulong) (data[cur++]&255) << 16) + 
-               ((ulong) (data[cur++]&255) << 8) + 
-               ((ulong) (data[cur++]&255) << 0);
+        return ((ulong) ReadByte() << 56) +
+               ((ulong) (ReadByte()&255) << 48) +
+               ((ulong) (ReadByte()&255) << 40) +
+               ((ulong) (ReadByte()&255) << 32) +
+               ((ulong) (ReadByte()&255) << 24) +
+               ((ulong) (ReadByte()&255) << 16) +
+               ((ulong) (ReadByte()&255) << 8) +
+               ((ulong) (ReadByte()&255) << 0);
     }
     
     public sbyte ReadSByte() {
-        return (sbyte) data[cur++];
+        return (sbyte) ReadByte();
     }
     
     public char ReadChar() {
-        return (char) ((data[cur++] << 8) + data[cur++]);
+        return (char) ((ReadByte() << 8) + ReadByte());
     }
     
     public byte[] ReadBytes() {
         byte[] buffer = new byte[ReadInt()];
-        for(int i = 0; i < buffer.Length; i++) buffer[i] = data[cur++];
+        for(int i = 0; i < buffer.Length; i++) buffer[i] = ReadByte();
+        return buffer;
+    }
+
+    public byte[] ReadBytes(int length) {
+        byte[] buffer = new byte[length];
+        for(int i = 0; i < buffer.Length; i++) buffer[i] = ReadByte();
         return buffer;
     }
 }

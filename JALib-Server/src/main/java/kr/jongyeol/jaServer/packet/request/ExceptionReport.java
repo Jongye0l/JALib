@@ -3,6 +3,7 @@ package kr.jongyeol.jaServer.packet.request;
 import kr.jongyeol.jaServer.Connection;
 import kr.jongyeol.jaServer.data.CSharpException;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
+import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import kr.jongyeol.jaServer.packet.RequestPacket;
 import lombok.Cleanup;
 
@@ -19,8 +20,7 @@ public class ExceptionReport extends RequestPacket {
 
 
     @Override
-    public void getData(Connection connection, byte[] data) throws Exception {
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+    public void getData(Connection connection, ByteArrayDataInput input) throws Exception {
         name = input.readUTF();
         versionString = input.readUTF();
         version = input.readUTF();
@@ -32,7 +32,7 @@ public class ExceptionReport extends RequestPacket {
     }
 
     @Override
-    public byte[] getBinary() throws Exception {
+    public void getBinary(ByteArrayDataOutput output) throws Exception {
         // TODO: Implement this method
         throw new UnsupportedOperationException("Not implemented yet.");
     }

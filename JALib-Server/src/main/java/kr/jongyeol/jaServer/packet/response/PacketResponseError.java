@@ -15,10 +15,8 @@ public class PacketResponseError extends ResponsePacket {
     }
 
     @Override
-    public byte[] getBinary() throws Exception {
-        @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+    public void getBinary(ByteArrayDataOutput output) throws Exception {
         output.writeLong(id);
         output.writeUTF(exception.getClass().getName() + ": " + exception.getMessage());
-        return output.toByteArray();
     }
 }

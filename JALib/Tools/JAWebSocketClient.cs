@@ -27,6 +27,10 @@ public class JAWebSocketClient : IDisposable {
         Connect(uri);
     }
 
+    public JAWebSocketClient(string uri, JAction read = null, bool autoConnect = true) : this(read, autoConnect) {
+        Connect(uri);
+    }
+
     public void Connect(Uri uri, CancellationToken token = default) {
         while(true) {
             socket.ConnectAsync(uri, token).Wait();
@@ -41,17 +45,25 @@ public class JAWebSocketClient : IDisposable {
         }
     }
 
-    public async void ConnectAsync(Uri uri, CancellationToken token = default) {
+    public void Connect(string uri, CancellationToken token = default) {
+        Connect(new Uri(uri), token);
+    }
+
+    public async Task ConnectAsync(Uri uri, CancellationToken token = default) {
         while(true) {
             await socket.ConnectAsync(uri, token);
             if(!Connected) {
                 if(!autoConnect) return;
-                await Task.Delay(60000);
+                await Task.Delay(60000, token);
             }
             onConnect?.Invoke();
             if(read is not null || onClose is not null) Read();
             return;
         }
+    }
+
+    public Task ConnectAsync(string uri, CancellationToken token = default) {
+        return ConnectAsync(new Uri(uri), token);
     }
 
     private void Read() {

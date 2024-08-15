@@ -15,8 +15,7 @@ public class GetModInfo extends RequestPacket {
     public boolean beta;
 
     @Override
-    public void getData(Connection connection, byte[] data) throws Exception {
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+    public void getData(Connection connection, ByteArrayDataInput input) throws Exception {
         name = input.readUTF();
         version = input.readUTF();
         beta = input.readBoolean();
@@ -24,8 +23,7 @@ public class GetModInfo extends RequestPacket {
     }
 
     @Override
-    public byte[] getBinary() throws Exception {
-        @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+    public void getBinary(ByteArrayDataOutput output) throws Exception {
         ModData modData = ModData.getModData(name);
         output.writeUTF((beta ? modData.getBetaVersion() : modData.getVersion()).toString());
         output.writeBoolean(modData.isForceUpdate());
@@ -38,6 +36,5 @@ public class GetModInfo extends RequestPacket {
         String discord = modData.getDiscord();
         output.writeBoolean(discord != null);
         if(discord != null) output.writeUTF(discord);
-        return output.toByteArray();
     }
 }

@@ -1,5 +1,5 @@
 package kr.jongyeol.jaServer.packet;
 
 public abstract class ResponsePacket {
-    public abstract byte[] getBinary() throws Exception;
+    public abstract void getBinary(ByteArrayDataOutput output) throws Exception;
 }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using JALib.Core;
 using JALib.Stream;
 using JetBrains.Annotations;
 using UnityEngine;
@@ -88,7 +89,7 @@ public static class ByteTools {
 
     public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
         using ByteArrayDataInput input = new(bytes);
-        while(start-- <= 0) input.ReadByte();
+        while(start-- > 0) input.ReadByte();
         return ToObject(input, type, declearing, includeClass, version);
     }
 
@@ -102,7 +103,7 @@ public static class ByteTools {
             if(declear != null && declear.CheckCondition(version)) declearing = true;
         }
         if(includeClass) type = Type.GetType(input.ReadUTF());
-        if(type == typeof(ICollection<>) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+        if(CheckType(type, typeof(ICollection<>)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             int size = input.ReadInt();
             if(size == -1) return null;
             Type elementType = type.GetGenericArguments()[0];
@@ -117,7 +118,10 @@ public static class ByteTools {
             for(int i = 0; i < size; i++) addMethod.Invoke(collection, new[] { ToObject(input, elementType) });
             return collection;
         }
-        if(type.IsSubclassOf(typeof(Delegate))) {
+        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
+            if(!input.ReadBoolean()) return null;
+        }
+        if(CheckType(type, typeof(Delegate))) {
             if(!includeClass) type = Type.GetType(input.ReadUTF());
             Type declaringType = Type.GetType(input.ReadUTF());
             MethodInfo method = declaringType.Method(input.ReadUTF());
@@ -128,11 +132,16 @@ public static class ByteTools {
             }
             return Delegate.CreateDelegate(type, target, method);
         }
-        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
-            if(!input.ReadBoolean()) return null;
+        if(CheckType(type, typeof(JAMod))) {
+            return JAMod.GetMods(input.ReadUTF());
+        }
+        if(CheckType(type, typeof(Feature))) {
+            string modName = input.ReadUTF();
+            string featureName = input.ReadUTF();
+            return JAMod.GetMods(modName).Features.Find(feature => feature.Name == featureName);
         }
         object obj = Activator.CreateInstance(type);
-        foreach(MemberInfo member in type.Members().Where(member => !declearing || member.DeclaringType == type)) {
+        foreach(MemberInfo member in type.Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == type))) {
             bool skip = false;
             bool memberDeclearing = false;
             foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
@@ -170,6 +179,7 @@ public static class ByteTools {
                 IncludeClassAttribute inc = member.GetCustomAttribute<IncludeClassAttribute>();
                 if(inc != null && inc.CheckCondition(version)) memberType = Type.GetType(input.ReadUTF());
             }
+            JALib.Instance.Log(castType.FullName);
             object value = castType switch {
                 not null when castType == typeof(long) => input.ReadLong(),
                 not null when castType == typeof(int) => input.ReadInt(),
@@ -349,7 +359,7 @@ public static class ByteTools {
             if(declear != null && declear.CheckCondition(version)) declearing = true;
         }
         if(includeClass) output.WriteUTF(type.FullName);
-        if(type.IsSubclassOf(typeof(ICollection<>)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+        if(CheckType(type, typeof(ICollection<>)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             if(value == null) {
                 output.WriteInt(-1);
                 return;
@@ -358,7 +368,14 @@ public static class ByteTools {
             foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
             return;
         }
-        if(type.IsSubclassOf(typeof(Delegate))) {
+        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
+            if(value == null) {
+                output.WriteBoolean(false);
+                return;
+            }
+            output.WriteBoolean(true);
+        }
+        if(CheckType(type, typeof(Delegate))) {
             if(!includeClass) output.WriteUTF(type.FullName);
             Delegate del = (Delegate) value;
             output.WriteUTF(del.Method.DeclaringType.FullName);
@@ -372,12 +389,16 @@ public static class ByteTools {
             del.Target.ToBytes(output, declearing);
             return;
         }
-        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
-            if(value == null) {
-                output.WriteBoolean(false);
-                return;
-            }
-            output.WriteBoolean(true);
+        if(CheckType(type, typeof(JAMod))) {
+            JAMod mod = (JAMod) value;
+            output.WriteUTF(mod.Name);
+            return;
+        }
+        if(CheckType(type, typeof(Feature))) {
+            Feature feature = (Feature) value;
+            output.WriteUTF(feature.Mod.Name);
+            output.WriteUTF(feature.Name);
+            return;
         }
         foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == type))) {
             bool skip = false;
@@ -449,6 +470,10 @@ public static class ByteTools {
             else if(castType == typeof(sbyte)) output.WriteSByte((sbyte) memberValue);
             else ToBytes(memberValue, output, castType, memberDeclearing, false, version);
         }
+    }
+
+    private static bool CheckType(Type type, Type check) {
+        return type == check || type.IsSubclassOf(check);
     }
     
     private static void CheckStart(int start, int length) {

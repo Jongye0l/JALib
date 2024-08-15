@@ -42,7 +42,6 @@ public class Logger {
     private LocalDate lastDate;
     private Path path;
     private boolean closed;
-    private boolean runningJob = false;
 
     public Logger(String name) {
         this(name, null);

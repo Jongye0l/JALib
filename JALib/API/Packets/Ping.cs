@@ -1,18 +1,21 @@
 ﻿using System;
+using System.Net.Http;
+using JALib.Stream;
 
 namespace JALib.API.Packets;
 
-internal class Ping : AsyncRequestPacket {
+internal class Ping : RequestAPI {
 
     private long time;
     public int ping;
     
-    public override void ReceiveData(byte[] data) {
+    public override void ReceiveData(ByteArrayDataInput input) {
         ping = (int) (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time);
     }
 
-    public override byte[] GetBinary() {
+    public override async void Run(HttpClient client, string url) {
         time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        return Array.Empty<byte>();
+        await client.GetAsync(url + "ping");
+        ReceiveData(null);
     }
 }
