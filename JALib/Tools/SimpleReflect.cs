@@ -165,9 +165,7 @@ public static class SimpleReflect {
     
     public static T New<T>(params object[] objects) => typeof(T).New<T>(objects) ?? default;
 
-    public static bool IsNumeric(this Type type) => type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort)
-                                                    || type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong) 
-                                                    || type == typeof(float) || type == typeof(double) || type == typeof(decimal);
+    public static bool IsNumeric(this Type type) => type.IsInteger() || type.IsFloat();
     
     public static bool IsInteger(this Type type) => type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort)
                                                     || type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong);
