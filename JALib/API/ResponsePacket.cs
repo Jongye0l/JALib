@@ -2,6 +2,6 @@
 
 namespace JALib.API;
 
-internal abstract class ResponsePacket {
+abstract class ResponsePacket {
     public abstract void ReceiveData(ByteArrayDataInput input);
 }

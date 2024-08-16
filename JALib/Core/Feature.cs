@@ -18,6 +18,7 @@ public abstract class Feature {
             else if(!value && Active) Disable();
         }
     }
+
     public bool Active { get; private set; }
     internal bool _expanded;
     private readonly bool _canExpand;

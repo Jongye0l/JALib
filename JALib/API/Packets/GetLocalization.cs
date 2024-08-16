@@ -10,12 +10,12 @@ using UnityEngine;
 
 namespace JALib.API.Packets;
 
-internal class GetLocalization : RequestAPI {
+class GetLocalization : RequestAPI {
 
     private JALocalization localization;
     private byte language;
     public SortedDictionary<string, string> Localizations;
-    
+
     public GetLocalization(JALocalization localization, SystemLanguage language) {
         this.localization = localization;
         this.language = (byte) language;
@@ -30,7 +30,7 @@ internal class GetLocalization : RequestAPI {
         if(localization._localizations == null) return;
         string path = Path.Combine(localization._jaMod.Path, "localization", language + ".json");
         if(!File.Exists(path)) File.Create(path);
-        File.WriteAllTextAsync(Path.Combine(localization._jaMod.Path, "localization", language + ".json"), 
+        File.WriteAllTextAsync(Path.Combine(localization._jaMod.Path, "localization", language + ".json"),
             JsonConvert.SerializeObject(localization._localizations, Formatting.Indented));
         MainThread.Run(new JAction(localization._jaMod, () => localization._jaMod.OnLocalizationUpdate0()));
     }

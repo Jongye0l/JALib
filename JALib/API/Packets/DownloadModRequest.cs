@@ -4,7 +4,7 @@ using JALib.Stream;
 
 namespace JALib.API.Packets;
 
-internal class DownloadModRequest : ResponsePacket {
+class DownloadModRequest : ResponsePacket {
     public override void ReceiveData(ByteArrayDataInput input) {
         string modName = input.ReadUTF();
         Version version = new(input.ReadUTF());

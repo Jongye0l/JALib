@@ -27,11 +27,11 @@ public static class MainThread {
         GC.SuppressFinalize(staticCoroutine.gameObject);
         GC.SuppressFinalize(staticCoroutine);
     }
-    
+
     internal static void OnUpdate() {
         while(queue.TryDequeue(out JAction action)) action.Invoke();
     }
-    
+
     public static void Run(JAction action) {
         if(IsMainThread() || Thread == null) {
             action.Invoke();
@@ -39,19 +39,19 @@ public static class MainThread {
         }
         queue.Enqueue(action);
     }
-    
+
     public static bool IsMainThread() {
         return Thread.CurrentThread == Thread;
     }
-    
+
     public static Coroutine StartCoroutine(IEnumerator routine) {
         return staticCoroutine.StartCoroutine(routine);
     }
-    
+
     public static void StopCoroutine(Coroutine routine) {
         staticCoroutine.StopCoroutine(routine);
     }
-    
+
     public static void StopCoroutine(IEnumerator routine) {
         staticCoroutine.StopCoroutine(routine);
     }

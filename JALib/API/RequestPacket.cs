@@ -2,7 +2,7 @@
 
 namespace JALib.API;
 
-internal abstract class RequestPacket : Request {
+abstract class RequestPacket : Request {
     public long ID;
     public abstract void GetBinary(ByteArrayDataOutput output);
 }

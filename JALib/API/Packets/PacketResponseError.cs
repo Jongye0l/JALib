@@ -2,7 +2,7 @@
 
 namespace JALib.API.Packets;
 
-internal class PacketResponseError : ResponsePacket {
+class PacketResponseError : ResponsePacket {
     public override void ReceiveData(ByteArrayDataInput input) {
         JApi.Instance.ResponseError(input.ReadLong(), input.ReadUTF());
     }

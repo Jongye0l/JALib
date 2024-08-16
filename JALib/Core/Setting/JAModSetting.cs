@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace JALib.Core.Setting;
 
-internal class JAModSetting : JASetting {
+class JAModSetting : JASetting {
     private string path;
     public Version LatestVersion;
     public bool ForceUpdate;
@@ -17,14 +17,14 @@ internal class JAModSetting : JASetting {
     public string Discord;
     public SystemLanguage? CustomLanguage;
     internal JASetting Setting;
-    
+
     public JAModSetting(JAMod mod, string path = null, Type type = null) : base(mod, LoadJson(mod, ref path)) {
         this.path = path;
         if(type != null && !JsonObject.ContainsKey(nameof(Setting))) JsonObject[nameof(Setting)] = new JObject();
         Setting = type?.New<JASetting>(Mod, JsonObject[nameof(Setting)] as JObject);
         if(!JsonObject.ContainsKey(nameof(Feature))) JsonObject[nameof(Feature)] = new JObject();
     }
-    
+
     private static JObject LoadJson(JAMod mod, ref string path) {
         path ??= Path.Combine(mod.Path, "Settings.json");
         return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
@@ -33,23 +33,23 @@ internal class JAModSetting : JASetting {
     public new void PutFieldData() {
         try {
             Setting?.PutFieldData();
-            foreach (Feature f in Mod.Features) f.FeatureSetting.PutFieldData();
+            foreach(Feature f in Mod.Features) f.FeatureSetting.PutFieldData();
             base.PutFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }
     }
-    
+
     public new void RemoveFieldData() {
         try {
             Setting?.RemoveFieldData();
-            foreach (Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();
+            foreach(Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();
             base.RemoveFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }
     }
-    
+
     public void Save() {
         try {
             PutFieldData();
@@ -59,7 +59,7 @@ internal class JAModSetting : JASetting {
             JALib.Instance.LogException(e);
         }
     }
-    
+
     protected override void Dispose0() {
         try {
             Setting?.Dispose();

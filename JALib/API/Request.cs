@@ -2,5 +2,5 @@
 
 namespace JALib.API;
 
-internal abstract class Request : ResponsePacket {
+abstract class Request : ResponsePacket {
 }

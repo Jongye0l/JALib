@@ -30,6 +30,7 @@ public abstract class JAMod {
     protected JASetting Setting => ModSetting.Setting;
     protected internal string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
+
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
         set {
@@ -37,6 +38,7 @@ public abstract class JAMod {
             Localization.Load();
         }
     }
+
     public JALocalization Localization { get; private set; }
 
     protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Dependency[] dependencies = null, Type settingType = null, string settingPath = null, string discord = null) {
@@ -58,7 +60,8 @@ public abstract class JAMod {
                 }
             }
             modEntry.SetValue("Version", Version.Parse(onlyVersion));
-            modEntry.Info.Version = (Version.Build == 0 ? new Version(Version.Major, Version.Minor) : Version.Revision == -1 ? Version : new Version(Version.Major, Version.Minor, Version.Build)) + behindVersion;
+            modEntry.Info.Version = (Version.Build == 0     ? new Version(Version.Major, Version.Minor) :
+                                     Version.Revision == -1 ? Version : new Version(Version.Major, Version.Minor, Version.Build)) + behindVersion;
             Dependencies = dependencies ?? Array.Empty<Dependency>();
             Features = new List<Feature>();
             Localization = localization ? new JALocalization(this) : null;
@@ -89,16 +92,16 @@ public abstract class JAMod {
         if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
         if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
     }
-    
+
 
     private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
 
     private bool CheckGUIEventRequire(string name) => IsExistMethod(name) || Features.Any(feature => feature.IsExistMethod(name));
-    
+
     private bool IsExistMethod(string name) => GetType().Method(name).DeclaringType == GetType();
 
     public static JAMod GetMods(string name) => mods[name];
-    
+
     internal static void EnableInit() {
         foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
             if(mod.ModEntry.Active) continue;
@@ -114,7 +117,7 @@ public abstract class JAMod {
             mod.OnDisable();
         }
     }
-    
+
     internal static void Dispose() {
         mods.Clear();
         mods = null;
@@ -163,7 +166,7 @@ public abstract class JAMod {
         }
         return true;
     }
-    
+
     private bool OnUnload0(UnityModManager.ModEntry modEntry) {
         foreach(Feature feature in Features) feature.Unload();
         if(mods[Name] == this) mods.Remove(Name);
@@ -220,10 +223,10 @@ public abstract class JAMod {
             LogException(e);
         }
     }
-    
+
     protected virtual void OnShowGUI() {
     }
-    
+
     internal void OnHideGUI0(UnityModManager.ModEntry modEntry) {
         try {
             OnHideGUI();
@@ -232,7 +235,7 @@ public abstract class JAMod {
             LogException(e);
         }
     }
-    
+
     protected virtual void OnHideGUI() {
     }
 
@@ -242,35 +245,35 @@ public abstract class JAMod {
 
     protected virtual void OnUpdate(float deltaTime) {
     }
-    
+
     private void OnFixedUpdate0(UnityModManager.ModEntry modEntry, float deltaTime) {
         OnFixedUpdate(deltaTime);
     }
-    
+
     protected virtual void OnFixedUpdate(float deltaTime) {
     }
-    
+
     private void OnLateUpdate0(UnityModManager.ModEntry modEntry, float deltaTime) {
         OnLateUpdate(deltaTime);
     }
-    
+
     protected virtual void OnLateUpdate(float deltaTime) {
     }
-    
+
     private void OnSessionStart0(UnityModManager.ModEntry modEntry) {
         OnSessionStart();
     }
-    
+
     protected virtual void OnSessionStart() {
     }
-    
+
     private void OnSessionStop0(UnityModManager.ModEntry modEntry) {
         OnSessionStop();
     }
-    
+
     protected virtual void OnSessionStop() {
     }
-    
+
     internal void OnLocalizationUpdate0() {
         OnLocalizationUpdate();
     }
@@ -279,13 +282,13 @@ public abstract class JAMod {
     }
 
     public void Log(object o) => Logger.Log(o?.ToString());
-    
+
     public void Error(object o) => Logger.Error(o?.ToString());
-    
+
     public void Warning(object o) => Logger.Warning(o?.ToString());
 
     public void Critical(object o) => Logger.Critical(o?.ToString());
-    
+
     public void NativeLog(object o) => Logger.NativeLog(o?.ToString());
 
     public void LogException(string key, Exception e) => Logger.LogException(key, e);

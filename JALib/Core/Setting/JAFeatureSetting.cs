@@ -4,11 +4,11 @@ using Newtonsoft.Json.Linq;
 
 namespace JALib.Core.Setting;
 
-internal class JAFeatureSetting : JASetting {
+class JAFeatureSetting : JASetting {
     public bool Enabled = true;
-    
+
     internal JASetting Setting;
-    
+
     public JAFeatureSetting(Feature feature, Type type = null) : base(feature.Mod, GetFeatureSetting(feature)) {
         if(type == null) return;
         if(!JsonObject.ContainsKey(nameof(Setting))) JsonObject[nameof(Setting)] = new JObject();

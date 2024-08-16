@@ -8,7 +8,7 @@ using JALib.Data;
 namespace JALib.Tools;
 
 public static class Zipper {
-    
+
     public static RawFile[] Unzip(byte[] zipData) {
         using MemoryStream zipStream = new(zipData);
         return Unzip(zipStream);
@@ -48,7 +48,7 @@ public static class Zipper {
     public static RawFile Unzip(string name, byte[] zipData) {
         return new RawFile(name, Unzip(zipData));
     }
-    
+
     public static RawFile Unzip(string name, System.IO.Stream stream) {
         return new RawFile(name, Unzip(stream));
     }
@@ -57,7 +57,7 @@ public static class Zipper {
         using MemoryStream zipStream = new(zipData);
         Unzip(zipStream, path);
     }
-    
+
     public static void Unzip(System.IO.Stream stream, string path) {
         using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
         foreach(ZipArchiveEntry entry in archive.Entries) {
@@ -69,7 +69,7 @@ public static class Zipper {
             }
         }
     }
-    
+
     public static byte[] Zip(IEnumerable<RawFile> files) {
         using MemoryStream zipStream = new();
         Zip(files, zipStream);

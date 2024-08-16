@@ -14,13 +14,14 @@ public class JAPatcher : IDisposable {
     private List<JAPatchAttribute> patchData;
     private JAMod mod;
     public event FailPatch OnFailPatch;
+
     public delegate void FailPatch(string patchId);
-    
+
     public JAPatcher(JAMod mod) {
         this.mod = mod;
         patchData = new List<JAPatchAttribute>();
     }
-    
+
     public void Patch() {
         foreach(JAPatchAttribute attribute in patchData) {
             if(attribute.Patch != null) {
@@ -37,8 +38,7 @@ public class JAPatcher : IDisposable {
                             attribute.ArgumentTypesType[i] = Type.GetType(attribute.ArgumentTypes[i]);
                     }
                     if(attribute.MethodName == ".ctor")
-                        attribute.MethodBase = attribute.ArgumentTypesType == null ?
-                            attribute.ClassType.Constructor() : attribute.ClassType.Constructor(attribute.ArgumentTypesType);
+                        attribute.MethodBase = attribute.ArgumentTypesType == null ? attribute.ClassType.Constructor() : attribute.ClassType.Constructor(attribute.ArgumentTypesType);
                     else if(attribute.MethodName == ".cctor") attribute.MethodBase = attribute.ClassType.TypeInitializer;
                     else if(attribute.MethodName == "u+") attribute.MethodBase = attribute.ClassType.GetMethod("op_UnaryPlus");
                     else if(attribute.MethodName == "u-") attribute.MethodBase = attribute.ClassType.GetMethod("op_UnaryNegation");
@@ -70,8 +70,7 @@ public class JAPatcher : IDisposable {
                     else if(attribute.MethodName == "[].set") attribute.MethodBase = attribute.ClassType.Setter("Item");
                     else if(attribute.MethodName.EndsWith(".get")) attribute.MethodBase = attribute.ClassType.Getter(attribute.MethodName[..4]);
                     else if(attribute.MethodName.EndsWith(".set")) attribute.MethodBase = attribute.ClassType.Setter(attribute.MethodName[..4]);
-                    else attribute.MethodBase = attribute.ArgumentTypesType == null ?
-                            attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
+                    else attribute.MethodBase = attribute.ArgumentTypesType == null ? attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
                     if(attribute.GenericType != null || attribute.GenericName != null) {
                         attribute.GenericType ??= Type.GetType(attribute.GenericName);
                         attribute.MethodBase = ((MethodInfo) attribute.MethodBase).MakeGenericMethod(attribute.GenericType);
@@ -94,14 +93,14 @@ public class JAPatcher : IDisposable {
             }
         }
     }
-    
+
     public void Unpatch() {
         foreach(JAPatchAttribute patchData in patchData.Where(patchData => patchData.Patch != null)) {
             JALib.Harmony.Unpatch(patchData.MethodBase, patchData.Patch);
             patchData.Patch = null;
         }
     }
-    
+
     public void Unpatch(string patchId) {
         foreach(JAPatchAttribute patchData in patchData.Where(patchData => patchData.Patch != null && patchData.PatchId == patchId)) {
             JALib.Harmony.Unpatch(patchData.MethodBase, patchData.Patch);

@@ -6,14 +6,14 @@ using JALib.Tools;
 
 namespace JALib.API.Packets;
 
-internal class GetModInfo : RequestAPI {
+class GetModInfo : RequestAPI {
 
     private JAMod mod;
 
     public GetModInfo(JAMod mod) {
         this.mod = mod;
     }
-    
+
     public override void ReceiveData(ByteArrayDataInput input) {
         if(input.ReadBoolean()) mod.ModInfo(input);
     }

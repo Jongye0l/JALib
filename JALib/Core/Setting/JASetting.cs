@@ -34,8 +34,7 @@ public class JASetting : IDisposable {
                 SettingNameAttribute nameAttribute = field.GetCustomAttribute<SettingNameAttribute>();
                 string name = nameAttribute?.Name ?? field.Name;
                 if(JsonObject.TryGetValue(name, out JToken token)) {
-                    field.SetValue(this, field.FieldType.IsSubclassOf(typeof(JASetting)) ?
-                        SetupJASetting(field.FieldType, token) : token.ToObject(field.FieldType));
+                    field.SetValue(this, field.FieldType.IsSubclassOf(typeof(JASetting)) ? SetupJASetting(field.FieldType, token) : token.ToObject(field.FieldType));
                     JsonObject.Remove(name);
                 } else if(field.FieldType.IsSubclassOf(typeof(JASetting))) field.SetValue(this, SetupJASetting(field.FieldType, null));
             }
@@ -111,7 +110,9 @@ public class JASetting : IDisposable {
         try {
             GC.SuppressFinalize(fieldValueCache);
             GC.SuppressFinalize(JsonObject);
-            foreach(FieldInfo field in jsonFields) if(field.GetValue(this) is JASetting setting) setting.Dispose();
+            foreach(FieldInfo field in jsonFields)
+                if(field.GetValue(this) is JASetting setting)
+                    setting.Dispose();
             GC.SuppressFinalize(jsonFields);
             GC.SuppressFinalize(this);
         } catch (Exception e) {

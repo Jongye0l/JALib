@@ -4,11 +4,11 @@ using JALib.Stream;
 
 namespace JALib.API.Packets;
 
-internal class Ping : RequestAPI {
+class Ping : RequestAPI {
 
     private long time;
     public int ping;
-    
+
     public override void ReceiveData(ByteArrayDataInput input) {
         ping = (int) (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time);
     }

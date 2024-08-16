@@ -30,7 +30,7 @@ public class JAction {
             mod.LogException(e);
         }
     }
-    
+
     public IAsyncResult BeginInvoke(AsyncCallback callback, object obj) {
         return action.BeginInvoke(callback, obj);
     }
@@ -42,35 +42,35 @@ public class JAction {
     public object DynamicInvoke(params object[] args) {
         return action.DynamicInvoke(args);
     }
-    
+
     public Delegate[] GetInvocationList() {
         return action.GetInvocationList();
     }
-    
+
     public void GetObjectData(SerializationInfo info, StreamingContext context) {
         action.GetObjectData(info, context);
     }
-    
+
     public override bool Equals(object obj) {
         return this.action.Equals(obj is JAction action ? action.action : obj);
     }
-    
+
     public override int GetHashCode() {
         return action.GetHashCode();
     }
-    
+
     public override string ToString() {
         return action.ToString();
     }
-    
+
     public static bool operator ==(JAction a, JAction b) {
         return a != null && b != null && a.action == b.action;
     }
-    
+
     public static bool operator !=(JAction a, JAction b) {
         return !(a == b);
     }
-    
+
     public static implicit operator JAction(Action action) {
         return new JAction(null, action);
     }

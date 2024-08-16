@@ -31,11 +31,11 @@ public class JATask {
             }
         }, cancellationToken);
     }
-    
+
     public static Task Run(JAction action, CancellationToken cancellationToken) {
         return Task.Run(action.Invoke, cancellationToken);
     }
-    
+
     public static Task Run(JAMod mod, Func<Task> action) {
         return Task.Run(async () => {
             try {
@@ -46,11 +46,11 @@ public class JATask {
             }
         });
     }
-    
+
     public static Task Run(Func<Task> action) {
         return Task.Run(action.Invoke);
     }
-    
+
     public static Task Run(JAMod mod, Func<Task> action, CancellationToken cancellationToken) {
         return Task.Run(async () => {
             try {
@@ -61,7 +61,7 @@ public class JATask {
             }
         }, cancellationToken);
     }
-    
+
     public static Task<TResult> Run<TResult>(JAMod mod, Func<TResult> action) {
         return Task.Run(() => {
             try {
@@ -73,7 +73,7 @@ public class JATask {
             }
         });
     }
-    
+
     public static Task<TResult> Run<TResult>(JAMod mod, Func<TResult> action, CancellationToken cancellationToken) {
         return Task.Run(() => {
             try {

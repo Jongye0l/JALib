@@ -25,7 +25,7 @@ public class ByteArrayDataInput : IDisposable {
     public void Dispose() {
         GC.SuppressFinalize(this);
     }
-    
+
     public string ReadUTF() {
         byte[] buffer = ReadBytes();
         return buffer == null ? null : Encoding.UTF8.GetString(buffer);
@@ -37,13 +37,13 @@ public class ByteArrayDataInput : IDisposable {
 
     public long ReadLong() {
         return ((long) ReadByte() << 56) +
-               ((long) (ReadByte()&255) << 48) +
-               ((long) (ReadByte()&255) << 40) +
-               ((long) (ReadByte()&255) << 32) +
-               ((long) (ReadByte()&255) << 24) +
-               (ReadByte()&255 << 16) +
-               (ReadByte()&255 << 8) +
-               (ReadByte()&255 << 0);
+               ((long) (ReadByte() & 255) << 48) +
+               ((long) (ReadByte() & 255) << 40) +
+               ((long) (ReadByte() & 255) << 32) +
+               ((long) (ReadByte() & 255) << 24) +
+               (ReadByte() & 255 << 16) +
+               (ReadByte() & 255 << 8) +
+               (ReadByte() & 255 << 0);
     }
 
     public bool ReadBoolean() {
@@ -79,34 +79,34 @@ public class ByteArrayDataInput : IDisposable {
         for(int i = 0; i < 4; i++) bits[i] = ReadInt();
         return new decimal(bits);
     }
-    
+
     public ushort ReadUShort() {
         return (ushort) ((ReadByte() << 8) + ReadByte());
     }
-    
+
     public uint ReadUInt() {
         return (uint) ((ReadByte() << 24) + (ReadByte() << 16) + (ReadByte() << 8) + (ReadByte() << 0));
     }
-    
+
     public ulong ReadULong() {
         return ((ulong) ReadByte() << 56) +
-               ((ulong) (ReadByte()&255) << 48) +
-               ((ulong) (ReadByte()&255) << 40) +
-               ((ulong) (ReadByte()&255) << 32) +
-               ((ulong) (ReadByte()&255) << 24) +
-               ((ulong) (ReadByte()&255) << 16) +
-               ((ulong) (ReadByte()&255) << 8) +
-               ((ulong) (ReadByte()&255) << 0);
+               ((ulong) (ReadByte() & 255) << 48) +
+               ((ulong) (ReadByte() & 255) << 40) +
+               ((ulong) (ReadByte() & 255) << 32) +
+               ((ulong) (ReadByte() & 255) << 24) +
+               ((ulong) (ReadByte() & 255) << 16) +
+               ((ulong) (ReadByte() & 255) << 8) +
+               ((ulong) (ReadByte() & 255) << 0);
     }
-    
+
     public sbyte ReadSByte() {
         return (sbyte) ReadByte();
     }
-    
+
     public char ReadChar() {
         return (char) ((ReadByte() << 8) + ReadByte());
     }
-    
+
     public byte[] ReadBytes() {
         byte[] buffer = new byte[ReadInt()];
         for(int i = 0; i < buffer.Length; i++) buffer[i] = ReadByte();

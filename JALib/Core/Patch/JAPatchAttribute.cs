@@ -36,13 +36,13 @@ public class JAPatchAttribute : Attribute {
         PatchType = patchType;
         Disable = disable;
     }
-    
+
     public JAPatchAttribute(MethodBase method, PatchType patchType, bool disable) {
         MethodBase = method;
         PatchType = patchType;
         Disable = disable;
     }
-    
+
     public JAPatchAttribute(Delegate @delegate, PatchType patchType, bool disable) : this(@delegate.Method, patchType, disable) {
     }
 }

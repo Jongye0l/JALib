@@ -12,7 +12,7 @@ public class JALocalization {
     internal SortedDictionary<string, string> _localizations;
     internal JAMod _jaMod;
     internal SystemLanguage? _curLang;
-    
+
     internal JALocalization(JAMod jaMod) {
         _jaMod = jaMod;
         Load();
@@ -39,9 +39,9 @@ public class JALocalization {
         TryGet(key, out string value);
         return value;
     }
-    
+
     public string this[string key] => Get(key);
-    
+
     public bool TryGet(string key, out string value) {
         if(_localizations != null && _localizations.TryGetValue(key, out value)) return true;
         value = key;

@@ -13,13 +13,14 @@ using UnityEngine;
 
 namespace JALib.API;
 
-internal class JApi {
+class JApi {
     public static JApi Instance {
         get {
             _instance ??= new JApi();
             return _instance;
         }
     }
+
     private static JApi _instance;
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
@@ -32,7 +33,7 @@ internal class JApi {
     private readonly Dictionary<long, RequestPacket> _requests = new();
     private static ConcurrentQueue<Request> _queue = new();
     private static Discord.Discord discord;
-    
+
     public static void Initialize() {
         if(ADOBase.platform != Platform.None) OnAdofaiStart();
         _instance ??= new JApi();
@@ -94,7 +95,7 @@ internal class JApi {
         if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
         _requests.Remove(id);
     }
-    
+
     internal static void Send(Request request) {
         if(!Connected) {
             _queue.Enqueue(request);
@@ -105,7 +106,7 @@ internal class JApi {
             return;
         }
         if(request is RequestPacket packet) {
-            lock(_instance._client) {
+            lock (_instance._client) {
                 do {
                     packet.ID = JARandom.Instance.NextLong();
                 } while(_instance._requests.ContainsKey(packet.ID));
@@ -119,7 +120,7 @@ internal class JApi {
         } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }
 
-    internal async Task<T> SendAsync<T> (T packet) where T : AsyncRequestPacket {
+    internal async Task<T> SendAsync<T>(T packet) where T : AsyncRequestPacket {
         await JATask.Run(JALib.Instance, () => Send(packet));
         await packet.WaitResponse();
         return packet;
@@ -129,7 +130,7 @@ internal class JApi {
         ConnectInfo();
         while(_queue.TryDequeue(out Request request)) Send(request);
     }
-    
+
     private void ConnectInfo() {
         if(_connectInfo || !_adofaiEnable) return;
         _connectInfo = true;
@@ -141,7 +142,7 @@ internal class JApi {
     private static void OnUserUpdate() {
         if(Instance != null) Send(new DiscordUpdate(discord.GetUserManager().GetCurrentUser().Id));
     }
-    
+
     internal static void OnAdofaiStart() {
         _adofaiEnable = true;
         if(Connected && !Instance._connectInfo) Instance.ConnectInfo();

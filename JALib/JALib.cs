@@ -44,8 +44,8 @@ public class JALib : JAMod {
     protected override void OnUpdate(float deltaTime) {
         MainThread.OnUpdate();
     }
-    
-    
+
+
     [JAPatch(typeof(scnSplash), "GoToMenu", PatchType.Postfix, false)]
     private static void OnAdofaiStart() {
         JApi.OnAdofaiStart();

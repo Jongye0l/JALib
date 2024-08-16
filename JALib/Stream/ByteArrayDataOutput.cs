@@ -10,7 +10,7 @@ public class ByteArrayDataOutput : IDisposable {
     private byte[] buf;
     private int count;
     private JAMod mod;
-    
+
     public ByteArrayDataOutput(JAMod mod = null) {
         buf = new byte[32];
         this.mod = mod;
@@ -28,7 +28,7 @@ public class ByteArrayDataOutput : IDisposable {
         Array.Copy(buf, bytes, count);
         buf = bytes;
     }
-    
+
     public void WriteUTF(string value) {
         WriteBytes(value == null ? null : Encoding.UTF8.GetBytes(value));
     }
@@ -116,13 +116,13 @@ public class ByteArrayDataOutput : IDisposable {
         WriteIntBypass(value.Length);
         foreach(byte b in value) buf[count++] = b;
     }
-    
+
     public void WriteUShort(ushort value) {
         EnsureCapacity(count + 2);
         buf[count++] = (byte) (value >> 8);
         buf[count++] = (byte) value;
     }
-    
+
     public void WriteUInt(uint value) {
         EnsureCapacity(count + 4);
         buf[count++] = (byte) (value >> 24);
@@ -130,18 +130,18 @@ public class ByteArrayDataOutput : IDisposable {
         buf[count++] = (byte) (value >> 8);
         buf[count++] = (byte) value;
     }
-    
+
     public void WriteSByte(sbyte value) {
         EnsureCapacity(count + 1);
         buf[count++] = (byte) value;
     }
-    
+
     public void WriteChar(char value) {
         EnsureCapacity(count + 2);
         buf[count++] = (byte) (value >> 8);
         buf[count++] = (byte) value;
     }
-    
+
     public void WriteDecimal(decimal value) {
         int[] bits = decimal.GetBits(value);
         EnsureCapacity(count + bits.Length * 4);

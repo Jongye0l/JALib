@@ -9,7 +9,7 @@ public class RawFile : IDisposable {
     public byte[] Data { get; private set; }
     public List<RawFile> Files { get; private set; }
     public bool IsFolder => Data == null;
-    
+
     public RawFile(string name, byte[] data) {
         Name = name;
         Data = data;
@@ -26,15 +26,16 @@ public class RawFile : IDisposable {
         Files = new List<RawFile>();
         foreach(string path in paths) Files.Add(new RawFile(path));
     }
-    
+
     public RawFile(string name, RawFile[] files) {
         Name = name;
         Files = new List<RawFile>(files);
     }
-    
+
     public void Save(string path) {
         path = Path.Combine(path, Name);
-        if(IsFolder) {;
+        if(IsFolder) {
+            ;
             Directory.CreateDirectory(path);
             foreach(RawFile file in Files) file.Save(path);
             return;

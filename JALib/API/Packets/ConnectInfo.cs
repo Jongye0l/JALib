@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace JALib.API.Packets;
 
-internal class ConnectInfo : RequestPacket {
+class ConnectInfo : RequestPacket {
 
     public override void ReceiveData(ByteArrayDataInput input) {
     }
