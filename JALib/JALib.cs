@@ -3,6 +3,7 @@ using HarmonyLib;
 using JALib.API;
 using JALib.Core;
 using JALib.Core.Patch;
+using JALib.Core.Setting;
 using JALib.Tools;
 using UnityModManagerNet;
 
@@ -12,9 +13,11 @@ public class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
     private static JAPatcher patcher;
+    internal new JALibSetting Setting;
 
-    private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true) {
+    private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, null, typeof(JALibSetting)) {
         Instance = this;
+        Setting = (JALibSetting) base.Setting;
         patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
     }
 

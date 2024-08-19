@@ -1,26 +1,46 @@
 ﻿using System;
 using System.Net.Http;
+using System.Threading.Tasks;
+using JALib.Bootstrap;
 using JALib.Core;
 using JALib.Stream;
-using JALib.Tools;
+using UnityEngine;
 
 namespace JALib.API.Packets;
 
 class GetModInfo : RequestAPI {
 
     private JAMod mod;
+    private JAModInfo modInfo;
+    internal bool Success;
+    internal Version LatestVersion;
+    internal bool ForceUpdate;
+    internal SystemLanguage[] AvailableLanguages;
+    internal string Homepage;
+    internal string Discord;
 
     public GetModInfo(JAMod mod) {
         this.mod = mod;
     }
 
-    public override void ReceiveData(ByteArrayDataInput input) {
-        if(input.ReadBoolean()) mod.ModInfo(input);
+    public GetModInfo(JAModInfo modInfo) {
+        this.modInfo = modInfo;
     }
 
-    public override async void Run(HttpClient client, string url) {
+    public override void ReceiveData(ByteArrayDataInput input) {
+        if(!(Success = input.ReadBoolean())) return;
+        LatestVersion = Version.Parse(input.ReadUTF());
+        ForceUpdate = input.ReadBoolean();
+        SystemLanguage[] languages = new SystemLanguage[input.ReadByte()];
+        for(int i = 0; i < languages.Length; i++) languages[i] = (SystemLanguage) input.ReadByte();
+        AvailableLanguages = languages;
+        Homepage = input.ReadUTF();
+        Discord = input.ReadUTF();
+    }
+
+    public override async Task Run(HttpClient client, string url) {
         try {
-            System.IO.Stream stream = await client.GetStreamAsync(url + $"modInfo/{mod.Name}/{mod.Version}/{(mod.IsBetaBranch ? 1 : 0)}");
+            System.IO.Stream stream = await client.GetStreamAsync(url + $"modInfo/{modInfo.ModName}/{modInfo.ModVersion}/{(modInfo.IsBetaBranch ? 1 : 0)}");
             using ByteArrayDataInput input = new(stream, JALib.Instance);
             ReceiveData(input);
         } catch (Exception e) {

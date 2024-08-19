@@ -33,10 +33,17 @@ class JApi {
     private readonly Dictionary<long, RequestPacket> _requests = new();
     private static ConcurrentQueue<Request> _queue = new();
     private static Discord.Discord discord;
+    private TaskCompletionSource<bool> completeLoadTask = new();
 
     public static void Initialize() {
         if(ADOBase.platform != Platform.None) OnAdofaiStart();
         _instance ??= new JApi();
+    }
+
+    public static Task<bool> CompleteLoadTask() {
+        if(Connected) return Task.FromResult(true);
+        _instance ??= new JApi();
+        return _instance.completeLoadTask.Task;
     }
 
     private JApi() {
@@ -67,8 +74,10 @@ class JApi {
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
-            if(pingTest.otherError) Dispose();
-            else pingTest.otherError = true;
+            if(pingTest.otherError) {
+                completeLoadTask.TrySetResult(false);
+                Dispose();
+            } else pingTest.otherError = true;
         }
     }
 
@@ -120,6 +129,10 @@ class JApi {
         } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }
 
+    internal static Task Send<T>(T packet) where T : RequestAPI {
+        return Task.FromResult(packet.Run(_instance._httpClient, $"https://{_instance.domain}/"));
+    }
+
     internal async Task<T> SendAsync<T>(T packet) where T : AsyncRequestPacket {
         await JATask.Run(JALib.Instance, () => Send(packet));
         await packet.WaitResponse();
@@ -127,6 +140,8 @@ class JApi {
     }
 
     private void OnConnect() {
+        completeLoadTask.TrySetResult(true);
+        completeLoadTask = null;
         ConnectInfo();
         while(_queue.TryDequeue(out Request request)) Send(request);
     }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Threading.Tasks;
 using JALib.Core;
 using JALib.Stream;
 using JALib.Tools;
@@ -35,7 +36,7 @@ class GetLocalization : RequestAPI {
         MainThread.Run(new JAction(localization._jaMod, () => localization._jaMod.OnLocalizationUpdate0()));
     }
 
-    public override async void Run(HttpClient client, string url) {
+    public override async Task Run(HttpClient client, string url) {
         try {
             System.IO.Stream stream = await client.GetStreamAsync(url + $"/localization/{localization._jaMod.Name}/{language}");
             using ByteArrayDataInput input = new(stream, JALib.Instance);

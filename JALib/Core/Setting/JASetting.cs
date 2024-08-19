@@ -16,16 +16,20 @@ public class JASetting : IDisposable {
     private IEnumerable<FieldInfo> jsonFields;
     private Dictionary<string, string> fieldValueCache = new();
 
-    protected JASetting(JAMod mod, JObject jsonObject = null) {
+    public JASetting(JAMod mod, JObject jsonObject = null) {
         Mod = mod;
         JsonObject = jsonObject ?? new JObject();
         jsonFields = GetType().Fields().Where(field => {
-            if(field.IsStatic || field.DeclaringType == typeof(JASetting)) return false;
+            if(field.IsStatic) return false;
             SettingIncludeAttribute include = field.GetCustomAttribute<SettingIncludeAttribute>();
             SettingIgnoreAttribute ignore = field.GetCustomAttribute<SettingIgnoreAttribute>();
             return ignore == null && (field.IsPublic || include != null);
         });
         if(jsonObject != null) LoadJson();
+        else
+            foreach(FieldInfo field in jsonFields)
+                if(IsSettingType(field.FieldType))
+                    field.SetValue(this, SetupJASetting(field.FieldType, null));
     }
 
     private void LoadJson() {
@@ -34,13 +38,17 @@ public class JASetting : IDisposable {
                 SettingNameAttribute nameAttribute = field.GetCustomAttribute<SettingNameAttribute>();
                 string name = nameAttribute?.Name ?? field.Name;
                 if(JsonObject.TryGetValue(name, out JToken token)) {
-                    field.SetValue(this, field.FieldType.IsSubclassOf(typeof(JASetting)) ? SetupJASetting(field.FieldType, token) : token.ToObject(field.FieldType));
+                    field.SetValue(this, IsSettingType(field.FieldType) ? SetupJASetting(field.FieldType, token) : token.ToObject(field.FieldType));
                     JsonObject.Remove(name);
-                } else if(field.FieldType.IsSubclassOf(typeof(JASetting))) field.SetValue(this, SetupJASetting(field.FieldType, null));
+                } else if(IsSettingType(field.FieldType)) field.SetValue(this, SetupJASetting(field.FieldType, null));
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }
+    }
+
+    private bool IsSettingType(Type type) {
+        return type.IsSubclassOf(typeof(JASetting)) || type == typeof(JASetting);
     }
 
     internal JASetting SetupJASetting(Type type, JToken token) {

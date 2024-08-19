@@ -13,7 +13,6 @@ class JAModSetting : JASetting {
     public bool ForceUpdate;
     public SystemLanguage[] AvailableLanguages;
     public string Homepage;
-    public bool IsBetaBranch;
     public string Discord;
     public SystemLanguage? CustomLanguage;
     internal JASetting Setting;

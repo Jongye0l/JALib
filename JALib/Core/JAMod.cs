@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using JALib.API;
 using JALib.API.Packets;
+using JALib.Bootstrap;
 using JALib.Core.Setting;
-using JALib.Stream;
 using JALib.Tools;
+using TinyJson;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -22,7 +24,6 @@ public abstract class JAMod {
     protected bool ForceUpdate => ModSetting.ForceUpdate;
     protected Version LatestVersion => ModSetting.LatestVersion;
     public bool IsLatest => LatestVersion <= Version;
-    public bool IsBetaBranch => ModSetting.IsBetaBranch;
     protected Dependency[] Dependencies { get; private set; }
     protected internal List<Feature> Features { get; private set; }
     protected SystemLanguage[] AvailableLanguages => ModSetting.AvailableLanguages;
@@ -41,27 +42,41 @@ public abstract class JAMod {
 
     public JALocalization Localization { get; private set; }
 
+    private static async void LoadModInfo(JAModInfo modInfo) {
+        modInfo.ModName = modInfo.ModEntry.Info.DisplayName;
+        bool beta = modInfo.IsBetaBranch = JALib.Instance.Setting.Beta[modInfo.ModName]?.ToObject<bool>() ?? false;
+        modInfo.ModVersion = ParseVersion(modInfo.ModEntry, ref modInfo.IsBetaBranch);
+        if(beta != modInfo.IsBetaBranch) JALib.Instance.Setting.Beta[modInfo.ModName] = modInfo.IsBetaBranch;
+        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Waiting...]</color>";
+        bool success = await JApi.CompleteLoadTask();
+        GetModInfo getModInfo = null;
+        if(success) {
+            getModInfo = new GetModInfo(modInfo);
+            modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Loading Info...]</color>";
+            await JApi.Send(getModInfo);
+            if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModVersion) {
+                JALib.Instance.Log("JAMod " + modInfo.ModName + " is Forced to Update");
+                modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Updating...]</color>";
+                await JApi.Send(new DownloadMod(modInfo.ModName, getModInfo.LatestVersion, modInfo.ModEntry.Path));
+                string path = System.IO.Path.Combine(modInfo.ModEntry.Path, "Info.json");
+                if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
+                UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
+                modInfo.ModEntry.SetValue("Info", info);
+                ParseVersion(modInfo.ModEntry, ref beta);
+            }
+        }
+        modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
+        JABootstrap.LoadMod(modInfo);
+        if(getModInfo != null) mods[modInfo.ModName].ModInfo(getModInfo);
+    }
+
     protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Dependency[] dependencies = null, Type settingType = null, string settingPath = null, string discord = null) {
         try {
             ModEntry = modEntry;
             Name = ModEntry.Info.DisplayName;
             ModSetting = new JAModSetting(this, settingPath, settingType);
-            string version = modEntry.Info.Version;
-            string onlyVersion = version;
-            string behindVersion = "";
-            if(version.Contains('-') || version.Contains(' ')) {
-                int index = version.IndexOf('-');
-                if(index == -1) index = version.IndexOf(' ');
-                onlyVersion = version[..index];
-                behindVersion = version[index..];
-                if(!ModSetting.IsBetaBranch) {
-                    ModSetting.IsBetaBranch = true;
-                    SaveSetting();
-                }
-            }
-            modEntry.SetValue("Version", Version.Parse(onlyVersion));
-            modEntry.Info.Version = (Version.Build == 0     ? new Version(Version.Major, Version.Minor) :
-                                     Version.Revision == -1 ? Version : new Version(Version.Major, Version.Minor, Version.Build)) + behindVersion;
+            bool beta = false;
+            ParseVersion(ModEntry, ref beta);
             Dependencies = dependencies ?? Array.Empty<Dependency>();
             Features = new List<Feature>();
             Localization = localization ? new JALocalization(this) : null;
@@ -76,14 +91,32 @@ public abstract class JAMod {
             if(IsExistMethod(nameof(OnSessionStart))) modEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
             if(IsExistMethod(nameof(OnSessionStop))) modEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
             mods.Add(Name, this);
-            JApi.Send(new GetModInfo(this));
+            SaveSetting();
             Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {
-            ModEntry.Info.DisplayName = $"{Name} <color=#FF0000>[Fail to load]</color>";
+            ModEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
             Error("Failed to Initialize JAMod " + Name);
             LogException(e);
             throw;
         }
+    }
+
+    private static Version ParseVersion(UnityModManager.ModEntry modEntry, ref bool beta) {
+        string version = modEntry.Info.Version;
+        string onlyVersion = version;
+        string behindVersion = "";
+        if(version.Contains('-') || version.Contains(' ')) {
+            int index = version.IndexOf('-');
+            if(index == -1) index = version.IndexOf(' ');
+            onlyVersion = version[..index];
+            behindVersion = version[index..];
+            if(!beta) beta = true;
+        }
+        Version versionValue = Version.Parse(onlyVersion);
+        modEntry.Info.Version = (versionValue.Build == 0     ? new Version(versionValue.Major, versionValue.Minor) :
+                                 versionValue.Revision == -1 ? versionValue : new Version(versionValue.Major, versionValue.Minor, versionValue.Build)) + behindVersion;
+        modEntry.SetValue("Version", versionValue);
+        return versionValue;
     }
 
     private async void InitializeGUI() {
@@ -92,7 +125,6 @@ public abstract class JAMod {
         if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
         if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
     }
-
 
     private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
 
@@ -127,29 +159,17 @@ public abstract class JAMod {
         Features.Add(feature);
     }
 
-    internal void ModInfo(ByteArrayDataInput input) {
-        if(ModEntry == null) return;
-        ModSetting.LatestVersion = Version.Parse(input.ReadUTF());
-        ModSetting.ForceUpdate = input.ReadBoolean();
-        var languages = new SystemLanguage[input.ReadByte()];
-        for(int i = 0; i < languages.Length; i++) languages[i] = (SystemLanguage) input.ReadByte();
-        ModSetting.AvailableLanguages = languages;
-        if(input.ReadBoolean()) {
-            ModSetting.Homepage = input.ReadUTF();
-            ModEntry.Info.HomePage = ModSetting.Homepage;
-        } else ModSetting.Homepage = null;
-        if(input.ReadBoolean()) {
-            ModSetting.Discord = input.ReadUTF();
-            Discord = ModSetting.Discord;
-        } else ModSetting.Discord = null;
+    internal void ModInfo(GetModInfo getModInfo) {
+        if(ModEntry == null || !getModInfo.Success) return;
+        ModSetting.LatestVersion = getModInfo.LatestVersion;
+        ModSetting.ForceUpdate = getModInfo.ForceUpdate;
+        ModSetting.AvailableLanguages = getModInfo.AvailableLanguages;
+        ModSetting.Homepage = getModInfo.Homepage;
+        ModSetting.Discord = getModInfo.Discord;
         SaveSetting();
-        Log("JAMod " + Name + "'s Info is Updated");
         if(IsLatest) return;
         ModEntry.NewestVersion = LatestVersion;
         Log($"JAMod {Name} is Outdated (current: {Version}, latest: {LatestVersion})");
-        if(!ForceUpdate) return;
-        Log("JAMod " + Name + " is Forced to Update");
-        JAWebAPI.DownloadMod(this, true);
     }
 
     private bool OnToggle(UnityModManager.ModEntry modEntry, bool value) {

@@ -13,6 +13,7 @@ public class Settings {
     public String adminManagerPath;
     public String tokenPath;
     public String otherLibURL;
+    public String modFilePath;
 
     public static void load(Class<? extends Settings> cl) throws IOException {
         instance = Variables.gson.fromJson(Files.readString(Path.of("settings.json")), cl);

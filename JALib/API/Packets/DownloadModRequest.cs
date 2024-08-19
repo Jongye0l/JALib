@@ -9,7 +9,7 @@ class DownloadModRequest : ResponsePacket {
         string modName = input.ReadUTF();
         Version version = new(input.ReadUTF());
         JAMod mod = JAMod.GetMods(modName);
-        if(mod != null && mod.Version < version) JAWebAPI.DownloadMod(mod, false);
-        else if(mod == null) JAWebAPI.DownloadMod(modName);
+        if(mod != null && mod.Version < version) JApi.Send(new DownloadMod(modName, version, mod.Path));
+        else if(mod == null) JApi.Send(new DownloadMod(modName, version));
     }
 }

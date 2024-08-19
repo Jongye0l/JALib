@@ -504,7 +504,7 @@
     <ItemGroup>
         <Compile Include="API\AsyncRequestPacket.cs" />
         <Compile Include="API\JApi.cs" />
-        <Compile Include="API\JAWebAPI.cs" />
+        <Compile Include="API\Packets\DownloadMod.cs" />
         <Compile Include="API\Packets\DownloadModRequest.cs" />
         <Compile Include="API\Packets\ConnectInfo.cs" />
         <Compile Include="API\Packets\DiscordUpdate.cs" />
@@ -524,6 +524,7 @@
         <Compile Include="Core\Patch\JAPatcher.cs" />
         <Compile Include="Core\Patch\PatchType.cs" />
         <Compile Include="Core\Setting\JAFeatureSetting.cs" />
+        <Compile Include="Core\Setting\JALibSetting.cs" />
         <Compile Include="Core\Setting\JASetting.cs" />
         <Compile Include="Core\Setting\JAModSetting.cs" />
         <Compile Include="Core\Setting\SettingCastAttribute.cs" />
@@ -562,6 +563,12 @@
     <ItemGroup>
       <None Include="App.config" />
       <None Include="packages.config" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\JALib-Bootstrap\JALib-Bootstrap.csproj">
+        <Project>{c34f6cfe-9c98-4e36-91fd-3fb94c1e6443}</Project>
+        <Name>JALib-Bootstrap</Name>
+      </ProjectReference>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

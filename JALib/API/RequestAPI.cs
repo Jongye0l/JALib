@@ -1,7 +1,8 @@
 ﻿using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace JALib.API;
 
 abstract class RequestAPI : Request {
-    public abstract void Run(HttpClient client, string url);
+    public abstract Task Run(HttpClient client, string url);
 }
