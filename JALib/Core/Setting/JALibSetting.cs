@@ -4,7 +4,7 @@ namespace JALib.Core.Setting;
 
 class JALibSetting : JASetting {
 
-    internal JASetting Beta;
+    public JASetting Beta;
 
     protected JALibSetting(JAMod mod, JObject jsonObject = null) : base(mod, jsonObject) {
     }

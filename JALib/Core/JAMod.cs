@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using JALib.API;
 using JALib.API.Packets;
-using JALib.Bootstrap;
 using JALib.Core.Setting;
 using JALib.Tools;
-using TinyJson;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -42,34 +38,6 @@ public abstract class JAMod {
 
     public JALocalization Localization { get; private set; }
 
-    private static async void LoadModInfo(JAModInfo modInfo) {
-        modInfo.ModName = modInfo.ModEntry.Info.DisplayName;
-        bool beta = modInfo.IsBetaBranch = JALib.Instance.Setting.Beta[modInfo.ModName]?.ToObject<bool>() ?? false;
-        modInfo.ModVersion = ParseVersion(modInfo.ModEntry, ref modInfo.IsBetaBranch);
-        if(beta != modInfo.IsBetaBranch) JALib.Instance.Setting.Beta[modInfo.ModName] = modInfo.IsBetaBranch;
-        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Waiting...]</color>";
-        bool success = await JApi.CompleteLoadTask();
-        GetModInfo getModInfo = null;
-        if(success) {
-            getModInfo = new GetModInfo(modInfo);
-            modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Loading Info...]</color>";
-            await JApi.Send(getModInfo);
-            if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModVersion) {
-                JALib.Instance.Log("JAMod " + modInfo.ModName + " is Forced to Update");
-                modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Updating...]</color>";
-                await JApi.Send(new DownloadMod(modInfo.ModName, getModInfo.LatestVersion, modInfo.ModEntry.Path));
-                string path = System.IO.Path.Combine(modInfo.ModEntry.Path, "Info.json");
-                if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
-                UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
-                modInfo.ModEntry.SetValue("Info", info);
-                ParseVersion(modInfo.ModEntry, ref beta);
-            }
-        }
-        modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
-        JABootstrap.LoadMod(modInfo);
-        if(getModInfo != null) mods[modInfo.ModName].ModInfo(getModInfo);
-    }
-
     protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Dependency[] dependencies = null, Type settingType = null, string settingPath = null, string discord = null) {
         try {
             ModEntry = modEntry;
@@ -101,7 +69,7 @@ public abstract class JAMod {
         }
     }
 
-    private static Version ParseVersion(UnityModManager.ModEntry modEntry, ref bool beta) {
+    internal static Version ParseVersion(UnityModManager.ModEntry modEntry, ref bool beta) {
         string version = modEntry.Info.Version;
         string onlyVersion = version;
         string behindVersion = "";
@@ -172,7 +140,7 @@ public abstract class JAMod {
         Log($"JAMod {Name} is Outdated (current: {Version}, latest: {LatestVersion})");
     }
 
-    private bool OnToggle(UnityModManager.ModEntry modEntry, bool value) {
+    internal bool OnToggle(UnityModManager.ModEntry modEntry, bool value) {
         if(this != JALib.Instance && !JALib.Instance.ModEntry.Active) {
             Error("JALib is Disabled");
             return false;
