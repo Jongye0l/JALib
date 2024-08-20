@@ -68,24 +68,26 @@ class JALib : JAMod {
                 SetupModInfo(modInfo);
             }
         }
-        List<Task> tasks = new();
-        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=gray>[Loading Dependencies...]</color>";
-        foreach(KeyValuePair<string,string> dependency in modInfo.Dependencies) {
-            try {
-                Version version = new(dependency.Value);
-                UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
-                if(modEntry != null && modEntry.Version >= version) {
-                    if(loadTasks.TryGetValue(dependency.Key, out Task task)) tasks.Add(task);
-                    continue;
+        if(modInfo.Dependencies != null) {
+            List<Task> tasks = new();
+            modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=gray>[Loading Dependencies...]</color>";
+            foreach(KeyValuePair<string,string> dependency in modInfo.Dependencies) {
+                try {
+                    Version version = new(dependency.Value);
+                    UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
+                    if(modEntry != null && modEntry.Version >= version) {
+                        if(loadTasks.TryGetValue(dependency.Key, out Task task)) tasks.Add(task);
+                        continue;
+                    }
+                    tasks.Add(SetupDependency(dependency.Key, version, modEntry));
+                } catch (Exception e) {
+                    modInfo.ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
+                    modInfo.ModEntry.Logger.LogException(e);
                 }
-                tasks.Add(SetupDependency(dependency.Key, version, modEntry));
-            } catch (Exception e) {
-                modInfo.ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
-                modInfo.ModEntry.Logger.LogException(e);
             }
+            modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=aqua>[Waiting Dependencies...]</color>";
+            await Task.WhenAll(tasks);
         }
-        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=aqua>[Waiting Dependencies...]</color>";
-        await Task.WhenAll(tasks);
         modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
         try {
             typeof(JABootstrap).Invoke("LoadMod", modInfo);
