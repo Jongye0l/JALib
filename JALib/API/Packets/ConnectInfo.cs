@@ -1,4 +1,5 @@
-﻿using JALib.Stream;
+﻿using System;
+using JALib.Stream;
 using Steamworks;
 using UnityEngine;
 
@@ -15,6 +16,14 @@ class ConnectInfo : RequestPacket {
         output.WriteInt(GCNS.releaseNumber);
         output.WriteUTF(GCS.steamBranchName);
         output.WriteLong(DiscordController.currentUserID);
-        output.WriteULong(SteamUser.GetSteamID().m_SteamID);
+        ulong steamID;
+        try {
+            steamID = SteamUser.GetSteamID().m_SteamID;
+        } catch (Exception e) {
+            steamID = 0;
+            JALib.Instance.Log("Failed to get SteamID");
+            JALib.Instance.LogException(e);
+        }
+        output.WriteULong(steamID);
     }
 }
