@@ -66,7 +66,7 @@ public static class SimpleReflect {
 
     public static ConstructorInfo Constructor(this Type type) {
         var constructors = type.GetConstructors(AccessTools.all);
-        if(constructors.Length != 0) throw new Exception("Constructor count is not 0");
+        if(constructors.Length != 1) throw new Exception("Constructor count is not 1");
         return constructors[0];
     }
 

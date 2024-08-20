@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using JALib.API;
@@ -90,7 +91,7 @@ class JALib : JAMod {
         }
         modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
         try {
-            typeof(JABootstrap).Invoke("LoadMod", modInfo);
+            typeof(JABootstrap).Invoke("LoadMod", new object[] { modInfo });
         } catch (Exception e) {
             modInfo.ModEntry.Logger.Log("Failed to Load JAMod " + modInfo.ModName);
             modInfo.ModEntry.Logger.LogException(e);
