@@ -95,4 +95,62 @@ public static class Zipper {
         using System.IO.Stream entryStream = entry.Open();
         entryStream.Write(rawFile.Data);
     }
+
+    public static byte[] Gunzip(byte[] gzipData) {
+        using MemoryStream gzipStream = new(gzipData);
+        return Gunzip(gzipStream);
+    }
+
+    public static byte[] Gunzip(System.IO.Stream stream) {
+        using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
+        using MemoryStream memoryStream = GunzipToMemoryStream(stream);
+        return memoryStream.ToArray();
+    }
+
+    public static MemoryStream GunzipToMemoryStream(byte[] gzipData) {
+        using MemoryStream gzipStream = new(gzipData);
+        return GunzipToMemoryStream(gzipStream);
+    }
+
+    public static MemoryStream GunzipToMemoryStream(System.IO.Stream stream) {
+        using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
+        MemoryStream memoryStream = new();
+        gzipStream.CopyTo(memoryStream);
+        return memoryStream;
+    }
+
+    public static void Gunzip(byte[] gzipData, string path) {
+        using MemoryStream gzipStream = new(gzipData);
+        Gunzip(gzipStream, path);
+    }
+
+    public static void Gunzip(System.IO.Stream stream, string path) {
+        using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
+        using FileStream fileStream = new(path, FileMode.Create);
+        gzipStream.CopyTo(fileStream);
+    }
+
+    public static byte[] Gzip(byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using MemoryStream memoryStream = GzipToMemoryStream(data, compressionLevel);
+        return memoryStream.ToArray();
+    }
+
+    public static byte[] Gzip(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using MemoryStream memoryStream = GzipToMemoryStream(stream, compressionLevel);
+        return memoryStream.ToArray();
+    }
+
+    public static MemoryStream GzipToMemoryStream(byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        MemoryStream memoryStream = new();
+        using GZipStream gzipStream = new(memoryStream, compressionLevel, true);
+        gzipStream.Write(data);
+        return memoryStream;
+    }
+
+    public static MemoryStream GzipToMemoryStream(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        MemoryStream memoryStream = new();
+        using GZipStream gzipStream = new(memoryStream, compressionLevel, true);
+        stream.CopyTo(gzipStream);
+        return memoryStream;
+    }
 }
