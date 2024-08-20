@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using HarmonyLib;
@@ -14,14 +15,16 @@ using UnityModManagerNet;
 
 namespace JALib;
 
-public class JALib : JAMod {
+class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
     private static JAPatcher patcher;
     internal new JALibSetting Setting;
     private static Task<Type> loadTask;
+    private static Dictionary<string, Task> loadTasks = new();
+    private static Dictionary<string, Version> updateQueue = new();
 
-    private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, null, typeof(JALibSetting)) {
+    private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting)) {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
@@ -29,35 +32,60 @@ public class JALib : JAMod {
     }
 
     private static async void LoadModInfo(JAModInfo modInfo) {
-        modInfo.ModName = modInfo.ModEntry.Info.DisplayName;
-        bool beta = modInfo.IsBetaBranch = Instance.Setting.Beta[modInfo.ModName]?.ToObject<bool>() ?? false;
-        modInfo.ModVersion = ParseVersion(modInfo.ModEntry, ref modInfo.IsBetaBranch);
-        if(beta != modInfo.IsBetaBranch) Instance.Setting.Beta[modInfo.ModName] = modInfo.IsBetaBranch;
-        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Waiting...]</color>";
+        SetupModInfo(modInfo);
         Type type = await loadTask;
-        if(type == null) SetupMod(modInfo);
+        if(type == null) loadTasks[modInfo.ModEntry.Info.Id] = SetupMod(modInfo);
         else type.Invoke("SetupMod", modInfo);
     }
 
-    private static async void SetupMod(JAModInfo modInfo) {
-        bool success = await JApi.CompleteLoadTask();
+    private static void SetupModInfo(JAModInfo modInfo) {
+        modInfo.ModName = modInfo.ModEntry.Info.DisplayName;
+        bool beta = modInfo.IsBetaBranch = Instance.Setting.Beta[modInfo.ModName]?.ToObject<bool>() ?? false;
+        modInfo.ModVersion = ParseVersion(modInfo.ModEntry, ref modInfo.IsBetaBranch);
+        if(beta != modInfo.IsBetaBranch) {
+            Instance.Setting.Beta[modInfo.ModName] = modInfo.IsBetaBranch;
+            Instance.SaveSetting();
+        }
+        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=gray>[Waiting...]</color>";
+    }
+
+    private static async Task SetupMod(JAModInfo modInfo) {
         GetModInfo getModInfo = null;
-        if(success) {
+        if(JApi.Connected) {
             getModInfo = new GetModInfo(modInfo);
-            modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Loading Info...]</color>";
+            modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=gray>[Loading Info...]</color>";
             await JApi.Send(getModInfo);
             if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModVersion) {
                 Instance.Log("JAMod " + modInfo.ModName + " is Forced to Update");
-                modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=blue>[Updating...]</color>";
+                modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=aqua>[Updating...]</color>";
                 await JApi.Send(new DownloadMod(modInfo.ModName, getModInfo.LatestVersion, modInfo.ModEntry.Path));
                 string path = System.IO.Path.Combine(modInfo.ModEntry.Path, "Info.json");
                 if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
                 UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
                 modInfo.ModEntry.SetValue("Info", info);
-                bool beta = false;
-                ParseVersion(modInfo.ModEntry, ref beta);
+                modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
+                modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modInfo.ModEntry);
+                SetupModInfo(modInfo);
             }
         }
+        List<Task> tasks = new();
+        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=gray>[Loading Dependencies...]</color>";
+        foreach(KeyValuePair<string,string> dependency in modInfo.Dependencies) {
+            try {
+                Version version = new(dependency.Value);
+                UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
+                if(modEntry != null && modEntry.Version >= version) {
+                    if(loadTasks.TryGetValue(dependency.Key, out Task task)) tasks.Add(task);
+                    continue;
+                }
+                tasks.Add(SetupDependency(dependency.Key, version, modEntry));
+            } catch (Exception e) {
+                modInfo.ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
+                modInfo.ModEntry.Logger.LogException(e);
+            }
+        }
+        modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=aqua>[Waiting Dependencies...]</color>";
+        await Task.WhenAll(tasks);
         modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
         try {
             typeof(JABootstrap).Invoke("LoadMod", modInfo);
@@ -76,6 +104,38 @@ public class JALib : JAMod {
             mod.ModEntry.SetValue("mActive", false);
         }
         if(getModInfo != null) mod.ModInfo(getModInfo);
+    }
+
+    private static async Task SetupDependency(string name, Version version, UnityModManager.ModEntry modEntry) {
+        bool needUpdate = false;
+        if(updateQueue.TryGetValue(name, out Version value) && value < version) {
+            updateQueue[name] = version;
+            needUpdate = true;
+        }
+        await Task.Yield();
+        if(loadTasks.TryGetValue(name, out Task task)) await task;
+        if(needUpdate && updateQueue.TryGetValue(name, out value) && value == version) {
+            updateQueue.Remove(name);
+            if(modEntry != null && modEntry.Version >= version) return;
+            task = DownloadDependency(name, version, modEntry);
+            loadTasks[name] = task;
+            await task;
+            return;
+        }
+        if(modEntry != null && modEntry.Version >= version) return;
+        if(loadTasks.TryGetValue(name, out task)) await task;
+    }
+
+    private static async Task DownloadDependency(string name, Version version, UnityModManager.ModEntry modEntry) {
+        string path = modEntry?.Path ?? System.IO.Path.Combine(UnityModManager.modsPath, name);
+        await JApi.Send(new DownloadMod(name, version, path));
+        if(modEntry != null) {
+            modEntry.Enabled = false;
+            modEntry.Active = false;
+            modEntry.OnUnload(modEntry);
+            UnityModManager.modEntries.Remove(modEntry);
+        }
+        ForceApplyMod.ApplyMod(path);
     }
 
     private async Task<Type> LoadInfo() {
@@ -138,6 +198,11 @@ public class JALib : JAMod {
     protected override void OnUnload() {
         patcher.Dispose();
         patcher = null;
+        loadTask = null;
+        loadTasks.Clear();
+        updateQueue.Clear();
+        loadTasks = null;
+        updateQueue = null;
         Dispose();
     }
 

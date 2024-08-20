@@ -38,14 +38,13 @@ public abstract class JAMod {
 
     public JALocalization Localization { get; private set; }
 
-    protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Dependency[] dependencies = null, Type settingType = null, string settingPath = null, string discord = null) {
+    protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null) {
         try {
             ModEntry = modEntry;
             Name = ModEntry.Info.DisplayName;
             ModSetting = new JAModSetting(this, settingPath, settingType);
             bool beta = false;
             ParseVersion(ModEntry, ref beta);
-            Dependencies = dependencies ?? Array.Empty<Dependency>();
             Features = new List<Feature>();
             Localization = localization ? new JALocalization(this) : null;
             Discord = ModSetting.Discord ?? discord ?? Discord;
@@ -101,6 +100,8 @@ public abstract class JAMod {
     private bool IsExistMethod(string name) => GetType().Method(name).DeclaringType == GetType();
 
     public static JAMod GetMods(string name) => mods[name];
+
+    public static ICollection<JAMod> GetMods() => mods.Values;
 
     internal static void EnableInit() {
         foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
@@ -162,7 +163,6 @@ public abstract class JAMod {
         OnUnload();
         ModEntry = null;
         Name = null;
-        Dependencies = null;
         Features = null;
         Discord = null;
         Localization.Dispose();
