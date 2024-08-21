@@ -98,13 +98,9 @@ public static class StreamTool {
         return ByteTools.ToObject<T>(stream, declearing, includeClass, version);
     }
 
-    public static void WriteBytesByPass(this System.IO.Stream stream, byte[] buffer) {
-        foreach(byte t in buffer) stream.WriteByte(t);
-    }
-
     public static void WriteBytes(this System.IO.Stream stream, byte[] buffer) {
         stream.WriteInt(buffer.Length);
-        WriteBytesByPass(stream, buffer);
+        stream.Write(buffer);
     }
 
     public static void WriteSByte(this System.IO.Stream stream, sbyte value) {

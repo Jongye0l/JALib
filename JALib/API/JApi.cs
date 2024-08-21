@@ -83,7 +83,7 @@ class JApi {
     }
 
     private void Read() {
-        using MemoryStream input = new(_client.ReadBytes(1024, false));
+        using Stream input = _client.ReadStream();
         if(input.ReadBoolean()) {
             long id = _client.ReadLong();
             if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;

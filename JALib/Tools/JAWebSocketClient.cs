@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
@@ -119,8 +120,27 @@ public class JAWebSocketClient : IDisposable {
         byte[] buffer = new byte[count];
         if(count == 0) return buffer;
         WebSocketReceiveResult result = socket.ReceiveAsync(buffer, CancellationToken.None).Result;
-        if(result.Count != count) throw new InvalidOperationException("Failed to read bytes");
+        if(result.Count != count && force) throw new InvalidOperationException("Failed to read bytes");
         return buffer;
+    }
+
+    public byte[] ReadBytes() {
+        using MemoryStream stream = (MemoryStream) ReadStream();
+        return stream.ToArray();
+    }
+
+    public Stream ReadStream() {
+        CheckConnect();
+        byte[] buffer = new byte[1024];
+        MemoryStream stream = new();
+        int offset = 0;
+        while(true) {
+            WebSocketReceiveResult result = socket.ReceiveAsync(buffer, CancellationToken.None).Result;
+            stream.Write(buffer, offset, result.Count);
+            offset += result.Count;
+            if(result.EndOfMessage) break;
+        }
+        return stream;
     }
 
     public bool ReadBoolean() {
