@@ -99,6 +99,14 @@ public static class StreamTool {
         return ByteTools.ToObject<T>(stream, declearing, includeClass, version);
     }
 
+    public static object ReadObject(this Stream stream, object obj, Type type, bool declearing = false, uint? version = null) {
+        return obj.ChangeData(stream, type, declearing, version);
+    }
+
+    public static T ReadObject<T>(this Stream stream, T obj, bool declearing = false, uint? version = null) {
+        return obj.ChangeData(stream, declearing, version);
+    }
+
     public static void WriteBytes(this Stream stream, byte[] buffer) {
         stream.WriteInt(buffer.Length);
         stream.Write(buffer);

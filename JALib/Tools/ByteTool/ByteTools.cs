@@ -86,6 +86,30 @@ public static class ByteTools {
         return (T) ToObject(input, typeof(T), declearing, includeClass, version);
     }
 
+    public static T ToObject<T>(this byte[] bytes, Type type, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(bytes, type, start, declearing, includeClass, version);
+    }
+
+    public static T ToObject<T>(Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(input, type, declearing, includeClass, version);
+    }
+
+    public static T ChangeData<T>(this T obj, byte[] bytes, int start = 0, bool declearing = false, uint? version = null) {
+        return ChangeData(obj, bytes, typeof(T), start, declearing, version);
+    }
+
+    public static T ChangeData<T>(this T obj, Stream input, bool declearing = false, uint? version = null) {
+        return ChangeData(obj, input, typeof(T), declearing, version);
+    }
+
+    public static T ChangeData<T>(this T obj, byte[] bytes, Type type, int start = 0, bool declearing = false, uint? version = null) {
+        return (T) ChangeData((object) obj, bytes, type, start, declearing, version);
+    }
+
+    public static T ChangeData<T>(this T obj, Stream input, Type type, bool declearing = false, uint? version = null) {
+        return (T) ChangeData((object) obj, input, type, declearing, version);
+    }
+
     public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
         using MemoryStream input = new(bytes);
         while(start-- > 0) input.ReadByte();
@@ -140,6 +164,24 @@ public static class ByteTools {
             return JAMod.GetMods(modName).Features.Find(feature => feature.Name == featureName);
         }
         object obj = Activator.CreateInstance(type);
+        return ChangeData(obj, input, type, declearing, version);
+    }
+
+    public static object ChangeData(this object obj, byte[] bytes, int start = 0, bool declearing = false, uint? version = null) {
+        return ChangeData(obj, bytes, obj.GetType(), start, declearing, version);
+    }
+
+    public static object ChangeData(this object obj, Stream input, bool declearing = false, uint? version = null) {
+        return ChangeData(obj, input, obj.GetType(), declearing, version);
+    }
+
+    public static object ChangeData(this object obj, byte[] bytes, Type type, int start = 0, bool declearing = false, uint? version = null) {
+        using MemoryStream input = new(bytes);
+        while(start-- > 0) input.ReadByte();
+        return ChangeData(obj, input, type, declearing, version);
+    }
+
+    public static object ChangeData(this object obj, Stream input, Type type, bool declearing = false, uint? version = null) {
         foreach(MemberInfo member in type.Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == type))) {
             bool skip = false;
             bool memberDeclearing = false;
