@@ -1,11 +1,12 @@
 ﻿using System;
+using System.IO;
 using JALib.Core;
-using JALib.Stream;
+using JALib.Tools.ByteTool;
 
 namespace JALib.API.Packets;
 
 class DownloadModRequest : ResponsePacket {
-    public override void ReceiveData(ByteArrayDataInput input) {
+    public override void ReceiveData(Stream input) {
         string modName = input.ReadUTF();
         Version version = new(input.ReadUTF());
         JAMod mod = JAMod.GetMods(modName);

@@ -1,7 +1,7 @@
-﻿using JALib.Stream;
+﻿using System.IO;
 
 namespace JALib.API;
 
 abstract class ResponsePacket {
-    public abstract void ReceiveData(ByteArrayDataInput input);
+    public abstract void ReceiveData(Stream input);
 }

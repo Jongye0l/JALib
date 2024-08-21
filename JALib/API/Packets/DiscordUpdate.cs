@@ -1,5 +1,4 @@
-﻿using JALib.Stream;
-using JALib.Tools;
+﻿using System.IO;
 using JALib.Tools.ByteTool;
 
 namespace JALib.API.Packets;
@@ -12,10 +11,10 @@ class DiscordUpdate : RequestPacket {
         this.id = id;
     }
 
-    public override void ReceiveData(ByteArrayDataInput input) {
+    public override void ReceiveData(Stream input) {
     }
 
-    public override void GetBinary(ByteArrayDataOutput output) {
+    public override void GetBinary(Stream output) {
         output.WriteLong(id);
     }
 }

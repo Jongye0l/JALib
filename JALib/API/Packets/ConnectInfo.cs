@@ -1,5 +1,6 @@
 ﻿using System;
-using JALib.Stream;
+using System.IO;
+using JALib.Tools.ByteTool;
 using Steamworks;
 using UnityEngine;
 
@@ -7,10 +8,10 @@ namespace JALib.API.Packets;
 
 class ConnectInfo : RequestPacket {
 
-    public override void ReceiveData(ByteArrayDataInput input) {
+    public override void ReceiveData(Stream input) {
     }
 
-    public override void GetBinary(ByteArrayDataOutput output) {
+    public override void GetBinary(Stream output) {
         output.WriteUTF(JALib.Instance.Version.ToString());
         output.WriteUTF(Application.version);
         output.WriteInt(GCNS.releaseNumber);

@@ -2,13 +2,14 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using JALib.API.Packets;
 using JALib.JAException;
-using JALib.Stream;
 using JALib.Tools;
+using JALib.Tools.ByteTool;
 using UnityEngine;
 
 namespace JALib.API;
@@ -82,7 +83,7 @@ class JApi {
     }
 
     private void Read() {
-        using ByteArrayDataInput input = new(_client.ReadBytes(1024, false), JALib.Instance);
+        using MemoryStream input = new(_client.ReadBytes(1024, false));
         if(input.ReadBoolean()) {
             long id = _client.ReadLong();
             if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;
@@ -119,12 +120,12 @@ class JApi {
                 do {
                     packet.ID = JARandom.Instance.NextLong();
                 } while(_instance._requests.ContainsKey(packet.ID));
-                using ByteArrayDataOutput output = new(JALib.Instance);
+                using MemoryStream output = new();
                 output.WriteUTF(packet.GetType().Name);
                 output.WriteLong(packet.ID);
                 packet.GetBinary(output);
                 _instance._requests.Add(packet.ID, packet);
-                _instance._client.WriteBytes(output.ToByteArray());
+                _instance._client.WriteBytes(output.ToArray());
             }
         } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }

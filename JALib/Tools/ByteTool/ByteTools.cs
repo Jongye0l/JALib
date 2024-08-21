@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using JALib.Core;
-using JALib.Stream;
 using JetBrains.Annotations;
-using UnityEngine;
 
 namespace JALib.Tools.ByteTool;
 
@@ -83,17 +82,17 @@ public static class ByteTools {
         return (T) ToObject(bytes, typeof(T), start, declearing, includeClass, version);
     }
 
-    public static T ToObject<T>(this ByteArrayDataInput input, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static T ToObject<T>(this System.IO.Stream input, bool declearing = false, bool includeClass = false, uint? version = null) {
         return (T) ToObject(input, typeof(T), declearing, includeClass, version);
     }
 
     public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
-        using ByteArrayDataInput input = new(bytes);
+        using MemoryStream input = new(bytes);
         while(start-- > 0) input.ReadByte();
         return ToObject(input, type, declearing, includeClass, version);
     }
 
-    public static object ToObject(ByteArrayDataInput input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static object ToObject(System.IO.Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;
@@ -273,9 +272,9 @@ public static class ByteTools {
     }
 
     public static byte[] ToBytes(this object value, bool declearing = false) {
-        using ByteArrayDataOutput output = new();
+        using MemoryStream output = new();
         ToBytes(value, output, declearing);
-        return output.ToByteArray();
+        return output.ToArray();
     }
 
     public static byte[] Reverse(this byte[] bytes, int start = 0) {
@@ -347,11 +346,11 @@ public static class ByteTools {
         buffer[start] = (byte) value;
     }
 
-    public static void ToBytes(this object value, ByteArrayDataOutput output, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, System.IO.Stream output, bool declearing = false, bool includeClass = false, uint? version = null) {
         ToBytes(value, output, value.GetType(), declearing, includeClass, version);
     }
 
-    public static void ToBytes(this object value, ByteArrayDataOutput output, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, System.IO.Stream output, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;

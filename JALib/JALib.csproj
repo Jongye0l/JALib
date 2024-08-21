@@ -536,8 +536,6 @@
         <Compile Include="JAException\ResponseException.cs" />
         <Compile Include="JALib.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
-        <Compile Include="Stream\ByteArrayDataInput.cs" />
-        <Compile Include="Stream\ByteArrayDataOutput.cs" />
         <Compile Include="Tools\ByteTool\ByteTools.cs" />
         <Compile Include="Tools\ByteTool\CastAttribute.cs" />
         <Compile Include="Tools\ByteTool\DataAttribute.cs" />
@@ -547,6 +545,7 @@
         <Compile Include="Tools\ByteTool\DummyAttribute.cs" />
         <Compile Include="Tools\ByteTool\IgnoreArrayAttribute.cs" />
         <Compile Include="Tools\ByteTool\IncludeClassAttribute.cs" />
+        <Compile Include="Tools\ByteTool\StreamTool.cs" />
         <Compile Include="Tools\ByteTool\VersionAttribute.cs" />
         <Compile Include="Tools\ForceApplyMod.cs" />
         <Compile Include="Tools\SettingGUI.cs" />

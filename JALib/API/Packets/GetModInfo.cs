@@ -1,9 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using JALib.Bootstrap;
 using JALib.Core;
-using JALib.Stream;
+using JALib.Tools.ByteTool;
 using UnityEngine;
 
 namespace JALib.API.Packets;
@@ -27,7 +28,7 @@ class GetModInfo : RequestAPI {
         this.modInfo = modInfo;
     }
 
-    public override void ReceiveData(ByteArrayDataInput input) {
+    public override void ReceiveData(Stream input) {
         if(!(Success = input.ReadBoolean())) return;
         LatestVersion = Version.Parse(input.ReadUTF());
         ForceUpdate = input.ReadBoolean();
@@ -40,9 +41,8 @@ class GetModInfo : RequestAPI {
 
     public override async Task Run(HttpClient client, string url) {
         try {
-            System.IO.Stream stream = await client.GetStreamAsync(url + $"modInfo/{modInfo.ModName}/{modInfo.ModVersion}/{(modInfo.IsBetaBranch ? 1 : 0)}");
-            using ByteArrayDataInput input = new(stream, JALib.Instance);
-            ReceiveData(input);
+            await using Stream stream = await client.GetStreamAsync(url + $"modInfo/{modInfo.ModName}/{modInfo.ModVersion}/{(modInfo.IsBetaBranch ? 1 : 0)}");
+            ReceiveData(stream);
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + url);
             JALib.Instance.LogException(e);

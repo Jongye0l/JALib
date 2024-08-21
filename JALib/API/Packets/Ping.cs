@@ -1,7 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
-using JALib.Stream;
 
 namespace JALib.API.Packets;
 
@@ -10,7 +10,7 @@ class Ping : RequestAPI {
     private long time;
     public int ping;
 
-    public override void ReceiveData(ByteArrayDataInput input) {
+    public override void ReceiveData(Stream input) {
         ping = (int) (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time);
     }
 

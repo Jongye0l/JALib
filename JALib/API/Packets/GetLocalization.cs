@@ -4,8 +4,8 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using JALib.Core;
-using JALib.Stream;
 using JALib.Tools;
+using JALib.Tools.ByteTool;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -22,7 +22,7 @@ class GetLocalization : RequestAPI {
         this.language = (byte) language;
     }
 
-    public override void ReceiveData(ByteArrayDataInput input) {
+    public override void ReceiveData(Stream input) {
         SystemLanguage language = (SystemLanguage) input.ReadByte();
         Localizations = new SortedDictionary<string, string>();
         for(int i = 0; i < input.ReadInt(); i++) Localizations.Add(input.ReadUTF(), input.ReadUTF());
@@ -38,9 +38,8 @@ class GetLocalization : RequestAPI {
 
     public override async Task Run(HttpClient client, string url) {
         try {
-            System.IO.Stream stream = await client.GetStreamAsync(url + $"/localization/{localization._jaMod.Name}/{language}");
-            using ByteArrayDataInput input = new(stream, JALib.Instance);
-            ReceiveData(input);
+            await using Stream stream = await client.GetStreamAsync(url + $"/localization/{localization._jaMod.Name}/{language}");
+            ReceiveData(stream);
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + url);
             JALib.Instance.LogException(e);
