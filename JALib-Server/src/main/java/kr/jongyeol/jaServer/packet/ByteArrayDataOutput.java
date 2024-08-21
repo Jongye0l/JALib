@@ -83,6 +83,17 @@ public class ByteArrayDataOutput {
         for(byte v : value) buf[count++] = v;
     }
 
+    public void writeBytesOnly(byte[] value) {
+        ensureCapacity(count + value.length);
+        for(byte v : value) buf[count++] = v;
+    }
+
+    public void writeBytes(byte[] value, int offset, int length) {
+        ensureCapacity(count + length + 4);
+        writeIntBypass(length);
+        for(int i = offset; i < offset + length; i++) buf[count++] = value[i];
+    }
+
     public byte[] toByteArray() {
         return Arrays.copyOf(buf, count);
     }

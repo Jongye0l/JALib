@@ -83,7 +83,7 @@ class JApi {
     }
 
     private void Read() {
-        using Stream input = _client.ReadStream();
+        using Stream input = Zipper.UnDeflateToMemoryStream(_client.ReadStream());
         if(input.ReadBoolean()) {
             long id = _client.ReadLong();
             if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;
@@ -124,8 +124,9 @@ class JApi {
                 output.WriteUTF(packet.GetType().Name);
                 output.WriteLong(packet.ID);
                 packet.GetBinary(output);
+                using MemoryStream result = Zipper.DeflateToMemoryStream(output);
                 _instance._requests.Add(packet.ID, packet);
-                _instance._client.WriteBytes(output.ToArray());
+                _instance._client.WriteBytes(result.ToArray());
             }
         } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }

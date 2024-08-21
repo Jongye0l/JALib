@@ -49,7 +49,7 @@ public class Connection extends BinaryWebSocketHandler {
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
         try {
-            @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(message.getPayload());
+            @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(message.getPayload().array()));
             String method = new String(input.readBytes(), StandardCharsets.UTF_8);
             long id = input.readLong();
             Variables.executor.execute(() -> {
@@ -94,7 +94,7 @@ public class Connection extends BinaryWebSocketHandler {
         } catch (Exception e) {
             throw new GetBinaryException(responsePacket.getClass().getSimpleName(), e);
         }
-        session.sendMessage(new BinaryMessage(output.toByteArray()));
+        session.sendMessage(new BinaryMessage(Compress.compress(output.toByteArray())));
     }
 
     public boolean isClosed() {
