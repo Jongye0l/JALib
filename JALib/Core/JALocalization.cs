@@ -32,7 +32,7 @@ public class JALocalization {
             _localizations = JsonConvert.DeserializeObject<SortedDictionary<string, string>>(await File.ReadAllTextAsync(localizationDataPath));
             _jaMod.OnLocalizationUpdate0();
         }
-        JApi.Send(new GetLocalization(this, language));
+        await JApi.Send(new GetLocalization(this, language));
     }
 
     public string Get(string key) {

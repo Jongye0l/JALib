@@ -2,6 +2,7 @@
 
 namespace JALib.Core.Setting;
 
+// Disable CS0649 because these fields are assigned by reflection
 class JALibSetting : JASetting {
 
     public JASetting Beta;
