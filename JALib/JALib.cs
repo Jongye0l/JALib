@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using JALib.API;
@@ -72,7 +71,7 @@ class JALib : JAMod {
         if(modInfo.Dependencies != null) {
             List<Task> tasks = new();
             modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=gray>[Loading Dependencies...]</color>";
-            foreach(KeyValuePair<string,string> dependency in modInfo.Dependencies) {
+            foreach(KeyValuePair<string, string> dependency in modInfo.Dependencies) {
                 try {
                     Version version = new(dependency.Value);
                     UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);

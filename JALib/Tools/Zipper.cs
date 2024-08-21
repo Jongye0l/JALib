@@ -14,7 +14,7 @@ public static class Zipper {
         return Unzip(zipStream);
     }
 
-    public static RawFile[] Unzip(System.IO.Stream stream) {
+    public static RawFile[] Unzip(Stream stream) {
         using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
         List<RawFile> files = new();
         Dictionary<string, RawFile> folders = new();
@@ -49,7 +49,7 @@ public static class Zipper {
         return new RawFile(name, Unzip(zipData));
     }
 
-    public static RawFile Unzip(string name, System.IO.Stream stream) {
+    public static RawFile Unzip(string name, Stream stream) {
         return new RawFile(name, Unzip(stream));
     }
 
@@ -58,7 +58,7 @@ public static class Zipper {
         Unzip(zipStream, path);
     }
 
-    public static void Unzip(System.IO.Stream stream, string path) {
+    public static void Unzip(Stream stream, string path) {
         using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
         foreach(ZipArchiveEntry entry in archive.Entries) {
             string entryPath = Path.Combine(path, entry.FullName);
@@ -76,7 +76,7 @@ public static class Zipper {
         return zipStream.ToArray();
     }
 
-    public static void Zip(IEnumerable<RawFile> files, System.IO.Stream stream) {
+    public static void Zip(IEnumerable<RawFile> files, Stream stream) {
         using ZipArchive archive = new(stream, ZipArchiveMode.Create, false, Encoding.UTF8);
         foreach(RawFile file in files) WriteZip(file, archive, null);
     }
@@ -92,7 +92,7 @@ public static class Zipper {
             return;
         }
         ZipArchiveEntry entry = archive.CreateEntry(fileName);
-        using System.IO.Stream entryStream = entry.Open();
+        using Stream entryStream = entry.Open();
         entryStream.Write(rawFile.Data);
     }
 
@@ -101,7 +101,7 @@ public static class Zipper {
         return Gunzip(gzipStream);
     }
 
-    public static byte[] Gunzip(System.IO.Stream stream) {
+    public static byte[] Gunzip(Stream stream) {
         using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
         using MemoryStream memoryStream = GunzipToMemoryStream(stream);
         return memoryStream.ToArray();
@@ -112,7 +112,7 @@ public static class Zipper {
         return GunzipToMemoryStream(gzipStream);
     }
 
-    public static MemoryStream GunzipToMemoryStream(System.IO.Stream stream) {
+    public static MemoryStream GunzipToMemoryStream(Stream stream) {
         using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
         MemoryStream memoryStream = new();
         gzipStream.CopyTo(memoryStream);
@@ -124,7 +124,7 @@ public static class Zipper {
         Gunzip(gzipStream, path);
     }
 
-    public static void Gunzip(System.IO.Stream stream, string path) {
+    public static void Gunzip(Stream stream, string path) {
         using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
         using FileStream fileStream = new(path, FileMode.Create);
         gzipStream.CopyTo(fileStream);
@@ -135,7 +135,7 @@ public static class Zipper {
         return memoryStream.ToArray();
     }
 
-    public static byte[] Gzip(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+    public static byte[] Gzip(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
         using MemoryStream memoryStream = GzipToMemoryStream(stream, compressionLevel);
         return memoryStream.ToArray();
     }
@@ -147,7 +147,7 @@ public static class Zipper {
         return memoryStream;
     }
 
-    public static MemoryStream GzipToMemoryStream(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+    public static MemoryStream GzipToMemoryStream(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
         MemoryStream memoryStream = new();
         using GZipStream gzipStream = new(memoryStream, compressionLevel, true);
         stream.CopyTo(gzipStream);
@@ -159,7 +159,7 @@ public static class Zipper {
         return UnDeflate(deflateStream);
     }
 
-    public static byte[] UnDeflate(System.IO.Stream stream) {
+    public static byte[] UnDeflate(Stream stream) {
         using DeflateStream deflateStream = new(stream, CompressionMode.Decompress);
         using MemoryStream memoryStream = UnDeflateToMemoryStream(stream);
         return memoryStream.ToArray();
@@ -170,7 +170,7 @@ public static class Zipper {
         return UnDeflateToMemoryStream(deflateStream);
     }
 
-    public static MemoryStream UnDeflateToMemoryStream(System.IO.Stream stream) {
+    public static MemoryStream UnDeflateToMemoryStream(Stream stream) {
         using DeflateStream deflateStream = new(stream, CompressionMode.Decompress);
         MemoryStream memoryStream = new();
         deflateStream.CopyTo(memoryStream);
@@ -182,7 +182,7 @@ public static class Zipper {
         return memoryStream.ToArray();
     }
 
-    public static byte[] Deflate(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+    public static byte[] Deflate(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
         using MemoryStream memoryStream = DeflateToMemoryStream(stream, compressionLevel);
         return memoryStream.ToArray();
     }
@@ -194,7 +194,7 @@ public static class Zipper {
         return memoryStream;
     }
 
-    public static MemoryStream DeflateToMemoryStream(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+    public static MemoryStream DeflateToMemoryStream(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
         MemoryStream memoryStream = new();
         using DeflateStream deflateStream = new(memoryStream, compressionLevel, true);
         stream.CopyTo(deflateStream);

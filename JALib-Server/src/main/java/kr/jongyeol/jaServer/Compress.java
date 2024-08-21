@@ -2,7 +2,6 @@ package kr.jongyeol.jaServer;
 
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 
-import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 

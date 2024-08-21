@@ -82,7 +82,7 @@ public static class ByteTools {
         return (T) ToObject(bytes, typeof(T), start, declearing, includeClass, version);
     }
 
-    public static T ToObject<T>(this System.IO.Stream input, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static T ToObject<T>(this Stream input, bool declearing = false, bool includeClass = false, uint? version = null) {
         return (T) ToObject(input, typeof(T), declearing, includeClass, version);
     }
 
@@ -92,7 +92,7 @@ public static class ByteTools {
         return ToObject(input, type, declearing, includeClass, version);
     }
 
-    public static object ToObject(System.IO.Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static object ToObject(Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;
@@ -346,11 +346,11 @@ public static class ByteTools {
         buffer[start] = (byte) value;
     }
 
-    public static void ToBytes(this object value, System.IO.Stream output, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, Stream output, bool declearing = false, bool includeClass = false, uint? version = null) {
         ToBytes(value, output, value.GetType(), declearing, includeClass, version);
     }
 
-    public static void ToBytes(this object value, System.IO.Stream output, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, Stream output, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
         {
             VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
             if(ver != null) version = ver.Version;
