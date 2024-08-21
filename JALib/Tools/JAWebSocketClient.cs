@@ -133,11 +133,9 @@ public class JAWebSocketClient : IDisposable {
         CheckConnect();
         byte[] buffer = new byte[1024];
         MemoryStream stream = new();
-        int offset = 0;
         while(true) {
             WebSocketReceiveResult result = socket.ReceiveAsync(buffer, CancellationToken.None).Result;
-            stream.Write(buffer, offset, result.Count);
-            offset += result.Count;
+            stream.Write(buffer, 0, result.Count);
             if(result.EndOfMessage) break;
         }
         return stream;
