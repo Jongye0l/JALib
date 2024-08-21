@@ -82,7 +82,7 @@ public static class ByteTools {
         return (T) ToObject(bytes, typeof(T), start, declearing, includeClass, version);
     }
 
-    public static T ToObject<T>(this Stream input, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static T ToObject<T>(Stream input, bool declearing = false, bool includeClass = false, uint? version = null) {
         return (T) ToObject(input, typeof(T), declearing, includeClass, version);
     }
 

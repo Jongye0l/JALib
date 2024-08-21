@@ -91,11 +91,11 @@ public static class StreamTool {
         return Encoding.UTF8.GetString(ReadBytes(stream));
     }
 
-    public static object ToObject(this Stream stream, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static object ReadObject(this Stream stream, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
         return ByteTools.ToObject(stream, type, declearing, includeClass, version);
     }
 
-    public static T ToObject<T>(this Stream stream, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static T ReadObject<T>(this Stream stream, bool declearing = false, bool includeClass = false, uint? version = null) {
         return ByteTools.ToObject<T>(stream, declearing, includeClass, version);
     }
 
