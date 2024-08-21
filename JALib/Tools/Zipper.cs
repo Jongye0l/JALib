@@ -153,4 +153,51 @@ public static class Zipper {
         stream.CopyTo(gzipStream);
         return memoryStream;
     }
+
+    public static byte[] UnDeflate(byte[] deflateData) {
+        using MemoryStream deflateStream = new(deflateData);
+        return UnDeflate(deflateStream);
+    }
+
+    public static byte[] UnDeflate(System.IO.Stream stream) {
+        using DeflateStream deflateStream = new(stream, CompressionMode.Decompress);
+        using MemoryStream memoryStream = UnDeflateToMemoryStream(stream);
+        return memoryStream.ToArray();
+    }
+
+    public static MemoryStream UnDeflateToMemoryStream(byte[] deflateData) {
+        using MemoryStream deflateStream = new(deflateData);
+        return UnDeflateToMemoryStream(deflateStream);
+    }
+
+    public static MemoryStream UnDeflateToMemoryStream(System.IO.Stream stream) {
+        using DeflateStream deflateStream = new(stream, CompressionMode.Decompress);
+        MemoryStream memoryStream = new();
+        deflateStream.CopyTo(memoryStream);
+        return memoryStream;
+    }
+
+    public static byte[] Deflate(byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using MemoryStream memoryStream = DeflateToMemoryStream(data, compressionLevel);
+        return memoryStream.ToArray();
+    }
+
+    public static byte[] Deflate(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using MemoryStream memoryStream = DeflateToMemoryStream(stream, compressionLevel);
+        return memoryStream.ToArray();
+    }
+
+    public static MemoryStream DeflateToMemoryStream(byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        MemoryStream memoryStream = new();
+        using DeflateStream deflateStream = new(memoryStream, compressionLevel, true);
+        deflateStream.Write(data);
+        return memoryStream;
+    }
+
+    public static MemoryStream DeflateToMemoryStream(System.IO.Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        MemoryStream memoryStream = new();
+        using DeflateStream deflateStream = new(memoryStream, compressionLevel, true);
+        stream.CopyTo(deflateStream);
+        return memoryStream;
+    }
 }
