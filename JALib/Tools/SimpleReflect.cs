@@ -65,7 +65,7 @@ public static class SimpleReflect {
     public static void SetValue(this Type type, [NotNull] string name, object value, object o = null) => type.Field(name).SetValue(o, value);
 
     public static ConstructorInfo Constructor(this Type type) {
-        var constructors = type.GetConstructors(AccessTools.all);
+        ConstructorInfo[] constructors = type.GetConstructors(AccessTools.all);
         if(constructors.Length != 1) throw new Exception("Constructor count is not 1");
         return constructors[0];
     }

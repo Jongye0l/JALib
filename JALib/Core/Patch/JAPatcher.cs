@@ -125,6 +125,20 @@ public class JAPatcher : IDisposable {
         return AddPatch(@delegate.Method);
     }
 
+    public JAPatcher AddPatch(JAPatchAttribute patch) {
+        patchData.Add(patch);
+        return this;
+    }
+
+    public JAPatcher AddPatch(MethodInfo method, JAPatchAttribute patch) {
+        patch.Method = method;
+        return AddPatch(patch);
+    }
+
+    public JAPatcher AddPatch(Delegate @delegate, JAPatchAttribute patch) {
+        return AddPatch(@delegate.Method, patch);
+    }
+
     public void Dispose() {
         Unpatch();
         GC.SuppressFinalize(patchData);
