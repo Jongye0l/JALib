@@ -14,15 +14,18 @@ public class JAPatcher : IDisposable {
     private List<JAPatchAttribute> patchData;
     private JAMod mod;
     public event FailPatch OnFailPatch;
+    private bool patched;
 
     public delegate void FailPatch(string patchId);
 
     public JAPatcher(JAMod mod) {
         this.mod = mod;
-        patchData = new List<JAPatchAttribute>();
+        patchData = [];
     }
 
     public void Patch() {
+        if(patched) return;
+        patched = true;
         foreach(JAPatchAttribute attribute in patchData) {
             if(attribute.Patch != null) {
                 mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed : Already Patched");
@@ -95,6 +98,8 @@ public class JAPatcher : IDisposable {
     }
 
     public void Unpatch() {
+        if(!patched) return;
+        patched = false;
         foreach(JAPatchAttribute patchData in patchData.Where(patchData => patchData.Patch != null)) {
             JALib.Harmony.Unpatch(patchData.MethodBase, patchData.Patch);
             patchData.Patch = null;
@@ -102,6 +107,7 @@ public class JAPatcher : IDisposable {
     }
 
     public void Unpatch(string patchId) {
+        if(!patched) return;
         foreach(JAPatchAttribute patchData in patchData.Where(patchData => patchData.Patch != null && patchData.PatchId == patchId)) {
             JALib.Harmony.Unpatch(patchData.MethodBase, patchData.Patch);
             patchData.Patch = null;

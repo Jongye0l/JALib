@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using JALib.API.Packets;
+using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
 using UnityEngine;
@@ -12,6 +15,7 @@ namespace JALib.Core;
 
 public abstract class JAMod {
     private static Dictionary<string, JAMod> mods = new();
+    protected static ModuleBuilder ModuleBuilder;
     protected internal UnityModManager.ModEntry ModEntry { get; private set; }
     public UnityModManager.ModEntry.ModLogger Logger => ModEntry.Logger;
     public string Name { get; private set; }
@@ -284,4 +288,83 @@ public abstract class JAMod {
     public void LogException(Exception e) => Logger.LogException(e);
 
     public void SaveSetting() => ModSetting.Save();
+
+    internal void ForceReloadMod(Assembly newAssembly) {
+        Assembly oldAssembly = GetType().Assembly;
+        ModReloadCache cache = new(oldAssembly, newAssembly);
+        TypeBuilder typeBuilder = ModuleBuilder.DefineType($"JALib.ForceReload.{Name}.{JARandom.Instance.NextInt()}", TypeAttributes.Public);
+        FieldBuilder fieldBuilder = typeBuilder.DefineField("cache", typeof(ModReloadCache), FieldAttributes.Private | FieldAttributes.Static);
+        fieldBuilder.SetConstant(cache);
+        MethodInfo dataChangeMethod = typeof(ModReloadCache).Method("GetCachedObject", typeof(object));
+        foreach(Type type in oldAssembly.GetTypes()) {
+            try {
+                Type newType = newAssembly.GetType(type.FullName);
+                foreach(FieldInfo field in type.Fields()) {
+                    if(!field.IsStatic) continue;
+                    object oldValue = field.GetValue(null);
+                    try {
+                        newType.SetValue(field.Name, cache.GetCachedObject(oldValue));
+                    } catch (Exception e) {
+                        JALib.Instance.Log("Failed to reload field " + field.Name + " of type " + type.FullName);
+                        JALib.Instance.LogException(e);
+                    }
+                }
+                Dictionary<string, int> methodCount = new();
+                foreach(MethodInfo method in type.Methods()) {
+                    try {
+                        Type[] parameters = method.GetGenericArguments();
+                        for(int i = 0; i < parameters.Length; i++)
+                            if(parameters[i].Assembly == newAssembly) parameters[i] = newAssembly.GetType(parameters[i].FullName);
+                        MethodInfo newMethod = newType.Method(method.Name, method.GetGenericArguments());
+                        if(newMethod == null) return;
+                        int count = methodCount.GetValueOrDefault(method.Name);
+                        methodCount[method.Name] = count += 1;
+                        int c = method.GetGenericArguments().Length;
+                        int staticCount = -1;
+                        int returnCount = -1;
+                        if(!method.IsStatic) staticCount = c++;
+                        if(method.ReturnType != typeof(void)) returnCount = c++;
+                        Type[] types = new Type[c];
+                        for(int i = 0; i < method.GetGenericArguments().Length; i++) types[i] = method.GetGenericArguments()[i];
+                        if(!method.IsStatic) types[staticCount] = type;
+                        if(returnCount != -1) types[returnCount] = method.ReturnType.MakeByRefType();
+                        MethodBuilder methodBuilder = typeBuilder.DefineMethod($"{type.FullName}_{method.Name}_{count}_Patch",
+                            MethodAttributes.Public | MethodAttributes.Static, typeof(bool), types);
+                        foreach(ParameterInfo parameter in method.GetParameters()) methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.Name);
+                        if(!method.IsStatic) methodBuilder.DefineParameter(staticCount, ParameterAttributes.None, "__instance");
+                        if(returnCount != -1) methodBuilder.DefineParameter(returnCount, ParameterAttributes.None, "__result");
+                        ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+                        if(returnCount != -1) ilGenerator.Emit(OpCodes.Ldarg, returnCount);
+                        if(!method.IsStatic) ilGenerator.Emit(OpCodes.Ldarg, staticCount);
+                        for(int i = 0; i < method.GetParameters().Length; i++) {
+                            if(method.GetGenericArguments()[i].Assembly == newAssembly) {
+                                ilGenerator.Emit(OpCodes.Ldsfld, fieldBuilder);
+                                ilGenerator.Emit(OpCodes.Ldarg, i);
+                                if(method.GetGenericArguments()[i].IsValueType) ilGenerator.Emit(OpCodes.Box, method.GetGenericArguments()[i]);
+                                ilGenerator.Emit(OpCodes.Callvirt, dataChangeMethod);
+                                ilGenerator.Emit(method.GetGenericArguments()[i].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, newMethod.GetGenericArguments()[i]);
+                            } else ilGenerator.Emit(OpCodes.Ldarg, i);
+                        }
+                        ilGenerator.Emit(OpCodes.Callvirt, newMethod);
+                        ilGenerator.Emit(OpCodes.Stind_Ref);
+                        ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                        ilGenerator.Emit(OpCodes.Ret);
+                        CustomAttributeBuilder attributeBuilder = new(typeof(JAPatchAttribute).Constructor(typeof(MethodInfo), typeof(PatchType), typeof(bool)),
+                            [ method, PatchType.Prefix, false ]);
+                        methodBuilder.SetCustomAttribute(attributeBuilder);
+                    } catch (Exception e) {
+                        JALib.Instance.Log("Failed to reload method " + method.Name + " of type " + type.FullName);
+                        JALib.Instance.LogException(e);
+                    }
+                }
+            } catch (Exception e) {
+                Log("Failed to reload type " + type.FullName);
+                LogException(e);
+            }
+        }
+        Type patchType = typeBuilder.CreateType();
+        JAPatcher patcher = new(JALib.Instance);
+        patcher.AddPatch(patchType);
+        patcher.Patch();
+    }
 }

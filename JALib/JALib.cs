@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using HarmonyLib;
 using JALib.API;
@@ -18,7 +21,7 @@ namespace JALib;
 class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
-    private static JAPatcher patcher;
+    internal static JAPatcher Patcher;
     internal new JALibSetting Setting;
     private static Task<Type> loadTask;
     private static Dictionary<string, Task> loadTasks = new();
@@ -27,7 +30,7 @@ class JALib : JAMod {
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting)) {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
-        patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
+        Patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
         loadTask = LoadInfo();
     }
 
@@ -154,6 +157,10 @@ class JALib : JAMod {
         Log("Update is required. Updating the mod.");
         ModEntry.Info.DisplayName = Name + " <color=blue>[Updating...]</color>";
         await JApi.Send(new DownloadMod(Name, getModInfo.LatestVersion, ModEntry.Path));
+        Type accessCacheType = typeof(Traverse).Assembly.GetType("HarmonyLib.AccessCache");
+        object accessCache = typeof(Traverse).GetValue("Cache");
+        string[] fields = { "declaredFields", "declaredProperties", "declaredMethods", "inheritedFields", "inheritedProperties", "inheritedMethods" };
+        foreach (string field in fields) accessCacheType.GetValue<IDictionary>(field, accessCache).Clear();
         string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
         if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
         UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
@@ -171,12 +178,7 @@ class JALib : JAMod {
             ModEntry.SetValue("mActive", false);
             throw;
         }
-        try {
-            type.Invoke("OnToggle", null, true);
-        } catch (Exception e) {
-            LogException(e);
-            ModEntry.SetValue("mActive", false);
-        }
+        ForceReloadMod(type.Assembly);
         return type;
     }
 
@@ -185,12 +187,14 @@ class JALib : JAMod {
         JApi.Initialize();
         EnableInit();
         Harmony = new Harmony(ModEntry.Info.Id);
-        patcher.Patch();
+        Patcher.Patch();
+        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("JALib_CustomPatch"), AssemblyBuilderAccess.Run);
+        ModuleBuilder = assemblyBuilder.DefineDynamicModule("JALib_CustomPatch");
     }
 
     protected override void OnDisable() {
         Harmony.UnpatchAll(ModEntry.Info.Id);
-        patcher.Unpatch();
+        Patcher.Unpatch();
         DisableInit();
         JApi.Instance.Dispose();
         MainThread.Dispose();
@@ -198,8 +202,8 @@ class JALib : JAMod {
     }
 
     protected override void OnUnload() {
-        patcher.Dispose();
-        patcher = null;
+        Patcher.Dispose();
+        Patcher = null;
         loadTask = null;
         loadTasks.Clear();
         updateQueue.Clear();

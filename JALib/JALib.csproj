@@ -12,7 +12,7 @@
         <AssemblyName>JALib</AssemblyName>
         <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
-        <LangVersion>10</LangVersion>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -520,6 +520,7 @@
         <Compile Include="Core\Feature.cs" />
         <Compile Include="Core\JALocalization.cs" />
         <Compile Include="Core\JAMod.cs" />
+        <Compile Include="Core\ModReloadCache.cs" />
         <Compile Include="Core\Patch\JAPatchAttribute.cs" />
         <Compile Include="Core\Patch\JAPatcher.cs" />
         <Compile Include="Core\Patch\PatchType.cs" />
