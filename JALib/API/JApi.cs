@@ -60,7 +60,7 @@ class JApi {
     private async void Connect(string domain, PingTest pingTest) {
         try {
             long currentTime = DateTimeOffset.UtcNow.Ticks;
-            await _httpClient.GetAsync($"https://{domain}/ping");
+            (await _httpClient.GetAsync($"https://{domain}/ping")).EnsureSuccessStatusCode();
             int ping = (int) (DateTimeOffset.UtcNow.Ticks - currentTime);
             if(pingTest.ping == -1) {
                 pingTest.ping = ping;
