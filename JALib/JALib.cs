@@ -38,7 +38,7 @@ class JALib : JAMod {
         SetupModInfo(modInfo);
         Type type = await loadTask;
         if(type == null) loadTasks[modInfo.ModEntry.Info.Id] = SetupMod(modInfo);
-        else type.Invoke("SetupMod", modInfo);
+        else type.Invoke("SetupMod", null, modInfo);
     }
 
     private static void SetupModInfo(JAModInfo modInfo) {
@@ -93,7 +93,7 @@ class JALib : JAMod {
         }
         modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
         try {
-            typeof(JABootstrap).Invoke("LoadMod", new object[] { modInfo });
+            typeof(JABootstrap).Invoke("LoadMod", [modInfo]);
         } catch (Exception e) {
             modInfo.ModEntry.Logger.Log("Failed to Load JAMod " + modInfo.ModName);
             modInfo.ModEntry.Logger.LogException(e);
@@ -159,7 +159,7 @@ class JALib : JAMod {
         await JApi.Send(new DownloadMod(Name, getModInfo.LatestVersion, ModEntry.Path));
         Type accessCacheType = typeof(Traverse).Assembly.GetType("HarmonyLib.AccessCache");
         object accessCache = typeof(Traverse).GetValue("Cache");
-        string[] fields = { "declaredFields", "declaredProperties", "declaredMethods", "inheritedFields", "inheritedProperties", "inheritedMethods" };
+        string[] fields = ["declaredFields", "declaredProperties", "declaredMethods", "inheritedFields", "inheritedProperties", "inheritedMethods"];
         foreach (string field in fields) accessCacheType.GetValue<IDictionary>(field, accessCache).Clear();
         string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
         if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");

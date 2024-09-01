@@ -32,7 +32,7 @@ class JApi {
     private static bool _adofaiEnable;
     private bool _connectInfo;
     private readonly Dictionary<long, RequestPacket> _requests = new();
-    private static ConcurrentQueue<Request> _queue = new();
+    private static ConcurrentQueue<(Request, TaskCompletionSource<bool>)> _queue = new();
     private static Discord.Discord discord;
     private TaskCompletionSource<bool> completeLoadTask = new();
 
@@ -108,7 +108,7 @@ class JApi {
 
     internal static void Send(Request request) {
         if(!Connected) {
-            _queue.Enqueue(request);
+            _queue.Enqueue((request, null));
             return;
         }
         if(Thread.CurrentThread == MainThread.Thread) {
@@ -132,7 +132,10 @@ class JApi {
     }
 
     internal static Task Send<T>(T packet) where T : RequestAPI {
-        return Task.FromResult(packet.Run(_instance._httpClient, $"https://{_instance.domain}/"));
+        if(Connected) return Task.FromResult(packet.Run(_instance._httpClient, $"https://{_instance.domain}/"));
+        TaskCompletionSource<bool> taskCompletionSource = new();
+        _queue.Enqueue((packet, taskCompletionSource));
+        return taskCompletionSource.Task;
     }
 
     internal async Task<T> SendAsync<T>(T packet) where T : AsyncRequestPacket {
@@ -145,7 +148,15 @@ class JApi {
         completeLoadTask.TrySetResult(true);
         completeLoadTask = null;
         ConnectInfo();
-        while(_queue.TryDequeue(out Request request)) Send(request);
+        while(_queue.TryDequeue(out (Request, TaskCompletionSource<bool>) result)) {
+            if(result.Item1 is RequestAPI requestAPI) {
+                TaskCompletionSource<bool> item2 = result.Item2;
+                Task.Run(async () => {
+                    await requestAPI.Run(_httpClient, $"https://{domain}/");
+                    item2.TrySetResult(true);
+                });
+            } else Send(result.Item1);
+        }
     }
 
     private void ConnectInfo() {
