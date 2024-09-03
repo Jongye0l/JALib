@@ -104,14 +104,17 @@ public abstract class Feature {
 
     internal void OnGUI0() {
         GUILayout.BeginHorizontal();
-        bool expanded = GUILayout.Toggle(_expanded, Enabled && _canExpand ? _expanded ? "◢" : "▶" : "", _expandStyle);
-        bool enabled;
-        if(!CanEnable) {
-            enabled = Enabled;
-            GUILayout.Label(Name, _enableStyle);
-        } else enabled = GUILayout.Toggle(Enabled, Name, _enableStyle);
-        GUILayout.FlexibleSpace();
-        GUILayout.EndHorizontal();
+        bool enabled, expanded;
+        try {
+            expanded = GUILayout.Toggle(_expanded, Enabled && _canExpand ? _expanded ? "◢" : "▶" : "", _expandStyle);
+            if(!CanEnable) {
+                enabled = Enabled;
+                GUILayout.Label(Name, _enableStyle);
+            } else enabled = GUILayout.Toggle(Enabled, Name, _enableStyle);
+        } finally {
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
         if(enabled != Enabled) {
             Enabled = enabled;
             if(enabled) expanded = true;
