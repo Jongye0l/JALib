@@ -7,6 +7,19 @@ using UnityEngine;
 namespace JALib.Core;
 
 public abstract class Feature {
+
+    private static GUIStyle _expandStyle = new() {
+        fixedWidth = 10f,
+        normal = new GUIStyleState { textColor = Color.white },
+        fontSize = 15,
+        margin = new RectOffset(4, 2, 6, 6)
+    };
+
+    private static GUIStyle _enableStyle = new(GUI.skin.toggle) {
+        fontStyle = FontStyle.Normal,
+        margin = new RectOffset(0, 4, 4, 4)
+    };
+
     public bool Enabled {
         get => FeatureSetting.Enabled;
         protected set {
@@ -91,21 +104,12 @@ public abstract class Feature {
 
     internal void OnGUI0() {
         GUILayout.BeginHorizontal();
-        bool expanded = GUILayout.Toggle(_expanded, Enabled && _canExpand ? _expanded ? "◢" : "▶" : "", new GUIStyle {
-            fixedWidth = 10f,
-            normal = new GUIStyleState { textColor = Color.white },
-            fontSize = 15,
-            margin = new RectOffset(4, 2, 6, 6)
-        });
-        GUIStyle guiStyle = new(GUI.skin.toggle) {
-            fontStyle = FontStyle.Normal,
-            margin = new RectOffset(0, 4, 4, 4)
-        };
+        bool expanded = GUILayout.Toggle(_expanded, Enabled && _canExpand ? _expanded ? "◢" : "▶" : "", _expandStyle);
         bool enabled;
         if(!CanEnable) {
             enabled = Enabled;
-            GUILayout.Label(Name, guiStyle);
-        } else enabled = GUILayout.Toggle(Enabled, Name, guiStyle);
+            GUILayout.Label(Name, _enableStyle);
+        } else enabled = GUILayout.Toggle(Enabled, Name, _enableStyle);
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
         if(enabled != Enabled) {
