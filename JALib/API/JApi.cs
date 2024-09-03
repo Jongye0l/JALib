@@ -62,6 +62,7 @@ class JApi {
             long currentTime = DateTimeOffset.UtcNow.Ticks;
             (await _httpClient.GetAsync($"https://{domain}/ping")).EnsureSuccessStatusCode();
             int ping = (int) (DateTimeOffset.UtcNow.Ticks - currentTime);
+            JALib.Instance.Log("Ping to the server: " + domain + " " + ping + "ms");
             if(pingTest.ping == -1) {
                 pingTest.ping = ping;
                 if(!pingTest.otherError) await Task.Delay(Math.Min(ping + 10, 300));
