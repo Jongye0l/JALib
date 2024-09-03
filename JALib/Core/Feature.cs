@@ -8,17 +8,8 @@ namespace JALib.Core;
 
 public abstract class Feature {
 
-    private static GUIStyle _expandStyle = new() {
-        fixedWidth = 10f,
-        normal = new GUIStyleState { textColor = Color.white },
-        fontSize = 15,
-        margin = new RectOffset(4, 2, 6, 6)
-    };
-
-    private static GUIStyle _enableStyle = new(GUI.skin.toggle) {
-        fontStyle = FontStyle.Normal,
-        margin = new RectOffset(0, 4, 4, 4)
-    };
+    private static GUIStyle _expandStyle;
+    private static GUIStyle _enableStyle;
 
     public bool Enabled {
         get => FeatureSetting.Enabled;
@@ -103,6 +94,16 @@ public abstract class Feature {
     }
 
     internal void OnGUI0() {
+        _expandStyle ??= new GUIStyle {
+            fixedWidth = 10f,
+            normal = new GUIStyleState { textColor = Color.white },
+            fontSize = 15,
+            margin = new RectOffset(4, 2, 6, 6)
+        };
+        _enableStyle ??= new GUIStyle(GUI.skin.toggle) {
+            fontStyle = FontStyle.Normal,
+            margin = new RectOffset(0, 4, 4, 4)
+        };
         GUILayout.BeginHorizontal();
         bool enabled, expanded;
         try {
