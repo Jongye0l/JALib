@@ -2,6 +2,7 @@ package kr.jongyeol.jaServer.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import kr.jongyeol.jaServer.Compress;
 import kr.jongyeol.jaServer.Connection;
 import kr.jongyeol.jaServer.data.*;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
@@ -18,7 +19,7 @@ public class AdminController extends CustomController {
     public String addModData(HttpServletResponse response, HttpServletRequest request,
                              @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
         String name = input.readUTF();
         info(request, "Add ModData: " + name);
         ModData modData = ModData.createMod(name, input);
@@ -30,7 +31,7 @@ public class AdminController extends CustomController {
     public String changeModData(HttpServletResponse response, HttpServletRequest request,
                                 @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
         ModData modData = ModData.getModData(input.readUTF());
         switch(input.readByte()) {
             case 0 -> {
@@ -115,14 +116,14 @@ public class AdminController extends CustomController {
             modData.getDownloadLink().write(output);
             output.writeInt(modData.getGid());
         }
-        return output.toByteArray();
+        return Compress.compress(output.toByteArray());
     }
 
     @PutMapping("/requestMods")
     public String addRequestMods(HttpServletResponse response, HttpServletRequest request,
                                  @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
         long discordID = input.readLong();
         DiscordUserData userData = DiscordUserData.getUserData(discordID);
         RawMod mod = new RawMod(ModData.getModData(input.readUTF()), new Version(input.readUTF()));
@@ -136,7 +137,7 @@ public class AdminController extends CustomController {
     public String removeRequestMods(HttpServletResponse response, HttpServletRequest request,
                                     @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
         long discordID = input.readLong();
         DiscordUserData userData = DiscordUserData.getUserData(discordID);
         if(input.readBoolean()) {
@@ -154,7 +155,7 @@ public class AdminController extends CustomController {
     public String changeRequestMods(HttpServletResponse response, HttpServletRequest request,
                                  @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(data);
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
         long discordID = input.readLong();
         DiscordUserData userData = DiscordUserData.getUserData(discordID);
         int i = input.readInt();
@@ -180,6 +181,6 @@ public class AdminController extends CustomController {
                 output.writeUTF(mod.version.toString());
             }
         }
-        return output.toByteArray();
+        return Compress.compress(output.toByteArray());
     }
 }
