@@ -19,7 +19,7 @@ public class TokenData {
         List<String> oldTokens = tokens;
         try {
             tokens = new ArrayList<>();
-            Path path = Path.of(Settings.instance.tokenPath);
+            Path path = Path.of(Settings.getInstance().getTokenPath());
             String data = Files.readString(path);
             Collections.addAll(tokens, data.split("\n"));
             if(autoRemovedData == null) {

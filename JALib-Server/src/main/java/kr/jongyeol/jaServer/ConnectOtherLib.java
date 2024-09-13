@@ -25,7 +25,7 @@ public class ConnectOtherLib {
             if(modData.getHomepage() != null) output.writeUTF(modData.getHomepage());
             modData.getDownloadLink().write(output);
             output.writeInt(modData.getGid());
-            restTemplate.put(Settings.instance.otherLibURL + "admin/modData", output.toByteArray());
+            restTemplate.put(Settings.getInstance().getOtherLibURL() + "admin/modData", output.toByteArray());
         } catch (Exception e) {
             logger.error(e);
         }
@@ -178,7 +178,7 @@ public class ConnectOtherLib {
 
     private static void changeModData(byte[] data) {
         try {
-            restTemplate.patchForObject(Settings.instance.otherLibURL + "admin/modData", data, String.class);
+            restTemplate.patchForObject(Settings.getInstance().getOtherLibURL() + "admin/modData", data, String.class);
         } catch (Exception e) {
             logger.error(e);
         }
@@ -186,7 +186,7 @@ public class ConnectOtherLib {
 
     public static void setupModData() {
         try {
-            byte[] data = restTemplate.getForEntity(Settings.instance.otherLibURL + "admin/modData", byte[].class).getBody();
+            byte[] data = restTemplate.getForEntity(Settings.getInstance().getOtherLibURL() + "admin/modData", byte[].class).getBody();
             ByteArrayDataInput input = new ByteArrayDataInput(data);
             int length = input.readInt();
             for(int i = 0; i < length; i++) ModData.createMod(input.readUTF(), input);
@@ -201,7 +201,7 @@ public class ConnectOtherLib {
             output.writeLong(discordId);
             output.writeUTF(rawMod.mod.getName());
             output.writeUTF(rawMod.version.toString());
-            restTemplate.put(Settings.instance.otherLibURL + "admin/requestMods", output.toByteArray());
+            restTemplate.put(Settings.getInstance().getOtherLibURL() + "admin/requestMods", output.toByteArray());
         } catch (Exception e) {
             logger.error(e);
         }
@@ -232,7 +232,7 @@ public class ConnectOtherLib {
 
     private static void removeRequestMods(byte[] data) {
         try {
-            restTemplate.execute(Settings.instance.otherLibURL + "admin/requestMods", HttpMethod.DELETE,
+            restTemplate.execute(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.DELETE,
                 restTemplate.httpEntityCallback(data), null);
         } catch (Exception e) {
             logger.error(e);
@@ -246,7 +246,7 @@ public class ConnectOtherLib {
             output.writeInt(i);
             output.writeUTF(rawMod.mod.getName());
             output.writeUTF(rawMod.version.toString());
-            restTemplate.patchForObject(Settings.instance.otherLibURL + "admin/requestMods", output.toByteArray(), String.class);
+            restTemplate.patchForObject(Settings.getInstance().getOtherLibURL() + "admin/requestMods", output.toByteArray(), String.class);
         } catch (Exception e) {
             logger.error(e);
         }
@@ -254,7 +254,7 @@ public class ConnectOtherLib {
 
     public static void loadModRequest() {
         try {
-            byte[] data = restTemplate.getForEntity(Settings.instance.otherLibURL + "admin/requestMods", byte[].class).getBody();
+            byte[] data = restTemplate.getForEntity(Settings.getInstance().getOtherLibURL() + "admin/requestMods", byte[].class).getBody();
             ByteArrayDataInput input = new ByteArrayDataInput(data);
             for(DiscordUserData userData : DiscordUserData.getUserData()) {
                 userData.resetRequestMods();

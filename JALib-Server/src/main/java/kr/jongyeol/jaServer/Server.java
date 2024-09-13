@@ -30,6 +30,10 @@ public class Server {
                 e.printStackTrace();
             }
         }
+        if(urls.isEmpty()) {
+            loaded = true;
+            return;
+        }
         URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[0]), Server.class.getClassLoader());
         loader.loadClass("kr.jongyeol.jaServer.Boot").getMethod("run", String[].class).invoke(null, (Object) args);
         loaded = true;

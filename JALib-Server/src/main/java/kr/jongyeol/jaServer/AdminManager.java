@@ -21,7 +21,7 @@ public class AdminManager {
         }
         requestPackets.clear();
         requestPackets = null;
-        Files.delete(Path.of(Settings.instance.adminManagerPath));
+        Files.delete(Path.of(Settings.getInstance().getAdminManagerPath()));
     }
 
     public static void sendPacket(RequestPacket packet) {

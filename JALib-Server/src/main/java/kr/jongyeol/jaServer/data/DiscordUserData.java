@@ -23,7 +23,7 @@ public class DiscordUserData {
             autoRemovedData.use();
             return;
         }
-        userDataMap = Variables.gson.fromJson(Files.readString(Path.of(Settings.instance.discordUserDataPath)), new TypeToken<Map<Long, DiscordUserData>>() {}.getType());
+        userDataMap = Variables.gson.fromJson(Files.readString(Path.of(Settings.getInstance().getDiscordUserDataPath())), new TypeToken<Map<Long, DiscordUserData>>() {}.getType());
         autoRemovedData = new AutoRemovedData() {
             @Override
             public void onRemove() {
@@ -50,7 +50,7 @@ public class DiscordUserData {
     private final transient Object requestLocker = new Object();
 
     public static void save() throws IOException {
-        Files.writeString(Path.of(Settings.instance.discordUserDataPath), Variables.gson.toJson(userDataMap));
+        Files.writeString(Path.of(Settings.getInstance().getDiscordUserDataPath()), Variables.gson.toJson(userDataMap));
     }
 
     public static DiscordUserData getUserData(long id) {

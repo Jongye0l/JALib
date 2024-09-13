@@ -74,7 +74,7 @@ public class JALibController extends CustomController {
     public ResponseEntity<?> downloadMod(HttpServletRequest request, @PathVariable String name, @PathVariable String version) {
         try {
             info(request, "DownloadMod: " + name + " " + version);
-            File modFile = Path.of(Settings.instance.modFilePath, name, version).toFile();
+            File modFile = Path.of(Settings.getInstance().getModFilePath(), name, version).toFile();
             if(modFile.exists()) {
                 FileSystemResource resource = new FileSystemResource(modFile);
                 HttpHeaders headers = new HttpHeaders();

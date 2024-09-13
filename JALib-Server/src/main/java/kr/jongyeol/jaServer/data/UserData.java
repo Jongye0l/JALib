@@ -23,7 +23,7 @@ public class UserData {
             autoRemovedData.use();
             return;
         }
-        userDataMap = Variables.gson.fromJson(Files.readString(Path.of(Settings.instance.userDataPath)), new TypeToken<Map<Long, List<Long>>>(){}.getType());
+        userDataMap = Variables.gson.fromJson(Files.readString(Path.of(Settings.getInstance().getUserDataPath())), new TypeToken<Map<Long, List<Long>>>(){}.getType());
         autoRemovedData = new AutoRemovedData() {
             @Override
             public void onRemove() {
@@ -40,7 +40,7 @@ public class UserData {
     }
 
     public static void save() throws IOException {
-        Files.writeString(Path.of(Settings.instance.userDataPath), Variables.gson.toJson(userDataMap));
+        Files.writeString(Path.of(Settings.getInstance().getUserDataPath()), Variables.gson.toJson(userDataMap));
     }
 
     public static List<Long> getUserData(long id) {

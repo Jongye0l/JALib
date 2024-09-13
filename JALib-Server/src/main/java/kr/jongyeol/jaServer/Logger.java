@@ -26,7 +26,7 @@ public class Logger {
     private static final Map<String, Logger> loggerMap = new HashMap<>();
 
     static {
-        logFolder = new File(Settings.instance.logPath);
+        logFolder = new File(Settings.getInstance().getLogPath());
         if(!logFolder.exists()) logFolder.mkdir();
         MAIN_LOGGER = new Logger("Main");
     }

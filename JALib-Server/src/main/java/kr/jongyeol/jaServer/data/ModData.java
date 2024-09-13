@@ -50,9 +50,9 @@ public class ModData extends AutoRemovedData {
             modData.use();
             return modData;
         }
-        Path path = Path.of(Settings.instance.modDataPath, name);
+        Path path = Path.of(Settings.getInstance().getModDataPath(), name);
         if(!Files.exists(path)) {
-            path = Path.of(Settings.instance.modDataPath, name + ".old");
+            path = Path.of(Settings.getInstance().getModDataPath(), name + ".old");
             if(!Files.exists(path)) return null;
         }
         return Variables.gson.fromJson(Files.readString(path), clazz);
@@ -82,7 +82,7 @@ public class ModData extends AutoRemovedData {
 
     @SneakyThrows(IOException.class)
     public static ModData[] getModDataList() {
-        File folder = new File(Settings.instance.modDataPath);
+        File folder = new File(Settings.getInstance().getModDataPath());
         for(File file : folder.listFiles()) {
             Path path = file.toPath();
             Path realPath = path.endsWith(".old") ? Path.of(path.toString().replace(".old", "")) : path;
@@ -95,11 +95,12 @@ public class ModData extends AutoRemovedData {
 
     public void save() throws IOException {
         use();
-        Path path = Path.of(Settings.instance.modDataPath, name);
+        String modDataPath = Settings.getInstance().getModDataPath();
+        Path path = Path.of(modDataPath, name);
         boolean exists = Files.exists(path);
         Path copyPath = null;
         if(exists) {
-            copyPath = Path.of(Settings.instance.modDataPath, name + ".old");
+            copyPath = Path.of(modDataPath, name + ".old");
             Files.move(path, copyPath);
         }
         String json = Variables.gson.toJson(this);
