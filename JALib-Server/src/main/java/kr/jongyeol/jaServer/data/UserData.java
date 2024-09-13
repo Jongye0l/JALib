@@ -1,8 +1,10 @@
 package kr.jongyeol.jaServer.data;
 
 import com.google.gson.reflect.TypeToken;
+import kr.jongyeol.jaServer.Logger;
 import kr.jongyeol.jaServer.Settings;
 import kr.jongyeol.jaServer.Variables;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,13 +15,28 @@ import java.util.Map;
 
 public class UserData {
     private static Map<Long, List<Long>> userDataMap;
+    private static AutoRemovedData autoRemovedData;
 
-    static {
-        try {
-            userDataMap = Variables.gson.fromJson(Files.readString(Path.of(Settings.instance.userDataPath)), new TypeToken<Map<Long, List<Long>>>(){}.getType());
-        } catch (IOException e) {
-            e.printStackTrace();
+    @SneakyThrows(IOException.class)
+    public static void checkLoad() {
+        if(userDataMap != null) {
+            autoRemovedData.use();
+            return;
         }
+        userDataMap = Variables.gson.fromJson(Files.readString(Path.of(Settings.instance.userDataPath)), new TypeToken<Map<Long, List<Long>>>(){}.getType());
+        autoRemovedData = new AutoRemovedData() {
+            @Override
+            public void onRemove() {
+                try {
+                    save();
+                    Variables.setNull(userDataMap);
+                    userDataMap = null;
+                    autoRemovedData = null;
+                } catch (IOException e) {
+                    Logger.MAIN_LOGGER.error(e);
+                }
+            }
+        };
     }
 
     public static void save() throws IOException {
@@ -27,10 +44,12 @@ public class UserData {
     }
 
     public static List<Long> getUserData(long id) {
+        checkLoad();
         return userDataMap.get(id);
     }
 
     public static void addDiscordID(long steamID, long discordID) throws IOException {
+        checkLoad();
         List<Long> list = userDataMap.computeIfAbsent(steamID, k -> new ArrayList<>());
         if(!list.contains(discordID)) list.add(discordID);
         save();
@@ -38,6 +57,7 @@ public class UserData {
     }
 
     public static void removeDiscordID(long steamID, long discordID) throws IOException {
+        checkLoad();
         List<Long> list = userDataMap.get(steamID);
         if(list != null) {
             list.remove(discordID);

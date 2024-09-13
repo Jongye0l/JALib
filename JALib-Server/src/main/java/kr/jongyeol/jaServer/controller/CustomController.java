@@ -12,7 +12,7 @@ public class CustomController {
     }
 
     protected boolean checkPermission(HttpServletResponse response, String token) {
-        if(token == null || !TokenData.tokens.contains(token)) {
+        if(token == null || !TokenData.getTokens().contains(token)) {
             response.setStatus(403);
             return true;
         }

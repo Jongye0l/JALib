@@ -20,10 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@EqualsAndHashCode(callSuper = false)
 @Data
-public class ModData {
-    private static List<ModData> modDataList = new ArrayList<>();
-    public static Class<? extends ModData> clazz;
+public class ModData extends AutoRemovedData {
+    private static Map<String, ModData> modDataList = new HashMap<>();
+    public static Class<? extends ModData> clazz = ModData.class;
     private String name;
     private Version version;
     private Version betaVersion;
@@ -35,26 +36,26 @@ public class ModData {
     private DownloadLink downloadLink;
     private int gid;
     private Map<String, Map<Language, String>> localizations = new HashMap<>();
-    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private final transient Object forceUpdateLocker = new Object();
 
     public ModData() {
-        modDataList.add(this);
+        modDataList.put(name, this);
     }
 
+    @SneakyThrows(IOException.class)
     public static ModData getModData(String name) {
-        for(ModData modData : modDataList) if(modData.getName().equals(name)) return modData;
-        return null;
-    }
-
-    public static void LoadModData(Class<? extends ModData> cl) throws IOException {
-        clazz = cl;
-        File folder = new File(Settings.instance.modDataPath);
-        for(File file : folder.listFiles()) {
-            Path path = file.toPath();
-            if(path.endsWith(".old") && Files.exists(Path.of(path.toString().replace(".old", "")))) continue;
-            Variables.gson.fromJson(Files.readString(path), cl);
+        if(modDataList.containsKey(name)) {
+            ModData modData = modDataList.get(name);
+            modData.use();
+            return modData;
         }
+        Path path = Path.of(Settings.instance.modDataPath, name);
+        if(!Files.exists(path)) {
+            path = Path.of(Settings.instance.modDataPath, name + ".old");
+            if(!Files.exists(path)) return null;
+        }
+        return Variables.gson.fromJson(Files.readString(path), clazz);
     }
 
     public static ModData createMod() throws Exception {
@@ -64,25 +65,36 @@ public class ModData {
     public static ModData createMod(String name, ByteArrayDataInput input) throws Exception {
         ModData modData = ModData.getModData(name);
         if(modData == null) modData = ModData.createMod();
-        modData.setName(name);
-        modData.setVersion(new Version(input.readUTF()));
-        modData.setBetaVersion(new Version(input.readUTF()));
-        modData.setForceUpdate(input.readBoolean());
+        modData.name = name;
+        modData.version = new Version(input.readUTF());
+        modData.betaVersion = new Version(input.readUTF());
+        modData.forceUpdate = input.readBoolean();
         ForceUpdateHandle[] handles = new ForceUpdateHandle[input.readInt()];
         for(int j = 0; j < handles.length; j++) handles[j] = new ForceUpdateHandle(input);
-        modData.setForceUpdateHandles(handles);
-        modData.setHomepage(input.readUTF());
-        modData.setDiscord(input.readUTF());
-        modData.setDownloadLink(DownloadLink.createDownloadLink(modData, input));
-        modData.setGid(input.readInt());
+        modData.forceUpdateHandles = handles;
+        modData.homepage = input.readUTF();
+        modData.discord = input.readUTF();
+        modData.downloadLink = DownloadLink.createDownloadLink(modData, input);
+        modData.gid = input.readInt();
+        modData.save();
         return modData;
     }
 
+    @SneakyThrows(IOException.class)
     public static ModData[] getModDataList() {
-        return modDataList.toArray(new ModData[0]);
+        File folder = new File(Settings.instance.modDataPath);
+        for(File file : folder.listFiles()) {
+            Path path = file.toPath();
+            Path realPath = path.endsWith(".old") ? Path.of(path.toString().replace(".old", "")) : path;
+            if(path != realPath && Files.exists(realPath)) continue;
+            if(modDataList.containsKey(realPath.getFileName().toString())) continue;
+            Variables.gson.fromJson(Files.readString(path), clazz);
+        }
+        return modDataList.values().toArray(new ModData[0]);
     }
 
     public void save() throws IOException {
+        use();
         Path path = Path.of(Settings.instance.modDataPath, name);
         boolean exists = Files.exists(path);
         Path copyPath = null;
@@ -145,6 +157,7 @@ public class ModData {
     }
 
     public boolean checkForceUpdate(Version version) {
+        use();
         synchronized(forceUpdateLocker) {
             for(ForceUpdateHandle handle : forceUpdateHandles)
                 if(!version.isUpper(handle.version1) && !handle.version2.isUpper(version)) return handle.forceUpdate;
@@ -163,6 +176,7 @@ public class ModData {
     }
 
     public void loadLocalizations() throws IOException {
+        use();
         URL url = new URL("https://docs.google.com/spreadsheets/d/1kx12GMqK9lgpiZimBSAMdj51xY4IuQUSLXzmQFZ6Sk4/gviz/tq?tqx=out:json&tq&gid=" + gid);
         @Cleanup InputStream stream = url.openStream();
         String json = new String(stream.readAllBytes());
@@ -202,5 +216,60 @@ public class ModData {
     public void setDiscord(String discord) throws IOException {
         this.discord = discord;
         save();
+    }
+
+    public void setDownloadLink(DownloadLink downloadLink) throws IOException {
+        this.downloadLink = downloadLink;
+        save();
+    }
+
+    @Override
+    public void onRemove() {
+        modDataList.remove(name, this);
+    }
+
+    public String getName() {
+        use();
+        return name;
+    }
+
+    public Version getVersion() {
+        use();
+        return version;
+    }
+
+    public Version getBetaVersion() {
+        use();
+        return betaVersion;
+    }
+
+    public Language[] getAvailableLanguages() {
+        use();
+        return availableLanguages;
+    }
+
+    public String getHomepage() {
+        use();
+        return homepage;
+    }
+
+    public String getDiscord() {
+        use();
+        return discord;
+    }
+
+    public DownloadLink getDownloadLink() {
+        use();
+        return downloadLink;
+    }
+
+    public int getGid() {
+        use();
+        return gid;
+    }
+
+    public Map<String, Map<Language, String>> getLocalizations() {
+        use();
+        return localizations;
     }
 }
