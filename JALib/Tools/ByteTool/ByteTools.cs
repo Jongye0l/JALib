@@ -117,14 +117,12 @@ public static class ByteTools {
     }
 
     public static object ToObject(Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
-        {
-            VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
-            if(ver != null) version = ver.Version;
-            IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
-            DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
-            if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
-            if(declear != null && declear.CheckCondition(version)) declearing = true;
-        }
+        VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
+        if(ver != null && version == null) version = ver.Version;
+        IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
+        DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
+        if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
+        if(declear != null && declear.CheckCondition(version)) declearing = true;
         if(includeClass) type = Type.GetType(input.ReadUTF());
         if(CheckType(type, typeof(ICollection<>)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             int size = input.ReadInt();

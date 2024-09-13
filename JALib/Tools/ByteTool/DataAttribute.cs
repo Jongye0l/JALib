@@ -8,6 +8,6 @@ public abstract class DataAttribute : Attribute {
     public Func<uint?, bool> Condition;
 
     public bool CheckCondition(uint? version) {
-        return (version == null || version < MinimumVersion || version > MaximumVersion) && (Condition == null || Condition(version));
+        return !(version < MinimumVersion || version > MaximumVersion) && (Condition == null || Condition(version));
     }
 }
