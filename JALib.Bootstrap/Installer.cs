@@ -11,11 +11,11 @@ using UnityModManagerNet;
 
 namespace JALib.Bootstrap;
 
-public class Installer {
+class Installer {
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
 
-    public static async Task CheckMod(UnityModManager.ModEntry modEntry) {
+    internal static async Task CheckMod(UnityModManager.ModEntry modEntry) {
         string modName = modEntry.Info.DisplayName;
         try {
             using HttpClient client = new();
