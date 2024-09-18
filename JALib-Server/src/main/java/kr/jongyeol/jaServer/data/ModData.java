@@ -15,10 +15,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @EqualsAndHashCode(callSuper = false)
 @Data
@@ -80,17 +77,39 @@ public class ModData extends AutoRemovedData {
         return modData;
     }
 
-    @SneakyThrows(IOException.class)
     public static ModData[] getModDataList() {
+        List<String> getModNames = getModNames();
+        ModData[] modData = new ModData[getModNames.size()];
+        for(int i = 0; i < getModNames.size(); i++) modData[i] = getModData(getModNames.get(i));
+        return modData;
+    }
+
+    public static List<String> getModNames() {
+        List<String> names = new ArrayList<>();
         File folder = new File(Settings.getInstance().getModDataPath());
         for(File file : folder.listFiles()) {
-            Path path = file.toPath();
-            Path realPath = path.endsWith(".old") ? Path.of(path.toString().replace(".old", "")) : path;
-            if(path != realPath && Files.exists(realPath)) continue;
-            if(modDataList.containsKey(realPath.getFileName().toString())) continue;
-            Variables.gson.fromJson(Files.readString(path), clazz);
+            String name = file.getName();
+            if(name.endsWith(".old")) name = name.substring(0, name.length() - 4);
+            if(!names.contains(name)) names.add(name);
         }
-        return modDataList.values().toArray(new ModData[0]);
+        return names;
+    }
+
+    public static Enumeration<ModData> getMods() {
+        List<String> getModNames = getModNames();
+        return new Enumeration<>() {
+            int i = 0;
+
+            @Override
+            public boolean hasMoreElements() {
+                return i < getModNames.size();
+            }
+
+            @Override
+            public ModData nextElement() {
+                return getModData(getModNames.get(i++));
+            }
+        };
     }
 
     public void save() throws IOException {
