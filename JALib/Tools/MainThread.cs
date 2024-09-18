@@ -22,6 +22,7 @@ public static class MainThread {
     internal static void Dispose() {
         Thread = null;
         GC.SuppressFinalize(queue);
+        if(!staticCoroutine) return;
         staticCoroutine.StopAllCoroutines();
         Object.Destroy(staticCoroutine.gameObject);
         GC.SuppressFinalize(staticCoroutine.gameObject);
