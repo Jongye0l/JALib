@@ -8,8 +8,8 @@
         <ProjectGuid>{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}</ProjectGuid>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>JALib_Bootstrap</RootNamespace>
-        <AssemblyName>JALib_Bootstrap</AssemblyName>
+        <RootNamespace>JALib.Bootstrap</RootNamespace>
+        <AssemblyName>JALib.Bootstrap</AssemblyName>
         <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <LangVersion>latest</LangVersion>
@@ -43,8 +43,8 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="Bootstrap\JABootstrap.cs" />
-        <Compile Include="Bootstrap\JAModInfo.cs" />
+        <Compile Include="JABootstrap.cs" />
+        <Compile Include="JAModInfo.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
@@ -57,7 +57,7 @@
     -->
 
     <Target Name="AfterBuild">
-        <Copy SourceFiles="bin/Debug/JALib_Bootstrap.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
+        <Copy SourceFiles="bin/Debug/JALib.Bootstrap.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
     </Target>
 
 </Project>

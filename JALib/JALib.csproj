@@ -565,9 +565,9 @@
       <None Include="packages.config" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\JALib-Bootstrap\JALib-Bootstrap.csproj">
+      <ProjectReference Include="..\JALib.Bootstrap\JALib.Bootstrap.csproj">
         <Project>{c34f6cfe-9c98-4e36-91fd-3fb94c1e6443}</Project>
-        <Name>JALib-Bootstrap</Name>
+        <Name>JALib.Bootstrap</Name>
       </ProjectReference>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>

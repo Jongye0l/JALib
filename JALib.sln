@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib", "JALib\JALib.csproj", "{A0C21116-20D4-4097-9486-3A5774671E00}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib-Bootstrap", "JALib-Bootstrap\JALib-Bootstrap.csproj", "{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib.Bootstrap", "JALib.Bootstrap\JALib.Bootstrap.csproj", "{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
