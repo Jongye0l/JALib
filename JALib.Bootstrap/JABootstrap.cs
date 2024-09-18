@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using TinyJson;
 using UnityModManagerNet;
 
@@ -10,8 +11,11 @@ public class JABootstrap {
     public const int BootstrapVersion = 0;
     private static AppDomain domain;
     private static MethodInfo LoadJAMod;
-    private static void Setup(UnityModManager.ModEntry modEntry) {
+    private static Task _task;
+    private static async void Setup(UnityModManager.ModEntry modEntry) {
         domain ??= AppDomain.CurrentDomain;
+        _task = Installer.CheckMod(modEntry);
+        await _task;
         SetupJALib(modEntry);
     }
 
@@ -49,7 +53,8 @@ public class JABootstrap {
         return modType;
     }
 
-    public static void Load(UnityModManager.ModEntry modEntry) {
+    public static async void Load(UnityModManager.ModEntry modEntry) {
+        await _task;
         JAModInfo modInfo = LoadModInfo(modEntry);
         LoadJAMod.Invoke(null, [modInfo]);
     }

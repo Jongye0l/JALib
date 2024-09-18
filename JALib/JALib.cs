@@ -66,7 +66,6 @@ class JALib : JAMod {
                 if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
                 UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
                 modInfo.ModEntry.SetValue("Info", info);
-                modInfo.ModEntry.Info.DisplayName = modInfo.ModName;
                 modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modInfo.ModEntry);
                 SetupModInfo(modInfo);
             }
