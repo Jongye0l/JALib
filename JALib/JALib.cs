@@ -32,6 +32,7 @@ class JALib : JAMod {
         Setting = (JALibSetting) base.Setting;
         Patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
         loadTask = LoadInfo();
+        OnEnable();
     }
 
     private static async void LoadModInfo(JAModInfo modInfo) {
