@@ -292,6 +292,10 @@ public abstract class JAMod {
     internal void ForceReloadMod(Assembly newAssembly) {
         Assembly oldAssembly = GetType().Assembly;
         ModReloadCache cache = new(oldAssembly, newAssembly);
+        if(ModuleBuilder == null) {
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("JALib.CustomPatch"), AssemblyBuilderAccess.Run);
+            ModuleBuilder = assemblyBuilder.DefineDynamicModule("JALib.CustomPatch");
+        }
         TypeBuilder typeBuilder = ModuleBuilder.DefineType($"JALib.ForceReload.{Name}.{JARandom.Instance.NextInt()}", TypeAttributes.Public);
         FieldBuilder fieldBuilder = typeBuilder.DefineField("cache", typeof(ModReloadCache), FieldAttributes.Private | FieldAttributes.Static);
         fieldBuilder.SetConstant(cache);

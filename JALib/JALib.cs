@@ -187,8 +187,6 @@ class JALib : JAMod {
         EnableInit();
         Harmony = new Harmony(ModEntry.Info.Id);
         Patcher.Patch();
-        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("JALib.CustomPatch"), AssemblyBuilderAccess.Run);
-        ModuleBuilder = assemblyBuilder.DefineDynamicModule("JALib.CustomPatch");
     }
 
     protected override void OnDisable() {
