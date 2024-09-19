@@ -30,29 +30,6 @@ public class JALibController extends CustomController {
 
     }
 
-    @GetMapping("/localization/{name}/{langInt}")
-    public byte[] getLocalization(HttpServletRequest request, @PathVariable String name, @PathVariable int langInt) {
-        Language language = Language.values()[langInt];
-        info(request, "GetLocalization: " + name + " " + language);
-        ModData modData = ModData.getModData(name);
-        if(modData == null) return new byte[0];
-        @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-        Language finalLanguage = language;
-        if(Arrays.stream(modData.getAvailableLanguages()).noneMatch(l -> l == finalLanguage))
-            language = Arrays.stream(modData.getAvailableLanguages()).anyMatch(l -> l == Language.English) ? Language.English : modData.getAvailableLanguages()[0];
-        output.writeByte((byte) language.ordinal());
-        Map<String, Map<Language, String>> localization = modData.getLocalizations();
-        output.writeInt(localization.size());
-        for(Map.Entry<String, Map<Language, String>> entry : localization.entrySet()) {
-            output.writeUTF(entry.getKey());
-            if(entry.getValue().containsKey(language)) output.writeUTF(entry.getValue().get(language));
-            else if(entry.getValue().containsKey(Language.English))
-                output.writeUTF(entry.getValue().get(Language.English));
-            else output.writeUTF(entry.getValue().values().stream().findFirst().get());
-        }
-        return output.toByteArray();
-    }
-
     @GetMapping("/modInfo/{name}/{version}/{beta}")
     public byte[] modInfo(HttpServletRequest request, @PathVariable String name, @PathVariable String version, @PathVariable int beta) {
         info(request, "GetModInfo: " + name + " " + version + ", beta: " + (beta == 1));
@@ -67,6 +44,7 @@ public class JALibController extends CustomController {
         for(Language language : languages) output.writeByte((byte) language.ordinal());
         output.writeUTF(modData.getHomepage());
         output.writeUTF(modData.getDiscord());
+        output.writeInt(modData.getGid());
         return output.toByteArray();
     }
 

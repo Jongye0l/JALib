@@ -19,6 +19,7 @@ class GetModInfo : RequestAPI {
     internal SystemLanguage[] AvailableLanguages;
     internal string Homepage;
     internal string Discord;
+    internal int Gid;
 
     public GetModInfo(JAMod mod) {
         this.mod = mod;
@@ -37,6 +38,7 @@ class GetModInfo : RequestAPI {
         AvailableLanguages = languages;
         Homepage = input.ReadUTF();
         Discord = input.ReadUTF();
+        Gid = input.ReadInt();
     }
 
     public override async Task Run(HttpClient client, string url) {

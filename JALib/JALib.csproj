@@ -508,7 +508,6 @@
         <Compile Include="API\Packets\DownloadModRequest.cs" />
         <Compile Include="API\Packets\ConnectInfo.cs" />
         <Compile Include="API\Packets\DiscordUpdate.cs" />
-        <Compile Include="API\Packets\GetLocalization.cs" />
         <Compile Include="API\Packets\GetModInfo.cs" />
         <Compile Include="API\Packets\PacketResponseError.cs" />
         <Compile Include="API\Packets\Ping.cs" />

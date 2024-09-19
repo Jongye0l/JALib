@@ -33,6 +33,7 @@ public abstract class JAMod {
     protected string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
     internal static JAModInfo JaModInfo;
+    internal int Gid;
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -141,6 +142,7 @@ public abstract class JAMod {
         ModSetting.AvailableLanguages = getModInfo.AvailableLanguages;
         ModSetting.Homepage = getModInfo.Homepage;
         ModSetting.Discord = getModInfo.Discord;
+        Gid = getModInfo.Gid;
         SaveSetting();
         if(IsLatest) return;
         ModEntry.NewestVersion = LatestVersion;

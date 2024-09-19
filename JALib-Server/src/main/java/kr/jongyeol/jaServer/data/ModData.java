@@ -202,7 +202,7 @@ public class ModData extends AutoRemovedData {
         String json = new String(stream.readAllBytes());
         json = json.substring(json.indexOf("{"), json.lastIndexOf("}") + 1);
         JsonArray array = JsonParser.parseString(json).getAsJsonObject().getAsJsonObject("table").getAsJsonArray("rows");
-        Map<String, Map<Language, String>> newLocalizations = new HashMap<>();
+        //Map<String, Map<Language, String>> newLocalizations = new HashMap<>();
         List<Language> languages = new ArrayList<>();
         for(JsonElement element : array.get(0).getAsJsonObject().getAsJsonArray("c")) {
             if(element.isJsonNull()) break;
@@ -212,18 +212,18 @@ public class ModData extends AutoRemovedData {
             if(string.equals("Language")) continue;
             languages.add(Language.valueOf(string));
         }
-        for(int i = 1; i < array.size(); i++) {
-            JsonObject object = array.get(i).getAsJsonObject();
-            String key = object.getAsJsonArray("c").get(0).getAsJsonObject().get("v").getAsString();
-            Map<Language, String> map = new HashMap<>();
-            for(int j = 1; j < object.getAsJsonArray("c").size(); j++) {
-                JsonElement element = object.getAsJsonArray("c").get(j).getAsJsonObject().get("v");
-                if(element.isJsonNull()) continue;
-                map.put(languages.get(j - 1), element.getAsString());
-            }
-            newLocalizations.put(key, map);
-        }
-        localizations = newLocalizations;
+        //for(int i = 1; i < array.size(); i++) {
+        //    JsonObject object = array.get(i).getAsJsonObject();
+        //    String key = object.getAsJsonArray("c").get(0).getAsJsonObject().get("v").getAsString();
+        //    Map<Language, String> map = new HashMap<>();
+        //    for(int j = 1; j < object.getAsJsonArray("c").size(); j++) {
+        //        JsonElement element = object.getAsJsonArray("c").get(j).getAsJsonObject().get("v");
+        //        if(element.isJsonNull()) continue;
+        //        map.put(languages.get(j - 1), element.getAsString());
+        //    }
+        //    newLocalizations.put(key, map);
+        //}
+        //localizations = newLocalizations;
         availableLanguages = languages.toArray(new Language[0]);
         save();
     }
