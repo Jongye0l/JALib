@@ -3,12 +3,19 @@ using System.IO;
 using JALib.Tools.ByteTool;
 using Steamworks;
 using UnityEngine;
+using Version = System.Version;
 
 namespace JALib.API.Packets;
 
 class ConnectInfo : RequestPacket {
 
     public override void ReceiveData(Stream input) {
+        int size = input.ReadInt();
+        for(int i = 0; i < size; i++) {
+            string mod = input.ReadUTF();
+            Version version = new(input.ReadUTF());
+            JALib.DownloadMod(mod, version);
+        }
     }
 
     public override void GetBinary(Stream output) {
