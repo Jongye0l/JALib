@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using JALib.API.Packets;
+using JALib.Bootstrap;
 using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
@@ -15,7 +16,7 @@ namespace JALib.Core;
 
 public abstract class JAMod {
     private static Dictionary<string, JAMod> mods = new();
-    protected static ModuleBuilder ModuleBuilder;
+    internal static ModuleBuilder ModuleBuilder;
     protected internal UnityModManager.ModEntry ModEntry { get; private set; }
     public UnityModManager.ModEntry.ModLogger Logger => ModEntry.Logger;
     public string Name { get; private set; }
@@ -29,8 +30,9 @@ public abstract class JAMod {
     protected SystemLanguage[] AvailableLanguages => ModSetting.AvailableLanguages;
     internal JAModSetting ModSetting;
     protected JASetting Setting => ModSetting.Setting;
-    protected internal string Discord = "https://discord.jongyeol.kr/";
+    protected string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
+    internal static JAModInfo JaModInfo;
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -49,7 +51,7 @@ public abstract class JAMod {
             ModSetting = new JAModSetting(this, settingPath, settingType);
             bool beta = false;
             ParseVersion(ModEntry, ref beta);
-            Features = new List<Feature>();
+            Features = [];
             Localization = localization ? new JALocalization(this) : null;
             Discord = ModSetting.Discord ?? discord ?? Discord;
             modEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
@@ -288,6 +290,11 @@ public abstract class JAMod {
     public void LogException(Exception e) => Logger.LogException(e);
 
     public void SaveSetting() => ModSetting.Save();
+
+    internal void ForceReloadMod() {
+        Type type = typeof(JABootstrap).Invoke<Type>("LoadMod", JaModInfo);
+        ForceReloadMod(type.Assembly);
+    }
 
     internal void ForceReloadMod(Assembly newAssembly) {
         Assembly oldAssembly = GetType().Assembly;

@@ -15,12 +15,12 @@ public class JABootstrap {
     private static async void Setup(UnityModManager.ModEntry modEntry) {
         domain ??= AppDomain.CurrentDomain;
         _task = Installer.CheckMod(modEntry);
+        JAModInfo modInfo = LoadModInfo(modEntry);
         await _task;
-        SetupJALib(modEntry);
+        SetupJALib(modInfo);
     }
 
-    private static Type SetupJALib(UnityModManager.ModEntry modEntry) {
-        JAModInfo modInfo = LoadModInfo(modEntry);
+    private static Type SetupJALib(JAModInfo modInfo) {
         Type modType = LoadMod(modInfo);
         LoadJAMod = modType.GetMethod("LoadModInfo", (BindingFlags) 15420);
         return modType;
@@ -50,6 +50,7 @@ public class JABootstrap {
         Type modType = modAssembly.GetType(modInfo.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
         Activator.CreateInstance(modType, (BindingFlags) 15420, null, [modInfo.ModEntry], null, null);
+        modType.GetField("JaModInfo", (BindingFlags) 15420).SetValue(null, modInfo);
         return modType;
     }
 

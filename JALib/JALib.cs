@@ -32,7 +32,6 @@ class JALib : JAMod {
         Setting = (JALibSetting) base.Setting;
         Patcher = new JAPatcher(this).AddPatch(OnAdofaiStart);
         loadTask = LoadInfo();
-        OnEnable();
     }
 
     private static async void LoadModInfo(JAModInfo modInfo) {
@@ -153,6 +152,7 @@ class JALib : JAMod {
         });
         await JApi.Send(getModInfo);
         ModInfo(getModInfo);
+        OnEnable();
         if(!getModInfo.Success || !getModInfo.ForceUpdate || getModInfo.LatestVersion <= Version) return null;
         Log("Update is required. Updating the mod.");
         ModEntry.Info.DisplayName = Name + " <color=blue>[Updating...]</color>";
@@ -170,7 +170,8 @@ class JALib : JAMod {
         ModEntry.Info.DisplayName = Name;
         Type type;
         try {
-            type = typeof(JABootstrap).Invoke<Type>("SetupJALib", ModEntry);
+            if(JaModInfo == null) await Task.Yield();
+            type = typeof(JABootstrap).Invoke<Type>("SetupJALib", JaModInfo);
         } catch (Exception e) {
             Log("Failed to Load JAMod " + Name);
             LogException(e);

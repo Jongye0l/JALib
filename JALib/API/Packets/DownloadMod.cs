@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using JALib.Core;
 using JALib.Tools;
 using UnityModManagerNet;
 
@@ -16,7 +17,7 @@ class DownloadMod : RequestAPI {
     public DownloadMod(string modName, Version modVersion, string modPath = null) {
         ModName = modName;
         ModVersion = modVersion;
-        ModPath = modPath ?? System.IO.Path.Combine(UnityModManager.modsPath, modName);
+        ModPath = modPath ?? Path.Combine(UnityModManager.modsPath, modName);
     }
 
     public override void ReceiveData(Stream input) {
@@ -27,6 +28,8 @@ class DownloadMod : RequestAPI {
         try {
             Stream stream = await client.GetStreamAsync(url + $"downloadMod/{ModName}/{ModVersion}");
             Zipper.Unzip(stream, ModPath);
+            JAMod mod = JAMod.GetMods(ModName);
+            mod.ForceReloadMod();
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + url);
             JALib.Instance.LogException(e);
