@@ -60,7 +60,7 @@ class JALib : JAMod {
             modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=gray>[Waiting ConnectInfo...]</color>";
             await JApi.Instance.ConnectInfoTask;
         }
-        if(updateQueue.TryGetValue(modInfo.ModName, out Version version)) {
+        if(updateQueue.TryGetValue(modInfo.ModName, out Version version) && version > modInfo.ModVersion) {
             Instance.Log("Update JAMod " + modInfo.ModName);
             modInfo.ModEntry.Info.DisplayName = modInfo.ModName + " <color=aqua>[Updating...]</color>";
             await JApi.Send(new DownloadMod(modInfo.ModName, version, modInfo.ModEntry.Path));
@@ -99,9 +99,11 @@ class JALib : JAMod {
     }
 
     internal static async void DownloadMod(string modName, Version version) {
-        AddDownload(modName, version);
         await Task.Yield();
-        if(!loadTasks.ContainsKey(modName)) loadTasks.Add(modName, DownloadDependency(modName, UnityModManager.modEntries.Find(entry => entry.Info.Id == modName)));
+        UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == modName);
+        if(modEntry.Version == version) return;
+        AddDownload(modName, version);
+        if(!loadTasks.ContainsKey(modName)) loadTasks.Add(modName, DownloadDependency(modName, modEntry));
     }
 
     private static async Task LoadDependencies(JAModInfo modInfo) {
