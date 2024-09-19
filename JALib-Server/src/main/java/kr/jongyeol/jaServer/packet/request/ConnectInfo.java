@@ -50,5 +50,6 @@ public class ConnectInfo extends RequestPacket {
             output.writeUTF(mod.mod.getName());
             output.writeUTF(mod.version.toString());
         }
+        requestMods = null;
     }
 }
