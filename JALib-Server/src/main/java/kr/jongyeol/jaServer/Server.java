@@ -21,7 +21,10 @@ public class Server {
     public static void BootstrapRun(String[] args) throws Exception {
         if(loaded) return;
         File file = new File("library");
-        if(!file.exists()) file.mkdir();
+        if(!file.exists()) {
+            loaded = true;
+            return;
+        }
         List<URL> urls = new ArrayList<>();
         for(File f : file.listFiles()) {
             try {
