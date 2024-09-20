@@ -1,6 +1,7 @@
 package kr.jongyeol.jaServer.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import kr.jongyeol.jaServer.GZipFile;
 import kr.jongyeol.jaServer.Settings;
 import kr.jongyeol.jaServer.data.Language;
 import kr.jongyeol.jaServer.data.ModData;
@@ -45,7 +46,7 @@ public class JALibController extends CustomController {
         output.writeUTF(modData.getHomepage());
         output.writeUTF(modData.getDiscord());
         output.writeInt(modData.getGid());
-        return output.toByteArray();
+        return GZipFile.gzipData(output.toByteArray());
     }
 
     @GetMapping("/downloadMod/{name}/{version}")
