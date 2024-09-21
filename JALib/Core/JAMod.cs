@@ -32,7 +32,7 @@ public abstract class JAMod {
     protected JASetting Setting => ModSetting.Setting;
     protected string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
-    internal static JAModInfo JaModInfo;
+    internal JAModInfo JaModInfo;
     internal int Gid;
 
     protected internal SystemLanguage? CustomLanguage {

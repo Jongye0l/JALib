@@ -49,8 +49,8 @@ public class JABootstrap {
         Assembly modAssembly = domain.Load(AssemblyName.GetAssemblyName(modInfo.AssemblyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.AssemblyPath) : modInfo.AssemblyPath));
         Type modType = modAssembly.GetType(modInfo.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
-        Activator.CreateInstance(modType, (BindingFlags) 15420, null, [modInfo.ModEntry], null, null);
-        modType.GetField("JaModInfo", (BindingFlags) 15420).SetValue(null, modInfo);
+        object obj = Activator.CreateInstance(modType, (BindingFlags) 15420, null, [modInfo.ModEntry], null, null);
+        modType.GetField("JaModInfo", (BindingFlags) 15420).SetValue(obj, modInfo);
         return modType;
     }
 

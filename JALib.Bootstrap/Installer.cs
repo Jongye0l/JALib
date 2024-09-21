@@ -17,20 +17,18 @@ class Installer {
 
     internal static async Task CheckMod(UnityModManager.ModEntry modEntry) {
         string modName = modEntry.Info.DisplayName;
+        using HttpClient client = new();
+        string domain = Domain1;
         try {
-            using HttpClient client = new();
-            modEntry.Info.DisplayName = modName + "<color=gray> [Checking Update...]</color>";
-            string domain = Domain1;
-            try {
-                (await client.GetAsync($"https://{domain}/ping")).EnsureSuccessStatusCode();
-            } catch {
+            HttpResponseMessage response = null;
+            for(int i = 0; i < 2; i++) {
+                response = await client.GetAsync($"https://{domain}/autoInstaller/{modEntry.Info.Version.Split(" ")[0]}");
+                if(response.StatusCode == HttpStatusCode.NotModified) {
+                    modEntry.Info.DisplayName = modName;
+                    return;
+                }
+                if(response.IsSuccessStatusCode) break;
                 domain = Domain2;
-                (await client.GetAsync($"https://{domain}/ping")).EnsureSuccessStatusCode();
-            }
-            HttpResponseMessage response = await client.GetAsync($"https://{domain}/autoInstaller/{modEntry.Info.Version.Split(" ")[0]}");
-            if(response.StatusCode == HttpStatusCode.NotModified) {
-                modEntry.Info.DisplayName = modName;
-                return;
             }
             response.EnsureSuccessStatusCode();
             modEntry.Info.DisplayName = modName + "<color=gray> [Updating...]</color>";
