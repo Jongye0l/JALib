@@ -2,6 +2,7 @@ package kr.jongyeol.jaServer;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.java.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,12 +37,10 @@ public class Logger {
 
     @Getter
     private String category;
-    private BlockingQueue<String> logQueue = new LinkedBlockingQueue<>();
-    private Thread thread;
     private File file;
     private LocalDate lastDate;
     private Path path;
-    private boolean closed;
+    private Object locker = new Object();
 
     public Logger(String name) {
         this(name, null);
@@ -52,8 +51,6 @@ public class Logger {
         this.category = category;
         loadFile();
         loggerMap.put(name, this);
-        thread = new Thread(this::threadRun);
-        thread.start();
     }
 
     public static Logger getLogger(String name) {
@@ -87,8 +84,22 @@ public class Logger {
     private void log(String type, String s) {
         String result = String.format("[%s] [%s/%s] %s", LocalTime.now().format(logFormat), name, type, s);
         System.out.println(result);
-        logQueue.offer(result);
-        if(this != MAIN_LOGGER) MAIN_LOGGER.logQueue.offer(result);
+        addQueue(result);
+        if(this != MAIN_LOGGER) MAIN_LOGGER.addQueue(result);
+    }
+
+    private void addQueue(String s) {
+        Variables.executor.execute(() -> {
+            synchronized(locker) {
+                try {
+                    if(lastDate.isBefore(LocalDate.now()) || Files.size(path) > 1048576) loadFile();
+                    Files.writeString(path, s + "\n", StandardOpenOption.APPEND);
+                } catch (OutOfMemoryError ignored) {
+                } catch (IOException e) {
+                    MAIN_LOGGER.error(e);
+                }
+            }
+        });
     }
 
     public void info(String s) {
@@ -131,30 +142,11 @@ public class Logger {
     }
 
     public void close() {
-        closed = true;
-        if(thread == null || Thread.currentThread() != thread) return;
-        thread = null;
         loggerMap.remove(name, this);
-        name = null;
-        category = null;
-        if(logQueue != null) logQueue.clear();
-        logQueue = null;
-        file = null;
-        path = null;
-        closed = true;
-    }
-
-    private void threadRun() {
-        while(!closed) {
-            try {
-                String log = logQueue.take();
-                if(lastDate.isBefore(LocalDate.now()) || Files.size(path) > 1048576) loadFile();
-                Files.writeString(path, log + "\n", StandardOpenOption.APPEND);
-            } catch (InterruptedException ignored) {
-            } catch (Exception e) {
-                MAIN_LOGGER.error(e);
+        Variables.executor.execute(() -> {
+            synchronized(locker) {
+                Variables.setNull(this);
             }
-        }
-        close();
+        });
     }
 }
