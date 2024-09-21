@@ -27,6 +27,7 @@ class JALib : JAMod {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         loadTask = LoadInfo();
+        OnEnable();
     }
 
     private static async void LoadModInfo(JAModInfo modInfo) {
