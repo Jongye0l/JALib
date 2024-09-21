@@ -38,7 +38,6 @@ public class JALocalization {
             _jaMod.OnLocalizationUpdate0();
         }
         LoadLocalization(language);
-        //JApi.Send(new GetLocalization(this, language));
     }
 
     internal void LoadLocalization(SystemLanguage language) {
@@ -48,7 +47,7 @@ public class JALocalization {
             string data = await httpClient.GetString(LOCALIZATION_URL + _jaMod.Gid);
             data = data[data.IndexOf('{')..(data.LastIndexOf('}') + 1)];
             JArray array = JObject.Parse(data)["table"]["rows"] as JArray;
-            List<SystemLanguage> languages = (from token in array[0]["c"]
+            List<SystemLanguage> languages = (from token in array[0]["c"].Skip(1)
                                               where token.Type != JTokenType.Null
                                               select token["v"]
                                               into value
