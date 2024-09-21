@@ -41,9 +41,10 @@ public class JALocalization {
         //JApi.Send(new GetLocalization(this, language));
     }
 
-    internal async void LoadLocalization(SystemLanguage language) {
+    internal void LoadLocalization(SystemLanguage language) {
         JATask.Run(_jaMod, async () => {
             using HttpClient httpClient = new();
+            if(_jaMod.Gid == -1) return;
             string data = await httpClient.GetString(LOCALIZATION_URL + _jaMod.Gid);
             data = data[data.IndexOf('{')..(data.LastIndexOf('}') + 1)];
             JArray array = JObject.Parse(data)["table"]["rows"] as JArray;

@@ -45,7 +45,7 @@ public abstract class JAMod {
 
     public JALocalization Localization { get; private set; }
 
-    protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null) {
+    protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null, int gid = -1) {
         try {
             ModEntry = modEntry;
             Name = ModEntry.Info.DisplayName;
@@ -55,6 +55,7 @@ public abstract class JAMod {
             Features = [];
             Localization = localization ? new JALocalization(this) : null;
             Discord = ModSetting.Discord ?? discord ?? Discord;
+            Gid = gid;
             modEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
