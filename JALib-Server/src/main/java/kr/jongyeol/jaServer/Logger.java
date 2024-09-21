@@ -127,12 +127,14 @@ public class Logger {
     }
 
     public void error(Throwable e, String prefix) {
-        error(prefix + e.toString());
-        for(StackTraceElement stackTrace : e.getStackTrace())
-            error(String.format("\tat %s.%s(%s:%d) [%s:%s]", stackTrace.getClassName(), stackTrace.getMethodName(),
-                stackTrace.getFileName(), stackTrace.getLineNumber(), stackTrace.getModuleName(), stackTrace.getModuleVersion()));
-        for(Throwable se : e.getSuppressed()) error(se, "Suppressed: ");
-        if(e.getCause() != null) error(e.getCause(), "Caused by: ");
+        synchronized(locker) {
+            error(prefix + e.toString());
+            for(StackTraceElement stackTrace : e.getStackTrace())
+                error(String.format("\tat %s.%s(%s:%d) [%s:%s]", stackTrace.getClassName(), stackTrace.getMethodName(),
+                    stackTrace.getFileName(), stackTrace.getLineNumber(), stackTrace.getModuleName(), stackTrace.getModuleVersion()));
+            for(Throwable se : e.getSuppressed()) error(se, "Suppressed: ");
+            if(e.getCause() != null) error(e.getCause(), "Caused by: ");
+        }
     }
 
     public void error(Object o) {
