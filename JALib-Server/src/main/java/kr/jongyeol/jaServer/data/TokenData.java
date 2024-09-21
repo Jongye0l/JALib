@@ -29,6 +29,7 @@ public class TokenData {
                         tokens.clear();
                         Variables.setNull(tokens);
                         tokens = null;
+                        autoRemovedData = null;
                     }
                 };
             } else autoRemovedData.use();

@@ -20,8 +20,7 @@ public class CustomController {
     }
 
     protected String getTokenData(HttpServletRequest request) {
-        return request.getSession().getAttribute("token") == null ? null :
-            (String) request.getSession().getAttribute("token");
+        return request.getHeader("token");
     }
 
     public static void info(HttpServletRequest request, String string) {
