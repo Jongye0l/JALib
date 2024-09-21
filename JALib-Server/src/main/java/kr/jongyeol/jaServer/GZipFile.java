@@ -4,6 +4,7 @@ import lombok.Cleanup;
 
 import java.io.*;
 import java.util.zip.Deflater;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class GZipFile {
@@ -26,6 +27,21 @@ public class GZipFile {
             }};
             gzipOuputStream.write(data);
             gzipOuputStream.finish();
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e) {
+            Logger.MAIN_LOGGER.error(e);
+            return null;
+        }
+    }
+
+    public static byte[] gunzipData(byte[] data) {
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
+            @Cleanup GZIPInputStream gzipInputStream = new GZIPInputStream(byteArrayInputStream);
+            byte[] buffer = new byte[1024];
+            int bytes_read;
+            while((bytes_read = gzipInputStream.read(buffer)) > 0) byteArrayOutputStream.write(buffer, 0, bytes_read);
             return byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
             Logger.MAIN_LOGGER.error(e);
