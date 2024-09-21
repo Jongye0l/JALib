@@ -23,7 +23,7 @@ class JALib : JAMod {
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
 
-    private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting)) {
+    private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         loadTask = LoadInfo();
