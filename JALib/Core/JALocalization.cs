@@ -57,13 +57,15 @@ public class JALocalization {
                 language = SystemLanguage.English;
                 if(!languages.Contains(language)) language = languages[0];
             }
-            int index = languages.IndexOf(language);
+            int index = languages.IndexOf(language) + 1;
+            int subindex = languages.Contains(SystemLanguage.English) ? languages.IndexOf(SystemLanguage.English) + 1 : 1;
             SortedDictionary<string, string> localizations = new();
             foreach(JToken token in array.Skip(1)) {
                 JArray row = token["c"] as JArray;
                 string key = row[0]["v"].ToString();
-                string value = row[index]["v"].ToString();
-                localizations[key] = value;
+                JToken valueToken = GetGoogleJToken(row[index]) ?? GetGoogleJToken(row[subindex]);
+                if(valueToken == null) for(int i = 0; i < languages.Count && valueToken == null; i++) valueToken = GetGoogleJToken(row[i + 1]);
+                localizations[key] = valueToken?.ToString() ?? key;
             }
             _localizations = localizations;
             string path = Path.Combine(_jaMod.Path, "localization", language + ".json");
@@ -72,6 +74,12 @@ public class JALocalization {
                 JsonConvert.SerializeObject(_localizations, Formatting.Indented));
             MainThread.Run(new JAction(_jaMod, () => _jaMod.OnLocalizationUpdate0()));
         });
+    }
+
+    private JToken GetGoogleJToken(JToken token) {
+        if(token.Type != JTokenType.Object) return null;
+        token = token["v"];
+        return token is not { Type: JTokenType.String } ? null : token;
     }
 
     public string Get(string key) {
