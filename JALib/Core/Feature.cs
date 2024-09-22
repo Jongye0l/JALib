@@ -13,7 +13,7 @@ public abstract class Feature {
 
     public bool Enabled {
         get => FeatureSetting.Enabled;
-        protected set {
+        set {
             if(FeatureSetting.Enabled != value) {
                 FeatureSetting.Enabled = value;
                 Mod.SaveSetting();
