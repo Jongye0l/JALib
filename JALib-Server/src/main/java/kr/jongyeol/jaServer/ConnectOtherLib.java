@@ -28,7 +28,7 @@ public class ConnectOtherLib {
             restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
             restTemplate.put(Settings.getInstance().getOtherLibURL() + "admin/modData", Compress.compress(output.toByteArray()));
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
     }
 
@@ -182,7 +182,7 @@ public class ConnectOtherLib {
             restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
             restTemplate.patchForObject(Settings.getInstance().getOtherLibURL() + "admin/modData", Compress.compress(data), String.class);
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
     }
 
@@ -194,7 +194,7 @@ public class ConnectOtherLib {
             int length = input.readInt();
             for(int i = 0; i < length; i++) ModData.createMod(input.readUTF(), input);
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
     }
 
@@ -207,7 +207,7 @@ public class ConnectOtherLib {
             restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
             restTemplate.put(Settings.getInstance().getOtherLibURL() + "admin/requestMods", Compress.compress(output.toByteArray()));
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
     }
 
@@ -240,7 +240,7 @@ public class ConnectOtherLib {
             restTemplate.execute(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.DELETE,
                 restTemplate.httpEntityCallback(Compress.compress(data)), null);
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
     }
 
@@ -254,7 +254,7 @@ public class ConnectOtherLib {
             restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
             restTemplate.patchForObject(Settings.getInstance().getOtherLibURL() + "admin/requestMods", Compress.compress(output.toByteArray()), String.class);
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
     }
 
@@ -272,7 +272,7 @@ public class ConnectOtherLib {
                 }
             }
         } catch (Exception e) {
-            logger.error(e);
+            logger.error(e.getMessage());
         }
     }
 }
