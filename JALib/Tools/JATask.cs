@@ -9,7 +9,7 @@ public class JATask {
     public static Task Run(JAMod mod, Action action) {
         return Task.Run(() => {
             try {
-                action.Invoke();
+                action();
             } catch (Exception e) {
                 mod.Error("An error occurred while running a task.");
                 mod.LogException(e);
@@ -24,7 +24,7 @@ public class JATask {
     public static Task Run(JAMod mod, Action action, CancellationToken cancellationToken) {
         return Task.Run(() => {
             try {
-                action.Invoke();
+                action();
             } catch (Exception e) {
                 mod.Error("An error occurred while running a task.");
                 mod.LogException(e);
@@ -39,7 +39,7 @@ public class JATask {
     public static Task Run(JAMod mod, Func<Task> action) {
         return Task.Run(async () => {
             try {
-                await action.Invoke();
+                await action();
             } catch (Exception e) {
                 mod.Error("An error occurred while running a task.");
                 mod.LogException(e);
@@ -48,7 +48,7 @@ public class JATask {
     }
 
     public static Task Run(Func<Task> action) {
-        return Task.Run(action.Invoke);
+        return Task.Run(action);
     }
 
     public static Task Run(JAMod mod, Func<Task> action, CancellationToken cancellationToken) {
