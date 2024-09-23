@@ -16,7 +16,18 @@ namespace JALib.Core;
 
 public abstract class JAMod {
     private static Dictionary<string, JAMod> mods = new();
-    internal static ModuleBuilder ModuleBuilder;
+    private static ModuleBuilder _moduleBuilder;
+    internal static AssemblyBuilder assemblyBuilder;
+
+    internal static ModuleBuilder ModuleBuilder {
+        get {
+            if(_moduleBuilder == null) {
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("JALib.CustomPatch"), AssemblyBuilderAccess.Run);
+                _moduleBuilder = assemblyBuilder.DefineDynamicModule("JALib.CustomPatch");
+            }
+            return _moduleBuilder;
+        }
+    }
     protected internal UnityModManager.ModEntry ModEntry { get; private set; }
     public UnityModManager.ModEntry.ModLogger Logger => ModEntry.Logger;
     public string Name { get; private set; }
@@ -301,10 +312,6 @@ public abstract class JAMod {
     internal void ForceReloadMod(Assembly newAssembly) {
         Assembly oldAssembly = GetType().Assembly;
         ModReloadCache cache = new(oldAssembly, newAssembly);
-        if(ModuleBuilder == null) {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("JALib.CustomPatch"), AssemblyBuilderAccess.Run);
-            ModuleBuilder = assemblyBuilder.DefineDynamicModule("JALib.CustomPatch");
-        }
         TypeBuilder typeBuilder = ModuleBuilder.DefineType($"JALib.ForceReload.{Name}.{JARandom.Instance.NextInt()}", TypeAttributes.Public);
         FieldBuilder fieldBuilder = typeBuilder.DefineField("cache", typeof(ModReloadCache), FieldAttributes.Private | FieldAttributes.Static);
         fieldBuilder.SetConstant(cache);
