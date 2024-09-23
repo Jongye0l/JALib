@@ -7,7 +7,7 @@ using Version = System.Version;
 
 namespace JALib.API.Packets;
 
-class ConnectInfo : RequestPacket {
+class ConnectInfo : AsyncRequestPacket {
 
     public override void ReceiveData(Stream input) {
         int size = input.ReadInt();

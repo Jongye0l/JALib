@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using HarmonyLib;
 using JALib.API.Packets;
 using JALib.JAException;
 using JALib.Tools;
@@ -29,7 +30,7 @@ class JApi {
     private JAWebSocketClient _client;
     private string domain;
     public static bool Connected => Instance?._client is { Connected: true };
-    internal Task ConnectInfoTask;
+    internal static Task<bool> ConnectInfoTask;
     private readonly Dictionary<long, RequestPacket> _requests = new();
     private static ConcurrentQueue<(Request, TaskCompletionSource<bool>)> _queue = new();
     private static Discord.Discord discord;
@@ -125,7 +126,9 @@ class JApi {
                 packet.GetBinary(output);
                 using MemoryStream result = Zipper.GzipToMemoryStream(output);
                 _instance._requests.Add(packet.ID, packet);
-                _instance._client.WriteBytes(result.ToArray());
+                byte[] bytes = result.ToArray();
+                _instance._client.WriteBytes(bytes);
+                JALib.Instance.Log(bytes.Join());
             }
         } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }
@@ -138,7 +141,7 @@ class JApi {
     }
 
     internal async Task<T> SendAsync<T>(T packet) where T : AsyncRequestPacket {
-        await JATask.Run(JALib.Instance, () => Send(packet));
+        await Task.Run(() => Send(packet));
         await packet.WaitResponse();
         return packet;
     }
@@ -158,13 +161,20 @@ class JApi {
         }
     }
 
-    private async Task ConnectInfo() {
-        while(ADOBase.platform == Platform.None) await Task.Yield();
-        await Task.Yield();
-        Send(new ConnectInfo());
-        discord = DiscordController.instance.GetValue<Discord.Discord>(nameof(discord));
-        if(discord != null) discord.GetUserManager().OnCurrentUserUpdate += OnUserUpdate;
-        else MainThread.StartCoroutine(CheckDiscordCo());
+    private async Task<bool> ConnectInfo() {
+        try {
+            while(ADOBase.platform == Platform.None) await Task.Yield();
+            await Task.Yield();
+            await SendAsync(new ConnectInfo());
+            discord = DiscordController.instance.GetValue<Discord.Discord>(nameof(discord));
+            if(discord != null) discord.GetUserManager().OnCurrentUserUpdate += OnUserUpdate;
+            else MainThread.StartCoroutine(CheckDiscordCo());
+            return true;
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            Dispose();
+            return false;
+        }
     }
 
     private static void OnUserUpdate() {
@@ -180,7 +190,7 @@ class JApi {
             discord = controller.GetValue<Discord.Discord>(nameof(discord));
             if(discord == null) continue;
             if(Connected) discord.GetUserManager().OnCurrentUserUpdate += OnUserUpdate;
-            if(Instance.ConnectInfoTask.IsCompleted) OnUserUpdate();
+            if(ConnectInfoTask.IsCompleted && ConnectInfoTask.Result) OnUserUpdate();
             break;
         }
     }
