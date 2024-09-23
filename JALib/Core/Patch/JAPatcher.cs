@@ -79,7 +79,58 @@ public class JAPatcher : IDisposable {
                         attribute.MethodBase = ((MethodInfo) attribute.MethodBase).MakeGenericMethod(attribute.GenericType);
                     }
                 }
-                attribute.HarmonyMethod ??= new HarmonyMethod(attribute.Method);
+                MethodInfo originalMethod = attribute.Method;
+                if(attribute.TryingCatch) {
+                    if(attribute.HarmonyMethod == null) {
+                        TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JAPatch.{mod.Name}.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
+                        FieldBuilder methodField = typeBuilder.DefineField("OriginalMethod", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static);
+                        FieldBuilder exceptionCatchField = typeBuilder.DefineField("ExceptionCatcher", typeof(Action<Exception>), FieldAttributes.Private | FieldAttributes.Static);
+                        MethodBuilder methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Public | MethodAttributes.Static,
+                            originalMethod.ReturnType, originalMethod.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+                        foreach(ParameterInfo parameter in originalMethod.GetParameters()) methodBuilder.DefineParameter(parameter.Position + 1, parameter.Attributes, parameter.Name);
+                        ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+                        Label returnLabel = ilGenerator.DefineLabel();
+                        ilGenerator.BeginExceptionBlock();
+                        LocalBuilder objectLocal = ilGenerator.DeclareLocal(typeof(object));
+                        ilGenerator.Emit(OpCodes.Ldsfld, methodField);
+                        ilGenerator.Emit(OpCodes.Ldnull);
+                        ilGenerator.Emit(OpCodes.Ldc_I4, originalMethod.GetParameters().Length);
+                        ilGenerator.Emit(OpCodes.Newarr, typeof(object));
+                        for(int i = 0; i < originalMethod.GetParameters().Length; i++) {
+                            ilGenerator.Emit(OpCodes.Dup);
+                            ilGenerator.Emit(OpCodes.Ldc_I4, i);
+                            ilGenerator.Emit(OpCodes.Ldarg, i);
+                            Type type = originalMethod.GetParameters()[i].ParameterType;
+                            if(type.IsValueType) ilGenerator.Emit(OpCodes.Box, type);
+                            ilGenerator.Emit(OpCodes.Stelem_Ref);
+                        }
+                        ilGenerator.Emit(OpCodes.Call, typeof(MethodInfo).Method("Invoke", typeof(object), typeof(object[])));
+                        ilGenerator.Emit(OpCodes.Stloc, objectLocal);
+                        ilGenerator.Emit(OpCodes.Leave, returnLabel);
+                        ilGenerator.BeginCatchBlock(typeof(Exception));
+                        LocalBuilder exceptionLocal = ilGenerator.DeclareLocal(typeof(Exception));
+                        ilGenerator.Emit(OpCodes.Stloc, exceptionLocal);
+                        ilGenerator.Emit(OpCodes.Ldsfld, exceptionCatchField);
+                        ilGenerator.Emit(OpCodes.Ldloc, exceptionLocal);
+                        ilGenerator.Emit(OpCodes.Call, typeof(Action<Exception>).Method("Invoke"));
+                        if(originalMethod.ReturnType != typeof(void)) {
+                            if(originalMethod.ReturnType.IsValueType) {
+                                ilGenerator.Emit(originalMethod.ReturnType == typeof(bool) ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
+                                ilGenerator.Emit(OpCodes.Box, originalMethod.ReturnType);
+                            } else ilGenerator.Emit(OpCodes.Ldnull);
+                            ilGenerator.Emit(OpCodes.Stloc, objectLocal);
+                        }
+                        ilGenerator.Emit(OpCodes.Leave, returnLabel);
+                        ilGenerator.EndExceptionBlock();
+                        ilGenerator.MarkLabel(returnLabel);
+                        if(originalMethod.ReturnType != typeof(void)) ilGenerator.Emit(OpCodes.Ldloc, objectLocal);
+                        ilGenerator.Emit(OpCodes.Ret);
+                        Type patchType = typeBuilder.CreateType();
+                        patchType.SetValue("OriginalMethod", originalMethod);
+                        patchType.SetValue("ExceptionCatcher", OnPatchException);
+                        attribute.HarmonyMethod ??= new HarmonyMethod(patchType.Method(originalMethod.Name));
+                    }
+                } else attribute.HarmonyMethod ??= new HarmonyMethod(originalMethod);
                 attribute.Patch = JALib.Harmony.Patch(attribute.MethodBase,
                     attribute.PatchType == PatchType.Prefix ? attribute.HarmonyMethod : null,
                     attribute.PatchType == PatchType.Postfix ? attribute.HarmonyMethod : null,
@@ -95,6 +146,10 @@ public class JAPatcher : IDisposable {
                 break;
             }
         }
+    }
+
+    private void OnPatchException(Exception exception) {
+        mod.LogException(exception);
     }
 
     public void Unpatch() {
