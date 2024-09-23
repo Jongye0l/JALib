@@ -51,9 +51,11 @@ public class UserData {
     public static void addDiscordID(long steamID, long discordID) throws IOException {
         checkLoad();
         List<Long> list = userDataMap.computeIfAbsent(steamID, k -> new ArrayList<>());
-        if(!list.contains(discordID)) list.add(discordID);
-        save();
-        DiscordUserData.getUserData(discordID).setSteamID(steamID);
+        if(!list.contains(discordID)) {
+            list.add(discordID);
+            DiscordUserData.getUserData(discordID).setSteamID(steamID);
+            save();
+        }
     }
 
     public static void removeDiscordID(long steamID, long discordID) throws IOException {
