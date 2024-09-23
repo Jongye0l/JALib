@@ -25,7 +25,6 @@ public abstract class JAMod {
     protected bool ForceUpdate => ModSetting.ForceUpdate;
     protected Version LatestVersion => ModSetting.LatestVersion;
     public bool IsLatest => LatestVersion <= Version;
-    protected Dependency[] Dependencies { get; private set; }
     protected internal List<Feature> Features { get; private set; }
     protected SystemLanguage[] AvailableLanguages => ModSetting.AvailableLanguages;
     internal JAModSetting ModSetting;

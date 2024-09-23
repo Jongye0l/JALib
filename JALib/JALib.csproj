@@ -515,7 +515,6 @@
         <Compile Include="API\RequestAPI.cs" />
         <Compile Include="API\RequestPacket.cs" />
         <Compile Include="API\ResponsePacket.cs" />
-        <Compile Include="Core\Dependency.cs" />
         <Compile Include="Core\Feature.cs" />
         <Compile Include="Core\JALocalization.cs" />
         <Compile Include="Core\JAMod.cs" />
