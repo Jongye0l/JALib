@@ -123,7 +123,10 @@ public class JAPatcher : IDisposable {
                         ilGenerator.Emit(OpCodes.Leave, returnLabel);
                         ilGenerator.EndExceptionBlock();
                         ilGenerator.MarkLabel(returnLabel);
-                        if(originalMethod.ReturnType != typeof(void)) ilGenerator.Emit(OpCodes.Ldloc, objectLocal);
+                        if(originalMethod.ReturnType != typeof(void)) {
+                            ilGenerator.Emit(OpCodes.Ldloc, objectLocal);
+                            if(originalMethod.ReturnType.IsValueType) ilGenerator.Emit(OpCodes.Unbox_Any, originalMethod.ReturnType);
+                        }
                         ilGenerator.Emit(OpCodes.Ret);
                         Type patchType = typeBuilder.CreateType();
                         patchType.SetValue("OriginalMethod", originalMethod);
