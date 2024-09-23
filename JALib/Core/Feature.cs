@@ -118,7 +118,7 @@ public abstract class Feature {
         }
         if(enabled != Enabled) {
             Enabled = enabled;
-            if(enabled) expanded = true;
+            if(enabled && _canExpand) expanded = true;
         }
         if(expanded != _expanded) {
             _expanded = expanded;
