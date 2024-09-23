@@ -46,7 +46,7 @@ public class JALibController extends CustomController {
         output.writeUTF(modData.getHomepage());
         output.writeUTF(modData.getDiscord());
         output.writeInt(modData.getGid());
-        return GZipFile.gzipData(output.toByteArray());
+        return output.toByteArray();
     }
 
     @GetMapping("/downloadMod/{name}/{version}")

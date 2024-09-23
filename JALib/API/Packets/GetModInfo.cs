@@ -45,7 +45,7 @@ class GetModInfo : RequestAPI {
     public override async Task Run(HttpClient client, string url) {
         try {
             await using Stream stream = await client.GetStreamAsync(url + $"modInfo/{modInfo.ModName}/{modInfo.ModVersion}/{(modInfo.IsBetaBranch ? 1 : 0)}");
-            ReceiveData(Zipper.GunzipToMemoryStream(stream));
+            ReceiveData(stream);
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + url);
             JALib.Instance.LogException(e);
