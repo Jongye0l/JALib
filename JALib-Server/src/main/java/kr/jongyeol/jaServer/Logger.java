@@ -2,7 +2,6 @@ package kr.jongyeol.jaServer;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
-import lombok.extern.java.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class Logger {
     public static final Logger MAIN_LOGGER;
@@ -40,7 +37,8 @@ public class Logger {
     private File file;
     private LocalDate lastDate;
     private Path path;
-    private Object locker = new Object();
+    private Object saveLocker = new Object();
+    private Object sendLocker = new Object();
 
     public Logger(String name) {
         this(name, null);
@@ -82,15 +80,17 @@ public class Logger {
     }
 
     private void log(String type, String s) {
-        String result = String.format("[%s] [%s/%s] %s", LocalTime.now().format(logFormat), name, type, s);
-        System.out.println(result);
-        addQueue(result);
-        if(this != MAIN_LOGGER) MAIN_LOGGER.addQueue(result);
+        synchronized(sendLocker) {
+            String result = String.format("[%s] [%s/%s] %s", LocalTime.now().format(logFormat), name, type, s);
+            System.out.println(result);
+            addQueue(result);
+            if(this != MAIN_LOGGER) MAIN_LOGGER.addQueue(result);
+        }
     }
 
     private void addQueue(String s) {
         Variables.executor.execute(() -> {
-            synchronized(locker) {
+            synchronized(saveLocker) {
                 try {
                     if(lastDate.isBefore(LocalDate.now()) || Files.size(path) > 1048576) loadFile();
                     Files.writeString(path, s + "\n", StandardOpenOption.APPEND);
@@ -127,7 +127,7 @@ public class Logger {
     }
 
     public void error(Throwable e, String prefix) {
-        synchronized(locker) {
+        synchronized(sendLocker) {
             error(prefix + e.toString());
             for(StackTraceElement stackTrace : e.getStackTrace())
                 error(String.format("\tat %s.%s(%s:%d) [%s:%s]", stackTrace.getClassName(), stackTrace.getMethodName(),
@@ -146,7 +146,7 @@ public class Logger {
     public void close() {
         loggerMap.remove(name, this);
         Variables.executor.execute(() -> {
-            synchronized(locker) {
+            synchronized(saveLocker) {
                 Variables.setNull(this);
             }
         });
