@@ -124,11 +124,9 @@ class JApi {
                 output.WriteUTF(packet.GetType().Name);
                 output.WriteLong(packet.ID);
                 packet.GetBinary(output);
-                using MemoryStream result = Zipper.GzipToMemoryStream(output);
+                using MemoryStream result = Zipper.GzipToMemoryStream(output.ToArray());
                 _instance._requests.Add(packet.ID, packet);
-                byte[] bytes = result.ToArray();
-                _instance._client.WriteBytes(bytes);
-                JALib.Instance.Log(bytes.Join());
+                _instance._client.WriteBytes(result.ToArray());
             }
         } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }

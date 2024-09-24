@@ -138,6 +138,7 @@ public class JAWebSocketClient : IDisposable {
             stream.Write(buffer, 0, result.Count);
             if(result.EndOfMessage) break;
         }
+        stream.Position = 0;
         return stream;
     }
 
