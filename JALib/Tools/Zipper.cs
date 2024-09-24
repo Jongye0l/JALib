@@ -188,10 +188,19 @@ public static class Zipper {
     }
 
     public static MemoryStream UnDeflateToMemoryStream(Stream stream) {
-        using DeflateStream deflateStream = new(stream, CompressionMode.Decompress);
         MemoryStream memoryStream = new();
-        deflateStream.CopyTo(memoryStream);
+        stream.UnDeflate(memoryStream);
         return memoryStream;
+    }
+
+    public static void UnDeflate(this Stream stream, Stream input) {
+        using DeflateStream deflateStream = new(stream, CompressionMode.Decompress);
+        deflateStream.CopyTo(input);
+    }
+
+    public static void UnDeflate(this Stream stream, byte[] deflateData) {
+        using MemoryStream memoryStream = new(deflateData);
+        UnDeflate(stream, memoryStream);
     }
 
     public static byte[] Deflate(byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
@@ -213,8 +222,17 @@ public static class Zipper {
 
     public static MemoryStream DeflateToMemoryStream(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
         MemoryStream memoryStream = new();
-        using DeflateStream deflateStream = new(memoryStream, compressionLevel, true);
-        stream.CopyTo(deflateStream);
+        stream.Deflate(memoryStream, compressionLevel);
         return memoryStream;
+    }
+
+    public static void Deflate(this Stream stream, Stream input, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using DeflateStream deflateStream = new(stream, compressionLevel, true);
+        input.CopyTo(deflateStream);
+    }
+
+    public static void Deflate(this Stream stream, byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using MemoryStream memoryStream = new(data);
+        Deflate(stream, memoryStream, compressionLevel);
     }
 }
