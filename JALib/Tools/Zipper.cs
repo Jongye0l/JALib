@@ -113,10 +113,19 @@ public static class Zipper {
     }
 
     public static MemoryStream GunzipToMemoryStream(Stream stream) {
-        using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
         MemoryStream memoryStream = new();
-        gzipStream.CopyTo(memoryStream);
+        stream.Gunzip(memoryStream);
         return memoryStream;
+    }
+
+    public static void Gunzip(this Stream stream, Stream input) {
+        using GZipStream gzipStream = new(stream, CompressionMode.Decompress);
+        gzipStream.CopyTo(input);
+    }
+
+    public static void Gunzip(this Stream stream, byte[] gzipData) {
+        using MemoryStream memoryStream = new(gzipData);
+        Gunzip(stream, memoryStream);
     }
 
     public static void Gunzip(byte[] gzipData, string path) {
@@ -142,16 +151,24 @@ public static class Zipper {
 
     public static MemoryStream GzipToMemoryStream(byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
         MemoryStream memoryStream = new();
-        using GZipStream gzipStream = new(memoryStream, compressionLevel, true);
-        gzipStream.Write(data);
+        memoryStream.Gzip(data, compressionLevel);
         return memoryStream;
     }
 
     public static MemoryStream GzipToMemoryStream(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
         MemoryStream memoryStream = new();
-        using GZipStream gzipStream = new(memoryStream, compressionLevel, true);
-        stream.CopyTo(gzipStream);
+        memoryStream.Gzip(stream, compressionLevel);
         return memoryStream;
+    }
+
+    public static void Gzip(this Stream stream, Stream input, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using GZipStream gzipStream = new(stream, compressionLevel, true);
+        input.CopyTo(gzipStream);
+    }
+
+    public static void Gzip(this Stream stream, byte[] data, CompressionLevel compressionLevel = CompressionLevel.Optimal) {
+        using GZipStream gzipStream = new(stream, compressionLevel, true);
+        gzipStream.Write(data);
     }
 
     public static byte[] UnDeflate(byte[] deflateData) {
