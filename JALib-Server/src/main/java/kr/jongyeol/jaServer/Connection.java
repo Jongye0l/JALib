@@ -48,37 +48,28 @@ public class Connection extends BinaryWebSocketHandler {
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
-        try {
+        Variables.executor.execute(() -> {
             @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(message.getPayload().array()));
             String method = new String(input.readBytes(), StandardCharsets.UTF_8);
             long id = input.readLong();
-            Variables.executor.execute(() -> {
-                try {
-                    Class<RequestPacket> requestPacketClass = (Class<RequestPacket>) Class.forName("kr.jongyeol.jaServer.packet.request." + method);
-                    RequestPacket requestPacket = requestPacketClass.getDeclaredConstructor().newInstance();
-                    requestPacket.id = id;
-                    requestPacket.getData(this, input);
-                    sendData(requestPacket);
-                } catch (Exception e) {
-                    if(logger == null) return;
-                    logger.error("Error in " + method + " packet");
-                    logger.error(e);
-                    try {
-                        sendData(new PacketResponseError(id, e));
-                    } catch (Exception ex) {
-                        if(logger == null) return;
-                        logger.error(ex);
-                    }
-                }
-            });
-        } catch (Exception e) {
-            if(logger != null) {
-                logger.error("Error in Read");
+            try {
+                Class<RequestPacket> requestPacketClass = (Class<RequestPacket>) Class.forName("kr.jongyeol.jaServer.packet.request." + method);
+                RequestPacket requestPacket = requestPacketClass.getDeclaredConstructor().newInstance();
+                requestPacket.id = id;
+                requestPacket.getData(this, input);
+                sendData(requestPacket);
+            } catch (Exception e) {
+                if(logger == null) return;
+                logger.error("Error in " + method + " packet");
                 logger.error(e);
+                try {
+                    sendData(new PacketResponseError(id, e));
+                } catch (Exception ex) {
+                    if(logger == null) return;
+                    logger.error(ex);
+                }
             }
-            session.close();
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     public void sendData(ResponsePacket responsePacket) throws Exception {
