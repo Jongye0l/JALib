@@ -83,9 +83,11 @@ class JApi {
     }
 
     private void Read() {
-        using Stream input = Zipper.GunzipToMemoryStream(_client.ReadStream());
-        if(input.ReadBoolean()) {
-            long id = _client.ReadLong();
+        using Stream inputRaw = _client.ReadStream();
+        ReadMethod method = (ReadMethod) inputRaw.ReadByte();
+        using Stream input = method.HasFlag(ReadMethod.Gzip) ? Zipper.GunzipToMemoryStream(inputRaw) : inputRaw;
+        if(method.HasFlag(ReadMethod.Response)) {
+            long id = input.ReadLong();
             if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;
             requestPacket.ReceiveData(input);
             if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
@@ -124,9 +126,9 @@ class JApi {
                 output.WriteUTF(packet.GetType().Name);
                 output.WriteLong(packet.ID);
                 packet.GetBinary(output);
-                using MemoryStream result = Zipper.GzipToMemoryStream(output.ToArray());
+                JALib.Instance.Log("Sending a request packet " + packet.ID);
                 _instance._requests.Add(packet.ID, packet);
-                _instance._client.WriteBytes(result.ToArray());
+                _instance._client.WriteBytes(output.ToArray());
             }
         } else if(request is RequestAPI api) api.Run(_instance._httpClient, $"https://{_instance.domain}/");
     }
@@ -203,5 +205,11 @@ class JApi {
     private class PingTest {
         public int ping = -1;
         public bool otherError;
+    }
+
+    private enum ReadMethod : byte {
+        Request = 0,
+        Response = 1,
+        Gzip = 2
     }
 }

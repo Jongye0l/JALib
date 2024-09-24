@@ -151,7 +151,6 @@ public static class Zipper {
         MemoryStream memoryStream = new();
         using GZipStream gzipStream = new(memoryStream, compressionLevel, true);
         stream.CopyTo(gzipStream);
-        memoryStream.Position = 0;
         return memoryStream;
     }
 

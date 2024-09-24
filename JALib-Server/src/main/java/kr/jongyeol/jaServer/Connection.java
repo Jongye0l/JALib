@@ -49,7 +49,7 @@ public class Connection extends BinaryWebSocketHandler {
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
         Variables.executor.execute(() -> {
-            @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(message.getPayload().array()));
+            @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(message.getPayload().array());
             String method = new String(input.readBytes(), StandardCharsets.UTF_8);
             long id = input.readLong();
             try {
@@ -74,11 +74,12 @@ public class Connection extends BinaryWebSocketHandler {
 
     public void sendData(ResponsePacket responsePacket) throws Exception {
         @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+        byte type;
         if(responsePacket instanceof RequestPacket requestPacket) {
-            output.writeBoolean(true);
+            type = 1;
             output.writeLong(requestPacket.id);
         } else {
-            output.writeBoolean(false);
+            type = 0;
             output.writeUTF(responsePacket.getClass().getSimpleName());
         }
         try {
@@ -86,7 +87,17 @@ public class Connection extends BinaryWebSocketHandler {
         } catch (Exception e) {
             throw new GetBinaryException(responsePacket.getClass().getSimpleName(), e);
         }
-        session.sendMessage(new BinaryMessage(GZipFile.gzipData(output.toByteArray())));
+        byte[] data = output.toByteArray();
+        byte[] zipData = GZipFile.gzipData(data);
+        byte[] result;
+        if(data.length > zipData.length) {
+            result = zipData;
+            type += 2;
+        } else result = data;
+        byte[] resultData = new byte[result.length + 1];
+        resultData[0] = type;
+        System.arraycopy(result, 0, resultData, 1, result.length);
+        session.sendMessage(new BinaryMessage(resultData));
     }
 
     public boolean isClosed() {

@@ -23,7 +23,7 @@ public class GZipFile {
 
     @SneakyThrows(IOException.class)
     public static byte[] gzipData(byte[] data) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        @Cleanup ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         @Cleanup GZIPOutputStream gzipOuputStream = new GZIPOutputStream(byteArrayOutputStream) {{
             def.setLevel(Deflater.BEST_COMPRESSION);
         }};
@@ -34,8 +34,8 @@ public class GZipFile {
 
     @SneakyThrows(IOException.class)
     public static byte[] gunzipData(byte[] data) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
+        @Cleanup ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        @Cleanup ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
         @Cleanup GZIPInputStream gzipInputStream = new GZIPInputStream(byteArrayInputStream);
         byte[] buffer = new byte[1024];
         int bytes_read;

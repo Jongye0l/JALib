@@ -19,15 +19,16 @@ public class JAction {
     }
 
     public void Invoke() {
-        if(mod == null) {
-            action();
-            return;
-        }
         try {
             action();
         } catch (Exception e) {
-            mod.Error("An error occurred while invoking an action.");
-            mod.LogException(e);
+            if(mod == null) {
+                JALib.Instance.Log("An error occurred while invoking an action " + action.Method.Name);
+                JALib.Instance.LogException(e);
+            } else {
+                mod.Error("An error occurred while invoking an action.");
+                mod.LogException(e);
+            }
         }
     }
 

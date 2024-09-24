@@ -76,6 +76,7 @@ public class JAWebSocketClient : IDisposable {
             onClose?.Invoke();
             thread = null;
         });
+        thread.Start();
     }
 
     public void SetConnectAction(JAction action) {
@@ -131,7 +132,7 @@ public class JAWebSocketClient : IDisposable {
 
     public Stream ReadStream() {
         CheckConnect();
-        byte[] buffer = new byte[1024];
+        byte[] buffer = new byte[256];
         MemoryStream stream = new();
         while(true) {
             WebSocketReceiveResult result = socket.ReceiveAsync(buffer, CancellationToken.None).Result;
