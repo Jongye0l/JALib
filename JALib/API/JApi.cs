@@ -87,9 +87,15 @@ class JApi {
         if(input.ReadBoolean()) {
             long id = input.ReadLong();
             if(!_requests.TryGetValue(id, out RequestPacket requestPacket)) return;
-            requestPacket.ReceiveData(input);
-            if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
-            _requests.Remove(id);
+            try {
+                requestPacket.ReceiveData(input);
+                if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
+            } catch (Exception) {
+                if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.FailResponse();
+                throw;
+            } finally {
+                _requests.Remove(id);
+            }
             return;
         }
         string packetName = input.ReadUTF();

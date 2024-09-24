@@ -10,7 +10,13 @@ abstract class AsyncRequestPacket : RequestPacket {
         await tcs.Task;
     }
 
+    public bool Success => tcs.Task.Result;
+
     internal void CompleteResponse() {
         tcs.TrySetResult(true);
+    }
+
+    internal void FailResponse() {
+        tcs.TrySetResult(false);
     }
 }
