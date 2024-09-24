@@ -74,12 +74,11 @@ public class Connection extends BinaryWebSocketHandler {
 
     public void sendData(ResponsePacket responsePacket) throws Exception {
         @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-        byte type;
         if(responsePacket instanceof RequestPacket requestPacket) {
-            type = 1;
+            output.writeBoolean(true);
             output.writeLong(requestPacket.id);
         } else {
-            type = 0;
+            output.writeBoolean(false);
             output.writeUTF(responsePacket.getClass().getSimpleName());
         }
         try {
@@ -87,17 +86,7 @@ public class Connection extends BinaryWebSocketHandler {
         } catch (Exception e) {
             throw new GetBinaryException(responsePacket.getClass().getSimpleName(), e);
         }
-        byte[] data = output.toByteArray();
-        byte[] zipData = GZipFile.gzipData(data);
-        byte[] result;
-        if(data.length > zipData.length) {
-            result = zipData;
-            type += 2;
-        } else result = data;
-        byte[] resultData = new byte[result.length + 1];
-        resultData[0] = type;
-        System.arraycopy(result, 0, resultData, 1, result.length);
-        session.sendMessage(new BinaryMessage(resultData));
+        session.sendMessage(new BinaryMessage(output.toByteArray()));
     }
 
     public boolean isClosed() {
