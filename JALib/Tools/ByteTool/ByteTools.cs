@@ -117,6 +117,21 @@ public static class ByteTools {
     }
 
     public static object ToObject(Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+        if(type == typeof(byte)) return (byte) input.ReadByte();
+        if(type == typeof(sbyte)) return input.ReadSByte();
+        if(type == typeof(short)) return input.ReadShort();
+        if(type == typeof(ushort)) return input.ReadUShort();
+        if(type == typeof(int)) return input.ReadInt();
+        if(type == typeof(uint)) return input.ReadUInt();
+        if(type == typeof(long)) return input.ReadLong();
+        if(type == typeof(ulong)) return input.ReadULong();
+        if(type == typeof(float)) return input.ReadFloat();
+        if(type == typeof(double)) return input.ReadDouble();
+        if(type == typeof(decimal)) return input.ReadDecimal();
+        if(type == typeof(bool)) return input.ReadBoolean();
+        if(type == typeof(char)) return input.ReadChar();
+        if(type == typeof(string)) return input.ReadUTF();
+        if(type == typeof(byte[])) return input.ReadBytes();
         VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
         if(ver != null && version == null) version = ver.Version;
         IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
@@ -124,7 +139,7 @@ public static class ByteTools {
         if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
         if(declear != null && declear.CheckCondition(version)) declearing = true;
         if(includeClass) type = Type.GetType(input.ReadUTF());
-        if(CheckType(type, typeof(ICollection<>)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+        if(CheckType(type, typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             int size = input.ReadInt();
             if(size == -1) return null;
             Type elementType = type.GetGenericArguments()[0];
@@ -134,14 +149,16 @@ public static class ByteTools {
                 return array;
             }
             ConstructorInfo constructorInfo;
-            object collection = (constructorInfo = type.Constructor(typeof(int))) != null ? constructorInfo.Invoke(new object[] { size }) : type.New();
+            object collection = (constructorInfo = type.Constructor(typeof(int))) != null ? constructorInfo.Invoke([size]) : type.New();
             MethodInfo addMethod = type.Method("Add");
-            for(int i = 0; i < size; i++) addMethod.Invoke(collection, new[] { ToObject(input, elementType) });
+            if(CheckType(type, typeof(IDictionary)))
+                for(int i = 0; i < size; i++) addMethod.Invoke(collection, [ToObject(input, elementType), ToObject(input, type.GetGenericArguments()[1])]);
+            else
+                for(int i = 0; i < size; i++) addMethod.Invoke(collection, [ToObject(input, elementType)]);
             return collection;
         }
-        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
+        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null)
             if(!input.ReadBoolean()) return null;
-        }
         if(CheckType(type, typeof(Delegate))) {
             if(!includeClass) type = Type.GetType(input.ReadUTF());
             Type declaringType = Type.GetType(input.ReadUTF());
@@ -220,24 +237,7 @@ public static class ByteTools {
                 IncludeClassAttribute inc = member.GetCustomAttribute<IncludeClassAttribute>();
                 if(inc != null && inc.CheckCondition(version)) memberType = Type.GetType(input.ReadUTF());
             }
-            JALib.Instance.Log(castType.FullName);
-            object value = castType switch {
-                not null when castType == typeof(long) => input.ReadLong(),
-                not null when castType == typeof(int) => input.ReadInt(),
-                not null when castType == typeof(short) => input.ReadShort(),
-                not null when castType == typeof(byte) => input.ReadByte(),
-                not null when castType == typeof(bool) => input.ReadBoolean(),
-                not null when castType == typeof(string) => input.ReadUTF(),
-                not null when castType == typeof(byte[]) => input.ReadBytes(),
-                not null when castType == typeof(decimal) => input.ReadDecimal(),
-                not null when castType == typeof(float) => input.ReadFloat(),
-                not null when castType == typeof(double) => input.ReadDouble(),
-                not null when castType == typeof(ushort) => input.ReadUShort(),
-                not null when castType == typeof(uint) => input.ReadUInt(),
-                not null when castType == typeof(ulong) => input.ReadULong(),
-                not null when castType == typeof(sbyte) => input.ReadSByte(),
-                _ => ToObject(input, castType, memberDeclearing, false, version)
-            };
+            object value = ToObject(input, castType, memberDeclearing, false, version);
             if(castType != memberType) {
                 MethodInfo explicitCast = memberType.Method("op_Explicit", castType);
                 MethodInfo implicitCast = castType.Method("op_Implicit", memberType);
@@ -391,22 +391,48 @@ public static class ByteTools {
     }
 
     public static void ToBytes(this object value, Stream output, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
-        {
-            VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
-            if(ver != null) version = ver.Version;
-            IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
-            DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
-            if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
-            if(declear != null && declear.CheckCondition(version)) declearing = true;
-        }
+        bool front = true;
+        if(type == typeof(byte)) output.WriteByte((byte) value);
+        else if(type == typeof(sbyte)) output.WriteByte((byte) value);
+        else if(type == typeof(short)) output.WriteShort((short) value);
+        else if(type == typeof(ushort)) output.WriteUShort((ushort) value);
+        else if(type == typeof(int)) output.WriteInt((int) value);
+        else if(type == typeof(uint)) output.WriteUInt((uint) value);
+        else if(type == typeof(long)) output.WriteLong((long) value);
+        else if(type == typeof(ulong)) output.WriteULong((ulong) value);
+        else if(type == typeof(float)) output.WriteFloat((float) value);
+        else if(type == typeof(double)) output.WriteDouble((double) value);
+        else if(type == typeof(decimal)) output.WriteDecimal((decimal) value);
+        else if(type == typeof(bool)) output.WriteBoolean((bool) value);
+        else if(type == typeof(char)) output.WriteChar((char) value);
+        else if(type == typeof(string)) output.WriteUTF((string) value);
+        else if(type == typeof(byte[])) output.WriteBytes((byte[]) value);
+        else front = false;
+        if(front) return;
+        VersionAttribute ver = type.GetCustomAttribute<VersionAttribute>();
+        if(ver != null) version = ver.Version;
+        IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
+        DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
+        if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
+        if(declear != null && declear.CheckCondition(version)) declearing = true;
         if(includeClass) output.WriteUTF(type.FullName);
-        if(CheckType(type, typeof(ICollection<>)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+        if(CheckType(type, typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             if(value == null) {
                 output.WriteInt(-1);
                 return;
             }
             output.WriteInt(value.GetValue<int>("Count"));
-            foreach(object obj in (IEnumerable) value) ToBytes(obj, output, declearing);
+            Type elementType = type.GetGenericArguments()[0];
+            if(CheckType(type, typeof(IDictionary))) {
+                Type valueType = type.GetGenericArguments()[1];
+                foreach(object obj in (IEnumerable) value) {
+                    DictionaryEntry entry = (DictionaryEntry) obj;
+                    ToBytes(entry.Key, output, elementType, declearing);
+                    ToBytes(entry.Value, output, valueType, declearing);
+                }
+                return;
+            }
+            foreach(object obj in (IEnumerable) value) ToBytes(obj, output, elementType, declearing);
             return;
         }
         if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
@@ -497,21 +523,7 @@ public static class ByteTools {
                 else if(implicitCast != null) memberValue = implicitCast.Invoke(null, memberValue);
                 else memberValue = Convert.ChangeType(memberValue, castType);
             }
-            if(castType == typeof(long)) output.WriteLong((long) memberValue);
-            else if(castType == typeof(int)) output.WriteInt((int) memberValue);
-            else if(castType == typeof(short)) output.WriteShort((short) memberValue);
-            else if(castType == typeof(byte)) output.WriteByte((byte) memberValue);
-            else if(castType == typeof(bool)) output.WriteBoolean((bool) memberValue);
-            else if(castType == typeof(string)) output.WriteUTF((string) memberValue);
-            else if(castType == typeof(byte[])) output.WriteBytes((byte[]) memberValue);
-            else if(castType == typeof(decimal)) output.WriteDecimal((decimal) memberValue);
-            else if(castType == typeof(float)) output.WriteFloat((float) memberValue);
-            else if(castType == typeof(double)) output.WriteDouble((double) memberValue);
-            else if(castType == typeof(ushort)) output.WriteUShort((ushort) memberValue);
-            else if(castType == typeof(uint)) output.WriteUInt((uint) memberValue);
-            else if(castType == typeof(ulong)) output.WriteULong((ulong) memberValue);
-            else if(castType == typeof(sbyte)) output.WriteSByte((sbyte) memberValue);
-            else ToBytes(memberValue, output, castType, memberDeclearing, false, version);
+            ToBytes(memberValue, output, castType, memberDeclearing, false, version);
         }
     }
 
