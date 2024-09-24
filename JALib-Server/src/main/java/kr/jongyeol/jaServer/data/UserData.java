@@ -29,7 +29,7 @@ public class UserData {
             public void onRemove() {
                 try {
                     save();
-                    Variables.setNull(userDataMap);
+                    userDataMap.clear();
                     userDataMap = null;
                     autoRemovedData = null;
                 } catch (IOException e) {

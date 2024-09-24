@@ -16,23 +16,24 @@ public class AutoRemovedData {
     }
 
     private static void autoRemove() {
-        AutoRemovedData autoRemovedData;
-        synchronized(autoRemovedDataList) {
-            if(autoRemovedDataList.isEmpty()) return;
-            autoRemovedData = autoRemovedDataList.get(0);
-            for(AutoRemovedData data : autoRemovedDataList)
-                if(data.removeTime < autoRemovedData.removeTime) autoRemovedData = data;
+        while(true) {
+            AutoRemovedData autoRemovedData;
+            synchronized(autoRemovedDataList) {
+                if(autoRemovedDataList.isEmpty()) return;
+                autoRemovedData = autoRemovedDataList.get(0);
+                for(AutoRemovedData data : autoRemovedDataList)
+                    if(data.removeTime < autoRemovedData.removeTime) autoRemovedData = data;
+            }
+            long time = autoRemovedData.removeTime - System.currentTimeMillis() - 10;
+            if(time < 0) time = 0;
+            AutoRemovedData finalAutoRemovedData = autoRemovedData;
+            try {
+                Thread.sleep(time);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            finalAutoRemovedData.remove();
         }
-        long time = autoRemovedData.removeTime - System.currentTimeMillis() - 10;
-        if(time < 0) time = 0;
-        AutoRemovedData finalAutoRemovedData = autoRemovedData;
-        try {
-            Thread.sleep(time);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        finalAutoRemovedData.remove();
-        autoRemove();
     }
 
     public long removeTime;
