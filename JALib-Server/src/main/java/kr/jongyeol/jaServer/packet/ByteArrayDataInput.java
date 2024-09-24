@@ -7,16 +7,11 @@ import java.nio.charset.StandardCharsets;
 
 public class ByteArrayDataInput {
     private byte[] data;
-    private ByteBuffer buffer;
     private int cur = 0;
 
     public ByteArrayDataInput(byte[] data) {
         this.data = data;
         if(data.length == 0) throw new ByteDataNotFound();
-    }
-
-    public ByteArrayDataInput(ByteBuffer buffer) {
-        this.buffer = buffer;
     }
 
     public String readUTF() {
@@ -54,7 +49,7 @@ public class ByteArrayDataInput {
     }
 
     public byte readByte() {
-        return data == null ? buffer.get() : data[cur++];
+        return data[cur++];
     }
 
     public short readShort() {
