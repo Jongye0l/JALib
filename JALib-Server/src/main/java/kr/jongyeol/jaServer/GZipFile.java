@@ -34,7 +34,6 @@ public class GZipFile {
 
     @SneakyThrows(IOException.class)
     public static byte[] gunzipData(byte[] data) {
-        Stream.of(data).forEach(Logger.MAIN_LOGGER::info);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
         @Cleanup GZIPInputStream gzipInputStream = new GZIPInputStream(byteArrayInputStream);

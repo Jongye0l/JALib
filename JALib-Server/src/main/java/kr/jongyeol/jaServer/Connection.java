@@ -58,6 +58,7 @@ public class Connection extends BinaryWebSocketHandler {
                     RequestPacket requestPacket = requestPacketClass.getDeclaredConstructor().newInstance();
                     requestPacket.id = id;
                     requestPacket.getData(this, input);
+                    sendData(requestPacket);
                 } catch (Exception e) {
                     if(logger == null) return;
                     logger.error("Error in " + method + " packet");
