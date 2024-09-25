@@ -29,7 +29,7 @@ class JAModSetting : JASetting {
         return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
     }
 
-    public new void PutFieldData() {
+    public override void PutFieldData() {
         try {
             Setting?.PutFieldData();
             foreach(Feature f in Mod.Features) f.FeatureSetting.PutFieldData();
@@ -39,7 +39,7 @@ class JAModSetting : JASetting {
         }
     }
 
-    public new void RemoveFieldData() {
+    public override void RemoveFieldData() {
         try {
             Setting?.RemoveFieldData();
             foreach(Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();

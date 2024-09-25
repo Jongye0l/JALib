@@ -24,12 +24,12 @@ class JAFeatureSetting : JASetting {
         return jObject;
     }
 
-    public new void PutFieldData() {
+    public override void PutFieldData() {
         base.PutFieldData();
         Setting?.PutFieldData();
     }
 
-    public new void RemoveFieldData() {
+    public override void RemoveFieldData() {
         base.RemoveFieldData();
         Setting?.RemoveFieldData();
     }

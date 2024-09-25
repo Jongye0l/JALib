@@ -79,7 +79,7 @@ public class JASetting : IDisposable {
         JsonObject[key] = JToken.FromObject(value);
     }
 
-    public void PutFieldData() {
+    public virtual void PutFieldData() {
         try {
             foreach(FieldInfo field in jsonFields) {
                 SettingNameAttribute nameAttribute = field.GetCustomAttribute<SettingNameAttribute>();
@@ -101,7 +101,7 @@ public class JASetting : IDisposable {
         }
     }
 
-    public void RemoveFieldData() {
+    public virtual void RemoveFieldData() {
         try {
             foreach(FieldInfo field in jsonFields) {
                 SettingNameAttribute nameAttribute = field.GetCustomAttribute<SettingNameAttribute>();
