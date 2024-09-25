@@ -15,7 +15,8 @@ public class JABootstrap {
     private static async void Setup(UnityModManager.ModEntry modEntry) {
         domain ??= AppDomain.CurrentDomain;
         _task = Installer.CheckMod(modEntry);
-        JAModInfo modInfo = LoadModInfo(modEntry);
+        bool beta = InitializeVersion(modEntry);
+        JAModInfo modInfo = LoadModInfo(modEntry, beta);
         await _task;
         SetupJALib(modInfo);
     }
@@ -26,13 +27,37 @@ public class JABootstrap {
         return modType;
     }
 
-    private static JAModInfo LoadModInfo(UnityModManager.ModEntry modEntry) {
+    private static JAModInfo LoadModInfo(UnityModManager.ModEntry modEntry, bool beta) {
         string modInfoPath = Path.Combine(modEntry.Path, "JAModInfo.json");
         if(!File.Exists(modInfoPath)) throw new FileNotFoundException("JAModInfo not found.");
         JAModInfo modInfo = File.ReadAllText(modInfoPath).FromJson<JAModInfo>();
         if(modInfo.BootstrapVersion > BootstrapVersion) throw new Exception("Bootstrap version is too low.");
         modInfo.ModEntry = modEntry;
+        modInfo.IsBetaBranch = beta;
         return modInfo;
+    }
+
+    private static bool InitializeVersion(UnityModManager.ModEntry modEntry) {
+        try {
+            string version = modEntry.Info.Version;
+            string onlyVersion = version;
+            string behindVersion = "";
+            bool beta = version.Contains('-') || version.Contains(' ');
+            if(beta) {
+                int index = version.IndexOf('-');
+                if(index == -1) index = version.IndexOf(' ');
+                onlyVersion = version[..index];
+                behindVersion = version[index..];
+            }
+            Version versionValue = Version.Parse(onlyVersion);
+            modEntry.Info.Version = (versionValue.Build == 0     ? new Version(versionValue.Major, versionValue.Minor) :
+                                     versionValue.Revision == -1 ? versionValue : new Version(versionValue.Major, versionValue.Minor, versionValue.Build)) + behindVersion;
+            typeof(UnityModManager.ModEntry).GetField("Version", (BindingFlags) 15420).SetValue(modEntry, versionValue);
+            return beta;
+        } catch (Exception e) {
+            modEntry.Logger.LogException(e);
+            return false;
+        }
     }
 
     private static Type LoadMod(JAModInfo modInfo) {
@@ -55,8 +80,9 @@ public class JABootstrap {
     }
 
     public static async void Load(UnityModManager.ModEntry modEntry) {
+        bool beta = InitializeVersion(modEntry);
         await _task;
-        JAModInfo modInfo = LoadModInfo(modEntry);
+        JAModInfo modInfo = LoadModInfo(modEntry, beta);
         LoadJAMod.Invoke(null, [modInfo]);
     }
 }

@@ -40,7 +40,7 @@ class JALib : JAMod {
     private static void SetupModInfo(JAModInfo modInfo) {
         modInfo.ModName = modInfo.ModEntry.Info.DisplayName;
         bool beta = modInfo.IsBetaBranch = Instance.Setting.Beta[modInfo.ModName]?.ToObject<bool>() ?? false;
-        modInfo.ModVersion = ParseVersion(modInfo.ModEntry, ref modInfo.IsBetaBranch);
+        modInfo.ModVersion = modInfo.ModEntry.Version;
         if(beta != modInfo.IsBetaBranch) {
             Instance.Setting.Beta[modInfo.ModName] = modInfo.IsBetaBranch;
             Instance.SaveSetting();
@@ -69,7 +69,8 @@ class JALib : JAMod {
             if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
             UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
             modInfo.ModEntry.SetValue("Info", info);
-            modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modInfo.ModEntry);
+            bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", modInfo.ModEntry);
+            modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modInfo.ModEntry, beta);
             SetupModInfo(modInfo);
             await LoadDependencies(modInfo);
         }
@@ -177,8 +178,6 @@ class JALib : JAMod {
         if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
         UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
         ModEntry.SetValue("Info", info);
-        bool beta = false;
-        ParseVersion(ModEntry, ref beta);
         ModEntry.Info.DisplayName = Name;
         Type type;
         try {

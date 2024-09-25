@@ -60,8 +60,6 @@ public abstract class JAMod {
             ModEntry = modEntry;
             Name = ModEntry.Info.DisplayName;
             ModSetting = new JAModSetting(this, settingPath, settingType);
-            bool beta = false;
-            ParseVersion(ModEntry, ref beta);
             Features = [];
             Localization = localization ? new JALocalization(this) : null;
             Discord = ModSetting.Discord ?? discord ?? Discord;
@@ -84,24 +82,6 @@ public abstract class JAMod {
             LogException(e);
             throw;
         }
-    }
-
-    internal static Version ParseVersion(UnityModManager.ModEntry modEntry, ref bool beta) {
-        string version = modEntry.Info.Version;
-        string onlyVersion = version;
-        string behindVersion = "";
-        if(version.Contains('-') || version.Contains(' ')) {
-            int index = version.IndexOf('-');
-            if(index == -1) index = version.IndexOf(' ');
-            onlyVersion = version[..index];
-            behindVersion = version[index..];
-            if(!beta) beta = true;
-        }
-        Version versionValue = Version.Parse(onlyVersion);
-        modEntry.Info.Version = (versionValue.Build == 0     ? new Version(versionValue.Major, versionValue.Minor) :
-                                 versionValue.Revision == -1 ? versionValue : new Version(versionValue.Major, versionValue.Minor, versionValue.Build)) + behindVersion;
-        modEntry.SetValue("Version", versionValue);
-        return versionValue;
     }
 
     private async void InitializeGUI() {
