@@ -20,6 +20,7 @@ class Installer {
         using HttpClient client = new();
         string domain = Domain1;
         try {
+            modEntry.Info.DisplayName = modName + "<color=gray> [Check Update...]</color>";
             HttpResponseMessage response = null;
             for(int i = 0; i < 2; i++) {
                 response = await client.GetAsync($"https://{domain}/autoInstaller/{modEntry.Info.Version.Split(" ")[0]}");
