@@ -16,7 +16,7 @@ class Installer {
     private const string Domain2 = "jalib2.jongyeol.kr";
 
     internal static async Task CheckMod(UnityModManager.ModEntry modEntry) {
-        string modName = modEntry.Info.DisplayName;
+        string modName = modEntry.Info.Id;
         using HttpClient client = new();
         string domain = Domain1;
         try {

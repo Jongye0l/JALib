@@ -58,7 +58,7 @@ public abstract class JAMod {
     protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null, int gid = -1) {
         try {
             ModEntry = modEntry;
-            Name = ModEntry.Info.DisplayName;
+            Name = ModEntry.Info.Id;
             ModSetting = new JAModSetting(this, settingPath, settingType);
             Features = [];
             Localization = localization ? new JALocalization(this) : null;

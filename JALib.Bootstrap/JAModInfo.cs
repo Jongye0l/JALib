@@ -12,8 +12,6 @@ public class JAModInfo {
     public bool DependencyRequireModPath;
     public int BootstrapVersion;
     public UnityModManager.ModEntry ModEntry;
-    public string ModName;
-    public Version ModVersion;
     public bool IsBetaBranch;
     public Dictionary<string, string> Dependencies;
 }
