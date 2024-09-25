@@ -10,6 +10,7 @@ public abstract class Feature {
 
     private static GUIStyle _expandStyle;
     private static GUIStyle _enableStyle;
+    private static GUIStyle _enableLabelStyle;
 
     public bool Enabled {
         get => FeatureSetting.Enabled;
@@ -104,13 +105,18 @@ public abstract class Feature {
             fontStyle = FontStyle.Normal,
             margin = new RectOffset(0, 4, 4, 4)
         };
+        _enableLabelStyle ??= new GUIStyle(GUI.skin.label) {
+            fontStyle = FontStyle.Normal,
+            margin = new RectOffset(4, 4, 4, 4)
+        };
         GUILayout.BeginHorizontal();
         bool enabled, expanded;
         try {
             expanded = GUILayout.Toggle(_expanded, Enabled && _canExpand ? _expanded ? "◢" : "▶" : "", _expandStyle);
             if(!CanEnable) {
                 enabled = Enabled;
-                GUILayout.Label(Name, _enableStyle);
+                GUILayout.Space(15f);
+                GUILayout.Label(Name, _enableLabelStyle);
             } else enabled = GUILayout.Toggle(Enabled, Name, _enableStyle);
         } finally {
             GUILayout.FlexibleSpace();
