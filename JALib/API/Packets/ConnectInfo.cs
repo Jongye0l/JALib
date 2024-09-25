@@ -22,7 +22,7 @@ class ConnectInfo : AsyncRequestPacket {
         output.WriteUTF(JALib.Instance.Version.ToString());
         output.WriteUTF(Application.version);
         output.WriteInt(GCNS.releaseNumber);
-        output.WriteUTF(GCS.steamBranchName);
+        output.WriteUTF(GCS.steamBranchName ?? "Unknown");
         output.WriteLong(DiscordController.currentUserID);
         ulong steamID;
         try {
