@@ -528,7 +528,7 @@ public static class ByteTools {
     }
 
     private static bool CheckType(Type type, Type check) {
-        return type == check || type.IsSubclassOf(check);
+        return check.IsAssignableFrom(type);
     }
 
     private static void CheckStart(int start, int length) {
