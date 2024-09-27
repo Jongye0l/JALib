@@ -14,8 +14,7 @@ public class JAPatcher : IDisposable {
     private List<JAPatchAttribute> patchData;
     private JAMod mod;
     public event FailPatch OnFailPatch;
-    private bool patched;
-
+    public bool patched { get; private set; }
     public delegate void FailPatch(string patchId);
 
     public JAPatcher(JAMod mod) {
