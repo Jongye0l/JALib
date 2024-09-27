@@ -19,7 +19,6 @@ public class JAPatchAttribute : Attribute {
     public Type[] ArgumentTypesType;
     internal MethodInfo Method;
     internal HarmonyMethod HarmonyMethod;
-    internal MethodInfo Patch;
     public string GenericName;
     public Type GenericType;
     public bool TryingCatch = true;

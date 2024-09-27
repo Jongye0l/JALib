@@ -35,7 +35,7 @@ public class JAPatcher : IDisposable {
     }
 
     private void Patch(JAPatchAttribute attribute) {
-        if(attribute.Patch != null) {
+        if(Harmony.GetAllPatchedMethods().Any(method => Harmony.GetPatchInfo(method).Owners.Contains(attribute.PatchId))) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed : Already Patched");
             return;
         }
@@ -139,10 +139,10 @@ public class JAPatcher : IDisposable {
                     Type patchType = typeBuilder.CreateType();
                     patchType.SetValue("OriginalMethod", originalMethod);
                     patchType.SetValue("ExceptionCatcher", OnPatchException);
-                    attribute.HarmonyMethod ??= new HarmonyMethod(patchType.Method(originalMethod.Name));
+                    attribute.HarmonyMethod = new HarmonyMethod(patchType.Method(originalMethod.Name));
                 }
             } else attribute.HarmonyMethod ??= new HarmonyMethod(originalMethod);
-            attribute.Patch = JALib.Harmony.Patch(attribute.MethodBase,
+            new Harmony(attribute.PatchId).Patch(attribute.MethodBase,
                 attribute.PatchType == PatchType.Prefix ? attribute.HarmonyMethod : null,
                 attribute.PatchType == PatchType.Postfix ? attribute.HarmonyMethod : null,
                 attribute.PatchType == PatchType.Transpiler ? attribute.HarmonyMethod : null,
@@ -165,18 +165,7 @@ public class JAPatcher : IDisposable {
     public void Unpatch() {
         if(!patched) return;
         patched = false;
-        foreach(JAPatchAttribute patchData in patchData.Where(patchData => patchData.Patch != null)) {
-            JALib.Harmony.Unpatch(patchData.MethodBase, patchData.Patch);
-            patchData.Patch = null;
-        }
-    }
-
-    public void Unpatch(string patchId) {
-        if(!patched) return;
-        foreach(JAPatchAttribute patchData in patchData.Where(patchData => patchData.Patch != null && patchData.PatchId == patchId)) {
-            JALib.Harmony.Unpatch(patchData.MethodBase, patchData.Patch);
-            patchData.Patch = null;
-        }
+        foreach(JAPatchAttribute patchData in patchData) new Harmony(patchData.PatchId).UnpatchAll();
     }
 
     public JAPatcher AddPatch(Type type) {
