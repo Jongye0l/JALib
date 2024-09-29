@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using ADOFAI;
 using HarmonyLib;
 using JALib.Tools;
 
@@ -13,9 +12,11 @@ public class JAPatcher : IDisposable {
 
     private List<JAPatchAttribute> patchData;
     private JAMod mod;
+    private string patchIdFront;
     public event FailPatch OnFailPatch;
     public bool patched { get; private set; }
     public delegate void FailPatch(string patchId);
+    private static Dictionary<MethodInfo, HarmonyMethod> harmonyMethods = new();
 
     public JAPatcher(JAMod mod) {
         this.mod = mod;
@@ -35,10 +36,6 @@ public class JAPatcher : IDisposable {
     }
 
     private void Patch(JAPatchAttribute attribute) {
-        if(Harmony.GetAllPatchedMethods().Any(method => Harmony.GetPatchInfo(method).Owners.Contains(attribute.PatchId))) {
-            mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed : Already Patched");
-            return;
-        }
         try {
             if(attribute.MinVersion > GCNS.releaseNumber || attribute.MaxVersion < GCNS.releaseNumber) return;
             if(attribute.MethodBase == null) {
@@ -87,10 +84,10 @@ public class JAPatcher : IDisposable {
                     attribute.MethodBase = ((MethodInfo) attribute.MethodBase).MakeGenericMethod(attribute.GenericType);
                 }
             }
-            MethodInfo originalMethod = attribute.Method;
-            if(attribute.TryingCatch) {
-                if(attribute.HarmonyMethod == null) {
-                    TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JAPatch.{mod.Name}.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
+            if(!harmonyMethods.TryGetValue(attribute.Method, out HarmonyMethod value)) {
+                MethodInfo originalMethod = attribute.Method;
+                if(attribute.TryingCatch) {
+                    TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JAPatch.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
                     FieldBuilder methodField = typeBuilder.DefineField("OriginalMethod", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static);
                     FieldBuilder exceptionCatchField = typeBuilder.DefineField("ExceptionCatcher", typeof(Action<Exception>), FieldAttributes.Private | FieldAttributes.Static);
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Public | MethodAttributes.Static,
@@ -139,14 +136,14 @@ public class JAPatcher : IDisposable {
                     Type patchType = typeBuilder.CreateType();
                     patchType.SetValue("OriginalMethod", originalMethod);
                     patchType.SetValue("ExceptionCatcher", OnPatchException);
-                    attribute.HarmonyMethod = new HarmonyMethod(patchType.Method(originalMethod.Name));
-                }
-            } else attribute.HarmonyMethod ??= new HarmonyMethod(originalMethod);
-            new Harmony(attribute.PatchId).Patch(attribute.MethodBase,
-                attribute.PatchType == PatchType.Prefix ? attribute.HarmonyMethod : null,
-                attribute.PatchType == PatchType.Postfix ? attribute.HarmonyMethod : null,
-                attribute.PatchType == PatchType.Transpiler ? attribute.HarmonyMethod : null,
-                attribute.PatchType == PatchType.Finalizer ? attribute.HarmonyMethod : null);
+                    harmonyMethods[originalMethod] = value = new HarmonyMethod(patchType.Method(originalMethod.Name));
+                } else harmonyMethods[originalMethod] = value = new HarmonyMethod(originalMethod);
+            }
+            attribute.Patch = JALib.Harmony.Patch(attribute.MethodBase,
+                attribute.PatchType == PatchType.Prefix ? value : null,
+                attribute.PatchType == PatchType.Postfix ? value : null,
+                attribute.PatchType == PatchType.Transpiler ? value : null,
+                attribute.PatchType == PatchType.Finalizer ? value : null);
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
             mod.LogException(e);
@@ -165,7 +162,7 @@ public class JAPatcher : IDisposable {
     public void Unpatch() {
         if(!patched) return;
         patched = false;
-        foreach(JAPatchAttribute patchData in patchData) new Harmony(patchData.PatchId).UnpatchAll();
+        foreach(JAPatchAttribute patchData in patchData) JALib.Harmony.Unpatch(patchData.MethodBase, harmonyMethods[patchData.Method].method);
     }
 
     public JAPatcher AddPatch(Type type) {
