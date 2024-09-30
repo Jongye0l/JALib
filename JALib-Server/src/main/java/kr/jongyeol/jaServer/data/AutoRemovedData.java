@@ -20,10 +20,17 @@ public class AutoRemovedData {
             AutoRemovedData autoRemovedData;
             synchronized(autoRemovedDataList) {
                 if(autoRemovedDataList.isEmpty()) return;
-                autoRemovedData = autoRemovedDataList.get(0);
-                for(AutoRemovedData data : autoRemovedDataList)
-                    if(data.removeTime < autoRemovedData.removeTime) autoRemovedData = data;
+                long cur = System.currentTimeMillis();
+                autoRemovedData = null;
+                for(AutoRemovedData data : autoRemovedDataList) {
+                    if(data.removeTime < cur) {
+                        data.remove();
+                        continue;
+                    }
+                    if(autoRemovedData == null || data.removeTime < autoRemovedData.removeTime) autoRemovedData = data;
+                }
             }
+            if(autoRemovedData == null) return;
             long time = autoRemovedData.removeTime - System.currentTimeMillis() - 10;
             if(time < 0) time = 0;
             AutoRemovedData finalAutoRemovedData = autoRemovedData;
@@ -36,7 +43,7 @@ public class AutoRemovedData {
         }
     }
 
-    public long removeTime;
+    public transient long removeTime;
 
     public AutoRemovedData() {
         synchronized(autoRemovedDataList) {
