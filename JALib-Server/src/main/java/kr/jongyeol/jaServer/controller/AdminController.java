@@ -105,8 +105,9 @@ public class AdminController extends CustomController {
         @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
         output.writeInt(modDatas.length);
         for(ModData modData : modDatas) {
+            if(modData.getBetaVersion() == null) continue;
             output.writeUTF(modData.getName());
-            output.writeUTF(modData.getVersion().toString());
+            output.writeUTF(modData.getVersion() == null ? null : modData.getVersion().toString());
             output.writeUTF(modData.getBetaVersion().toString());
             output.writeBoolean(modData.isForceUpdate());
             ForceUpdateHandle[] handles = modData.getForceUpdateHandles();

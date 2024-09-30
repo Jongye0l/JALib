@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import kr.jongyeol.jaServer.Logger;
 import kr.jongyeol.jaServer.Settings;
 import kr.jongyeol.jaServer.Variables;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
@@ -63,7 +64,8 @@ public class ModData extends AutoRemovedData {
         ModData modData = ModData.getModData(name);
         if(modData == null) modData = ModData.createMod();
         modData.name = name;
-        modData.version = new Version(input.readUTF());
+        String versionString = input.readUTF();
+        if(versionString != null) modData.version = new Version(versionString);
         modData.betaVersion = new Version(input.readUTF());
         modData.forceUpdate = input.readBoolean();
         ForceUpdateHandle[] handles = new ForceUpdateHandle[input.readInt()];
@@ -123,6 +125,7 @@ public class ModData extends AutoRemovedData {
             Files.move(path, copyPath);
         }
         String json = Variables.gson.toJson(this);
+        if(!Files.exists(path)) Files.createFile(path);
         Files.writeString(path, json);
         if(exists) Files.delete(copyPath);
     }

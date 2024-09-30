@@ -27,7 +27,6 @@ public class TokenData {
                     @Override
                     public void onRemove() {
                         tokens.clear();
-                        Variables.setNull(tokens);
                         tokens = null;
                         autoRemovedData = null;
                     }

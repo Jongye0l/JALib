@@ -1,5 +1,6 @@
 package kr.jongyeol.jaServer.data;
 
+import kr.jongyeol.jaServer.Logger;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 
@@ -13,7 +14,8 @@ public abstract class DownloadLink {
                 return new GithubDownloadLink(modData.getName());
             case 1:
                 Map<Version, String> map = new HashMap<>();
-                for(int i = 0; i < input.readInt(); i++) map.put(new Version(input.readUTF()), input.readUTF());
+                int size = input.readInt();
+                for(int i = 0; i < size; i++) map.put(new Version(input.readUTF()), input.readUTF());
                 return new CustomDownloadLink(map);
             default:
                 return null;
