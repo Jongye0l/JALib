@@ -87,7 +87,7 @@ public class JAPatcher : IDisposable {
             if(!harmonyMethods.TryGetValue(attribute.Method, out HarmonyMethod value)) {
                 MethodInfo originalMethod = attribute.Method;
                 if(attribute.TryingCatch) {
-                    TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JAPatch.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
+                    TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JALib.Patch.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
                     FieldBuilder methodField = typeBuilder.DefineField("OriginalMethod", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static);
                     FieldBuilder exceptionCatchField = typeBuilder.DefineField("ExceptionCatcher", typeof(Action<Exception>), FieldAttributes.Private | FieldAttributes.Static);
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Public | MethodAttributes.Static,

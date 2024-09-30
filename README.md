@@ -31,6 +31,7 @@
 * 기능별 관리
 * 필요한 모드 자동 다운로드
 * 얼불춤 버전 별 패치
+* 클래스 강제 오버라이드
 ---
 ### 사용 방법 How to use
 * [이 링크](https://github.com/Jongye0l/JALib/releases/latest) 에서 다운로드 후 모드매니저를 통해 적용시키면 됩니다.

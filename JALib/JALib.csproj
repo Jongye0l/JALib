@@ -532,6 +532,7 @@
         <Compile Include="Core\Setting\SettingNameAttribute.cs" />
         <Compile Include="Core\Setting\SettingRoundAttribute.cs" />
         <Compile Include="Data\RawFile.cs" />
+        <Compile Include="JAException\AlreadyWorkedException.cs" />
         <Compile Include="JAException\ResponseException.cs" />
         <Compile Include="JALib.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
@@ -546,6 +547,7 @@
         <Compile Include="Tools\ByteTool\IncludeClassAttribute.cs" />
         <Compile Include="Tools\ByteTool\StreamTool.cs" />
         <Compile Include="Tools\ByteTool\VersionAttribute.cs" />
+        <Compile Include="Tools\ClassOverride.cs" />
         <Compile Include="Tools\ForceApplyMod.cs" />
         <Compile Include="Tools\SettingGUI.cs" />
         <Compile Include="Tools\JAction.cs" />
