@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.jongyeol.jaServer.Compress;
 import kr.jongyeol.jaServer.Connection;
+import kr.jongyeol.jaServer.GZipFile;
 import kr.jongyeol.jaServer.data.*;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
@@ -19,7 +20,7 @@ public class AdminController extends CustomController {
     public String addModData(HttpServletResponse response, HttpServletRequest request,
                              @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
         String name = input.readUTF();
         info(request, "Add ModData: " + name);
         ModData modData = ModData.createMod(name, input);
@@ -31,7 +32,7 @@ public class AdminController extends CustomController {
     public String changeModData(HttpServletResponse response, HttpServletRequest request,
                                 @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
         ModData modData = ModData.getModData(input.readUTF());
         switch(input.readByte()) {
             case 0 -> {
@@ -116,14 +117,14 @@ public class AdminController extends CustomController {
             modData.getDownloadLink().write(output);
             output.writeInt(modData.getGid());
         }
-        return Compress.compress(output.toByteArray());
+        return GZipFile.gzipData(output.toByteArray());
     }
 
     @PutMapping("/requestMods")
     public String addRequestMods(HttpServletResponse response, HttpServletRequest request,
                                  @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
         long discordID = input.readLong();
         DiscordUserData userData = DiscordUserData.getUserData(discordID);
         RawMod mod = new RawMod(ModData.getModData(input.readUTF()), new Version(input.readUTF()));
@@ -137,7 +138,7 @@ public class AdminController extends CustomController {
     public String removeRequestMods(HttpServletResponse response, HttpServletRequest request,
                                     @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
         long discordID = input.readLong();
         DiscordUserData userData = DiscordUserData.getUserData(discordID);
         if(input.readBoolean()) {
@@ -155,7 +156,7 @@ public class AdminController extends CustomController {
     public String changeRequestMods(HttpServletResponse response, HttpServletRequest request,
                                  @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
+        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
         long discordID = input.readLong();
         DiscordUserData userData = DiscordUserData.getUserData(discordID);
         int i = input.readInt();
@@ -181,6 +182,6 @@ public class AdminController extends CustomController {
                 output.writeUTF(mod.version.toString());
             }
         }
-        return Compress.compress(output.toByteArray());
+        return GZipFile.gzipData(output.toByteArray());
     }
 }

@@ -4,7 +4,10 @@ import kr.jongyeol.jaServer.data.*;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import lombok.Cleanup;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 public class ConnectOtherLib {
@@ -25,10 +28,14 @@ public class ConnectOtherLib {
             if(modData.getHomepage() != null) output.writeUTF(modData.getHomepage());
             modData.getDownloadLink().write(output);
             output.writeInt(modData.getGid());
-            restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
-            restTemplate.put(Settings.getInstance().getOtherLibURL() + "admin/modData", Compress.compress(output.toByteArray()));
-        } catch (Exception e) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("token", TokenData.getTokens().get(0));
+            HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(output.toByteArray()), headers);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/modData", HttpMethod.PUT, entity, String.class);
+        } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
@@ -179,22 +186,30 @@ public class ConnectOtherLib {
 
     private static void changeModData(byte[] data) {
         try {
-            restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
-            restTemplate.patchForObject(Settings.getInstance().getOtherLibURL() + "admin/modData", Compress.compress(data), String.class);
-        } catch (Exception e) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("token", TokenData.getTokens().get(0));
+            HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(data), headers);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/modData", HttpMethod.PATCH, entity, String.class);
+        } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
     public static void setupModData() {
         try {
-            restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
-            byte[] data = restTemplate.getForEntity(Settings.getInstance().getOtherLibURL() + "admin/modData", byte[].class).getBody();
-            ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("token", TokenData.getTokens().get(0));
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            byte[] data = restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/modData", HttpMethod.GET, entity, byte[].class).getBody();
+            ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
             int length = input.readInt();
             for(int i = 0; i < length; i++) ModData.createMod(input.readUTF(), input);
-        } catch (Exception e) {
+        } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
@@ -204,10 +219,14 @@ public class ConnectOtherLib {
             output.writeLong(discordId);
             output.writeUTF(rawMod.mod.getName());
             output.writeUTF(rawMod.version.toString());
-            restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
-            restTemplate.put(Settings.getInstance().getOtherLibURL() + "admin/requestMods", Compress.compress(output.toByteArray()));
-        } catch (Exception e) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("token", TokenData.getTokens().get(0));
+            HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(output.toByteArray()), headers);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.PUT, entity, String.class);
+        } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
@@ -236,11 +255,14 @@ public class ConnectOtherLib {
 
     private static void removeRequestMods(byte[] data) {
         try {
-            restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
-            restTemplate.execute(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.DELETE,
-                restTemplate.httpEntityCallback(Compress.compress(data)), null);
-        } catch (Exception e) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("token", TokenData.getTokens().get(0));
+            HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(data), headers);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.DELETE, entity, String.class);
+        } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
@@ -251,18 +273,24 @@ public class ConnectOtherLib {
             output.writeInt(i);
             output.writeUTF(rawMod.mod.getName());
             output.writeUTF(rawMod.version.toString());
-            restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
-            restTemplate.patchForObject(Settings.getInstance().getOtherLibURL() + "admin/requestMods", Compress.compress(output.toByteArray()), String.class);
-        } catch (Exception e) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("token", TokenData.getTokens().get(0));
+            HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(output.toByteArray()), headers);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.PATCH, entity, String.class);
+        } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 
     public static void loadModRequest() {
         try {
-            restTemplate.headForHeaders(Settings.getInstance().getOtherLibURL()).add("token", TokenData.getTokens().get(0));
-            byte[] data = restTemplate.getForEntity(Settings.getInstance().getOtherLibURL() + "admin/requestMods", byte[].class).getBody();
-            ByteArrayDataInput input = new ByteArrayDataInput(Compress.decompress(data));
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("token", TokenData.getTokens().get(0));
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            byte[] data = restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.GET, entity, byte[].class).getBody();
+            ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
             for(DiscordUserData userData : DiscordUserData.getUserData()) {
                 userData.resetRequestMods();
                 int length = input.readInt();
@@ -271,8 +299,10 @@ public class ConnectOtherLib {
                     userData.addRequestMod(mod);
                 }
             }
-        } catch (Exception e) {
+        } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
         }
     }
 }
