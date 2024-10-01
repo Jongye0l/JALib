@@ -68,6 +68,9 @@ public class ClassOverride {
             ilGenerator.MarkLabel(falseLabel);
             ilGenerator.Emit(OpCodes.Ldc_I4_0);
             ilGenerator.Emit(OpCodes.Ret);
+            CustomAttributeBuilder attributeBuilder = new(typeof(JAPatchAttribute).Constructor(typeof(MethodInfo), typeof(PatchType), typeof(bool)),
+                [ originalMethod, PatchType.Prefix, false ]);
+            methodBuilder.SetCustomAttribute(attributeBuilder);
             Type patchType = typeBuilder.CreateType();
             JALib.Patcher.AddPatch(patchType);
         }
