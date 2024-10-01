@@ -37,10 +37,6 @@ public class ModData extends AutoRemovedData {
     @Setter(AccessLevel.NONE)
     private final transient Object forceUpdateLocker = new Object();
 
-    public ModData() {
-        modDataList.put(name, this);
-    }
-
     @SneakyThrows(IOException.class)
     public static ModData getModData(String name) {
         if(modDataList.containsKey(name)) {
@@ -53,7 +49,9 @@ public class ModData extends AutoRemovedData {
             path = Path.of(Settings.getInstance().getModDataPath(), name + ".old");
             if(!Files.exists(path)) return null;
         }
-        return Variables.gson.fromJson(Files.readString(path), clazz);
+        ModData modData = Variables.gson.fromJson(Files.readString(path), clazz);
+        modDataList.put(name, modData);
+        return modData;
     }
 
     public static ModData createMod() throws Exception {
@@ -62,7 +60,10 @@ public class ModData extends AutoRemovedData {
 
     public static ModData createMod(String name, ByteArrayDataInput input) throws Exception {
         ModData modData = ModData.getModData(name);
-        if(modData == null) modData = ModData.createMod();
+        if(modData == null) {
+            modData = ModData.createMod();
+            modDataList.put(name, modData);
+        }
         modData.name = name;
         String versionString = input.readUTF();
         if(versionString != null) modData.version = new Version(versionString);
@@ -124,7 +125,7 @@ public class ModData extends AutoRemovedData {
             copyPath = Path.of(modDataPath, name + ".old");
             Files.move(path, copyPath);
         }
-        String json = Variables.gson.toJson(this);
+        String json = Variables.gson.toJson(this, clazz);
         if(!Files.exists(path)) Files.createFile(path);
         Files.writeString(path, json);
         if(exists) Files.delete(copyPath);
