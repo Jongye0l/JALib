@@ -55,6 +55,10 @@ public class Logger {
         return loggerMap.get(name);
     }
 
+    public static void closeAll() {
+        for(Logger logger : loggerMap.values()) logger.close();
+    }
+
     @SneakyThrows(IOException.class)
     private void loadFile() {
         File folder = category == null ? logFolder : new File(logFolder, category);
@@ -62,21 +66,25 @@ public class Logger {
         lastDate = LocalDate.now();
         String date = logFileDateFormat.format(new Date());
         if(file == null) file = new File(folder, String.format("%s-%s.log", name, date));
-        if(file.exists()) {
-            String defaultName = file.getName().replace(".log", "");
-            File file = null;
-            int i = 1;
-            while(file == null || file.exists())
-                file = new File(folder, String.format("%s-%d.log.gz", defaultName, i++));
-            GZipFile.gzipFile(this.file, file);
-            this.file.delete();
-        }
+        if(file.exists()) gzip();
         try {
             file.createNewFile();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         path = file.toPath();
+    }
+
+    @SneakyThrows(IOException.class)
+    private void gzip() {
+        File folder = category == null ? logFolder : new File(logFolder, category);
+        String defaultName = file.getName().replace(".log", "");
+        File file = null;
+        int i = 1;
+        while(file == null || file.exists())
+            file = new File(folder, String.format("%s-%d.log.gz", defaultName, i++));
+        GZipFile.gzipFile(this.file, file);
+        this.file.delete();
     }
 
     private void log(String type, String s) {
@@ -147,6 +155,7 @@ public class Logger {
         loggerMap.remove(name, this);
         Variables.executor.execute(() -> {
             synchronized(saveLocker) {
+                gzip();
                 Variables.setNull(this);
             }
         });

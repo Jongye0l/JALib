@@ -16,6 +16,10 @@ public class Server {
     public static void main(String[] args) throws Exception {
         System.setErr(new ErrorStream(System.err));
         SpringApplication.run(Server.class, args);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            Logger.MAIN_LOGGER.info("서버가 종료됩니다.");
+            Logger.closeAll();
+        }, "ShutdownHook"));
     }
 
     public static void BootstrapRun(String[] args) throws Exception {
