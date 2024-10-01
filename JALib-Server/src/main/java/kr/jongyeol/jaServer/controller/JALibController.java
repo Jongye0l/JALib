@@ -91,7 +91,7 @@ public class JALibController extends CustomController {
         info(request, "GetAutoInstaller: " + version);
         Version ver = new Version(version);
         ModData modData = ModData.getModData("JALib");
-        Version version1 = modData.getVersion().isUpper(modData.getBetaVersion()) ? modData.getBetaVersion() : modData.getVersion();
+        Version version1 = modData.getBetaVersion();
         if(ver.isUpper(version1))
             return downloadMod(request, "JALib", modData.getBetaVersion().toString());
         return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
