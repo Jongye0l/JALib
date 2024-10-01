@@ -11,13 +11,16 @@ public class JABootstrap {
     public const int BootstrapVersion = 0;
     private static AppDomain domain;
     private static MethodInfo LoadJAMod;
-    private static Task _task;
+    private static Task<bool> _task;
     private static async void Setup(UnityModManager.ModEntry modEntry) {
         domain ??= AppDomain.CurrentDomain;
         _task = Installer.CheckMod(modEntry);
         bool beta = InitializeVersion(modEntry);
         JAModInfo modInfo = LoadModInfo(modEntry, beta);
-        await _task;
+        if(await _task) {
+            beta = InitializeVersion(modEntry);
+            modInfo = LoadModInfo(modEntry, beta);
+        }
         SetupJALib(modInfo);
     }
 

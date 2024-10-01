@@ -15,7 +15,7 @@ class Installer {
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
 
-    internal static async Task CheckMod(UnityModManager.ModEntry modEntry) {
+    internal static async Task<bool> CheckMod(UnityModManager.ModEntry modEntry) {
         string modName = modEntry.Info.Id;
         using HttpClient client = new();
         string domain = Domain1;
@@ -26,7 +26,7 @@ class Installer {
                 response = await client.GetAsync($"https://{domain}/autoInstaller/{modEntry.Info.Version.Split(" ")[0]}");
                 if(response.StatusCode == HttpStatusCode.NotModified) {
                     modEntry.Info.DisplayName = modName;
-                    return;
+                    return false;
                 }
                 if(response.IsSuccessStatusCode) break;
                 domain = Domain2;
@@ -47,10 +47,12 @@ class Installer {
             if(!File.Exists(path)) path = Path.Combine(modEntry.Path, "info.json");
             UnityModManager.ModInfo modInfo = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
             typeof(UnityModManager.ModEntry).GetField("Info", AccessTools.all).SetValue(modEntry, modInfo);
+            return true;
         } catch (Exception e) {
             modEntry.Logger.Error("Failed to connect to the auto installer server.");
             modEntry.Logger.LogException(e);
             modEntry.Info.DisplayName = modName;
+            return false;
         }
     }
 }
