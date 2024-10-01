@@ -56,10 +56,9 @@ public class Logger {
     }
 
     public static void closeAll() {
-        for(Logger logger : loggerMap.values()) logger.close();
+        for(Logger logger : loggerMap.values().toArray(new Logger[0])) logger.close();
     }
 
-    @SneakyThrows(IOException.class)
     private void loadFile() {
         File folder = category == null ? logFolder : new File(logFolder, category);
         if(!folder.exists()) folder.mkdir();
