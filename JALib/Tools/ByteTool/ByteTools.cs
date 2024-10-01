@@ -421,6 +421,12 @@ public static class ByteTools {
                 output.WriteInt(-1);
                 return;
             }
+            if(type.IsArray) {
+                Array array = (Array) value;
+                output.WriteInt(array.Length);
+                foreach(object obj in array) ToBytes(obj, output, type.GetElementType(), declearing);
+                return;
+            }
             output.WriteInt(value.GetValue<int>("Count"));
             Type elementType = type.GetGenericArguments()[0];
             if(CheckType(type, typeof(IDictionary))) {
