@@ -8,6 +8,7 @@ using JALib.API;
 using JALib.API.Packets;
 using JALib.Bootstrap;
 using JALib.Core;
+using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
 using TinyJson;
@@ -22,11 +23,14 @@ class JALib : JAMod {
     private static Task<Type> loadTask;
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
+    internal static JAPatcher Patcher;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         loadTask = LoadInfo();
+        Patcher = new JAPatcher(this);
+        Patcher.Patch();
         OnEnable();
     }
 

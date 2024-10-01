@@ -69,9 +69,7 @@ public class ClassOverride {
             ilGenerator.Emit(OpCodes.Ldc_I4_0);
             ilGenerator.Emit(OpCodes.Ret);
             Type patchType = typeBuilder.CreateType();
-            JAPatcher patcher = new(JALib.Instance);
-            patcher.AddPatch(patchType);
-            patcher.Patch();
+            JALib.Patcher.AddPatch(patchType);
         }
     }
 }

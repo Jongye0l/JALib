@@ -363,8 +363,6 @@ public abstract class JAMod {
             }
         }
         Type patchType = typeBuilder.CreateType();
-        JAPatcher patcher = new(JALib.Instance);
-        patcher.AddPatch(patchType);
-        patcher.Patch();
+        JALib.Patcher.AddPatch(patchType);
     }
 }

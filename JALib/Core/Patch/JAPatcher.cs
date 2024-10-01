@@ -12,7 +12,6 @@ public class JAPatcher : IDisposable {
 
     private List<JAPatchAttribute> patchData;
     private JAMod mod;
-    private string patchIdFront;
     public event FailPatch OnFailPatch;
     public bool patched { get; private set; }
     public delegate void FailPatch(string patchId);
@@ -173,13 +172,7 @@ public class JAPatcher : IDisposable {
     public JAPatcher AddPatch(MethodInfo method) {
         foreach(JAPatchAttribute attribute in method.GetCustomAttributes<JAPatchAttribute>()) {
             attribute.Method = method;
-            patchData.Add(attribute);
-            if(!patched) continue;
-            try {
-                Patch(attribute);
-            } catch (Exception) {
-                // ignored
-            }
+            AddPatch(attribute);
         }
         return this;
     }
