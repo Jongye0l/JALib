@@ -22,13 +22,16 @@ public class AutoRemovedData {
                 if(autoRemovedDataList.isEmpty()) return;
                 long cur = System.currentTimeMillis();
                 autoRemovedData = null;
+                List<AutoRemovedData> removeList = null;
                 for(AutoRemovedData data : autoRemovedDataList) {
                     if(data.removeTime < cur) {
-                        data.remove();
+                        if(removeList == null) removeList = new ArrayList<>();
+                        removeList.add(data);
                         continue;
                     }
                     if(autoRemovedData == null || data.removeTime < autoRemovedData.removeTime) autoRemovedData = data;
                 }
+                if(removeList != null) autoRemovedDataList.removeAll(removeList);
             }
             if(autoRemovedData == null) return;
             long time = autoRemovedData.removeTime - System.currentTimeMillis() - 10;
