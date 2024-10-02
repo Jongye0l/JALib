@@ -4,5 +4,6 @@ public enum PatchType {
     Prefix,
     Postfix,
     Transpiler,
-    Finalizer
+    Finalizer,
+    Replace
 }
