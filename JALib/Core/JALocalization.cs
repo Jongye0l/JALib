@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -60,20 +61,26 @@ public class JALocalization {
             int index = languages.IndexOf(language) + 1;
             int subindex = languages.Contains(SystemLanguage.English) ? languages.IndexOf(SystemLanguage.English) + 1 : 1;
             SortedDictionary<string, string> localizations = new();
-            foreach(JToken token in array.Skip(1)) {
-                JArray row = token["c"] as JArray;
-                string key = row[0]["v"].ToString();
-                JToken valueToken = GetGoogleJToken(row[index]) ?? GetGoogleJToken(row[subindex]);
-                if(valueToken == null) for(int i = 0; i < languages.Count && valueToken == null; i++) valueToken = GetGoogleJToken(row[i + 1]);
-                localizations[key] = valueToken?.ToString() ?? key;
-            }
+            foreach(JToken token in array.Skip(1)) SetLocalization(localizations, token, index, subindex, languages.Count);
             _localizations = localizations;
-            string path = Path.Combine(_jaMod.Path, "localization", language + ".json");
-            if(!File.Exists(path)) File.Create(path);
-            await File.WriteAllTextAsync(Path.Combine(_jaMod.Path, "localization", language + ".json"),
-                JsonConvert.SerializeObject(_localizations, Formatting.Indented));
             MainThread.Run(new JAction(_jaMod, () => _jaMod.OnLocalizationUpdate0()));
+            IDictionary<string, string>[] allLocalizations = new IDictionary<string, string>[languages.Count];
+            foreach(JToken token in array.Skip(1)) for(int i = 0; i < languages.Count; i++) SetLocalization(allLocalizations[i], token, i + 1, subindex, languages.Count);
+            for(int i = 0; i < languages.Count; i++) {
+                string path = Path.Combine(_jaMod.Path, "localization", languages[i] + ".json");
+                if(!File.Exists(path)) File.Create(path);
+                await File.WriteAllTextAsync(Path.Combine(_jaMod.Path, "localization", language + ".json"),
+                    JsonConvert.SerializeObject(allLocalizations[i], Formatting.Indented));
+            }
         });
+    }
+
+    private void SetLocalization(IDictionary<string, string> localizations, JToken token, int index, int subindex, int count) {
+        JArray row = token["c"] as JArray;
+        string key = row[0]["v"].ToString();
+        JToken valueToken = GetGoogleJToken(row[index]) ?? GetGoogleJToken(row[subindex]);
+        if(valueToken == null) for(int i = 0; i < count && valueToken == null; i++) valueToken = GetGoogleJToken(row[i + 1]);
+        localizations[key] = valueToken?.ToString() ?? key;
     }
 
     private JToken GetGoogleJToken(JToken token) {
