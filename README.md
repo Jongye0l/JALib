@@ -39,6 +39,10 @@
 ### 라이브러리 Library
 * [DnsClient.NET](https://github.com/MichaCo/DnsClient.NET)
 ---
+### 참고한 코드 Reference code
+* [Overlayer](https://github.com/c3nb/Overlayer/tree/2cdf95b13add797f9c274d5766786c24c54adb9f)
+* [AdofaiTweaks](https://github.com/PizzaLovers007/AdofaiTweaks)
+---
 ### 개발 환경 Development environment
 * Windows 11
 * Rider 2024.2.5
