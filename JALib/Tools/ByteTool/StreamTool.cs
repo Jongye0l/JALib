@@ -171,13 +171,13 @@ public static class StreamTool {
     public static void WriteFloat(this Stream stream, float value) {
         byte[] data = BitConverter.GetBytes(value);
         Array.Reverse(data);
-        stream.WriteBytes(data);
+        stream.Write(data);
     }
 
     public static void WriteDouble(this Stream stream, double value) {
         byte[] data = BitConverter.GetBytes(value);
         Array.Reverse(data);
-        stream.WriteBytes(data);
+        stream.Write(data);
     }
 
     public static void WriteDecimal(this Stream stream, decimal value) {
