@@ -69,7 +69,7 @@ public class JALocalization {
             for(int i = 0; i < languages.Count; i++) {
                 string path = Path.Combine(_jaMod.Path, "localization", languages[i] + ".json");
                 if(!File.Exists(path)) File.Create(path);
-                await File.WriteAllTextAsync(Path.Combine(_jaMod.Path, "localization", language + ".json"),
+                _ = File.WriteAllTextAsync(path,
                     JsonConvert.SerializeObject(allLocalizations[i], Formatting.Indented));
             }
         });
