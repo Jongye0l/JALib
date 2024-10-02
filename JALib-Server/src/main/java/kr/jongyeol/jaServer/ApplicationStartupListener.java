@@ -11,7 +11,7 @@ public class ApplicationStartupListener implements ApplicationListener<Applicati
     @SneakyThrows
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
-        Server.BootstrapRun(new String[0]);
+        Server.bootstrapRun(new String[0]);
         ConnectOtherLib.setupModData();
         ConnectOtherLib.loadModRequest();
     }

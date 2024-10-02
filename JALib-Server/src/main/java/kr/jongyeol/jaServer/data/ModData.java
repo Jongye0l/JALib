@@ -2,9 +2,7 @@ package kr.jongyeol.jaServer.data;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import kr.jongyeol.jaServer.Logger;
 import kr.jongyeol.jaServer.Settings;
 import kr.jongyeol.jaServer.Variables;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
@@ -16,11 +14,13 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-@EqualsAndHashCode(callSuper = false)
 @Data
-public class ModData extends AutoRemovedData {
+public class ModData {
     private static Map<String, ModData> modDataList = new HashMap<>();
     public static Class<? extends ModData> clazz = ModData.class;
     private String name;
@@ -34,24 +34,21 @@ public class ModData extends AutoRemovedData {
     private DownloadLink downloadLink;
     private int gid;
     private Map<String, Map<Language, String>> localizations = new HashMap<>();
-    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     private final transient Object forceUpdateLocker = new Object();
 
-    @SneakyThrows(IOException.class)
     public static ModData getModData(String name) {
-        if(modDataList.containsKey(name)) {
-            ModData modData = modDataList.get(name);
-            modData.use();
-            return modData;
+        return modDataList.get(name);
+    }
+
+    public static void LoadModData() throws IOException {
+        File folder = new File(Settings.getInstance().getModDataPath());
+        for(File file : folder.listFiles()) {
+            Path path = file.toPath();
+            if(path.endsWith(".old") && Files.exists(Path.of(path.toString().replace(".old", "")))) continue;
+            ModData modData = Variables.gson.fromJson(Files.readString(path), clazz);
+            modDataList.put(modData.name, modData);
         }
-        Path path = Path.of(Settings.getInstance().getModDataPath(), name);
-        if(!Files.exists(path)) {
-            path = Path.of(Settings.getInstance().getModDataPath(), name + ".old");
-            if(!Files.exists(path)) return null;
-        }
-        ModData modData = Variables.gson.fromJson(Files.readString(path), clazz);
-        modDataList.put(name, modData);
-        return modData;
     }
 
     public static ModData createMod() throws Exception {
@@ -81,42 +78,14 @@ public class ModData extends AutoRemovedData {
     }
 
     public static ModData[] getModDataList() {
-        List<String> getModNames = getModNames();
-        ModData[] modData = new ModData[getModNames.size()];
-        for(int i = 0; i < getModNames.size(); i++) modData[i] = getModData(getModNames.get(i));
-        return modData;
+        return modDataList.values().toArray(new ModData[0]);
     }
 
-    public static List<String> getModNames() {
-        List<String> names = new ArrayList<>();
-        File folder = new File(Settings.getInstance().getModDataPath());
-        for(File file : folder.listFiles()) {
-            String name = file.getName();
-            if(name.endsWith(".old")) name = name.substring(0, name.length() - 4);
-            if(!names.contains(name)) names.add(name);
-        }
-        return names;
-    }
-
-    public static Enumeration<ModData> getMods() {
-        List<String> getModNames = getModNames();
-        return new Enumeration<>() {
-            int i = 0;
-
-            @Override
-            public boolean hasMoreElements() {
-                return i < getModNames.size();
-            }
-
-            @Override
-            public ModData nextElement() {
-                return getModData(getModNames.get(i++));
-            }
-        };
+    public static String[] getModNames() {
+        return modDataList.keySet().toArray(new String[0]);
     }
 
     public void save() throws IOException {
-        use();
         String modDataPath = Settings.getInstance().getModDataPath();
         Path path = Path.of(modDataPath, name);
         boolean exists = Files.exists(path);
@@ -181,7 +150,6 @@ public class ModData extends AutoRemovedData {
     }
 
     public boolean checkForceUpdate(Version version) {
-        use();
         synchronized(forceUpdateLocker) {
             for(ForceUpdateHandle handle : forceUpdateHandles)
                 if(!version.isUpper(handle.version1) && !handle.version2.isUpper(version)) return handle.forceUpdate;
@@ -200,7 +168,6 @@ public class ModData extends AutoRemovedData {
     }
 
     public void loadLocalizations() throws IOException {
-        use();
         URL url = new URL("https://docs.google.com/spreadsheets/d/1kx12GMqK9lgpiZimBSAMdj51xY4IuQUSLXzmQFZ6Sk4/gviz/tq?tqx=out:json&tq&gid=" + gid);
         @Cleanup InputStream stream = url.openStream();
         String json = new String(stream.readAllBytes());
@@ -245,55 +212,5 @@ public class ModData extends AutoRemovedData {
     public void setDownloadLink(DownloadLink downloadLink) throws IOException {
         this.downloadLink = downloadLink;
         save();
-    }
-
-    @Override
-    public void onRemove() {
-        modDataList.remove(name, this);
-    }
-
-    public String getName() {
-        use();
-        return name;
-    }
-
-    public Version getVersion() {
-        use();
-        return version;
-    }
-
-    public Version getBetaVersion() {
-        use();
-        return betaVersion;
-    }
-
-    public Language[] getAvailableLanguages() {
-        use();
-        return availableLanguages;
-    }
-
-    public String getHomepage() {
-        use();
-        return homepage;
-    }
-
-    public String getDiscord() {
-        use();
-        return discord;
-    }
-
-    public DownloadLink getDownloadLink() {
-        use();
-        return downloadLink;
-    }
-
-    public int getGid() {
-        use();
-        return gid;
-    }
-
-    public Map<String, Map<Language, String>> getLocalizations() {
-        use();
-        return localizations;
     }
 }

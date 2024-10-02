@@ -1,5 +1,7 @@
 package kr.jongyeol.jaServer;
 
+import kr.jongyeol.jaServer.data.ModData;
+import lombok.SneakyThrows;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -22,11 +24,12 @@ public class Server {
         }, "ShutdownHook"));
     }
 
-    public static void BootstrapRun(String[] args) throws Exception {
+    public static void bootstrapRun(String[] args) throws Exception {
         if(loaded) return;
         File file = new File("library");
         if(!file.exists()) {
             loaded = true;
+            nonLibrary();
             return;
         }
         List<URL> urls = new ArrayList<>();
@@ -39,10 +42,16 @@ public class Server {
         }
         if(urls.isEmpty()) {
             loaded = true;
+            nonLibrary();
             return;
         }
         URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[0]), Server.class.getClassLoader());
         loader.loadClass("kr.jongyeol.jaServer.Boot").getMethod("run", String[].class).invoke(null, (Object) args);
         loaded = true;
+    }
+
+    @SneakyThrows
+    public static void nonLibrary() {
+        ModData.LoadModData();
     }
 }
