@@ -1,7 +1,6 @@
 package kr.jongyeol.jaServer.data;
 
 import kr.jongyeol.jaServer.Settings;
-import kr.jongyeol.jaServer.Variables;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
@@ -13,7 +12,6 @@ import java.util.List;
 
 public class TokenData {
     private static List<String> tokens;
-    private static AutoRemovedData autoRemovedData;
 
     public static void LoadToken() throws IOException {
         List<String> oldTokens = tokens;
@@ -22,16 +20,6 @@ public class TokenData {
             Path path = Path.of(Settings.getInstance().getTokenPath());
             String data = Files.readString(path);
             Collections.addAll(tokens, data.split("\n"));
-            if(autoRemovedData == null) {
-                autoRemovedData = new AutoRemovedData() {
-                    @Override
-                    public void onRemove() {
-                        tokens.clear();
-                        tokens = null;
-                        autoRemovedData = null;
-                    }
-                };
-            } else autoRemovedData.use();
         } catch (Exception e) {
             tokens = oldTokens;
             throw e;
@@ -41,7 +29,6 @@ public class TokenData {
     @SneakyThrows
     public static List<String> getTokens() {
         if(tokens == null) LoadToken();
-        autoRemovedData.use();
         return tokens;
     }
 }
