@@ -65,10 +65,10 @@ public class JALocalization {
             _localizations = localizations;
             MainThread.Run(new JAction(_jaMod, () => _jaMod.OnLocalizationUpdate0()));
             IDictionary<string, string>[] allLocalizations = new IDictionary<string, string>[languages.Count];
+            for(int i = 0; i < languages.Count; i++) allLocalizations[i] = new Dictionary<string, string>();
             foreach(JToken token in array.Skip(1)) for(int i = 0; i < languages.Count; i++) SetLocalization(allLocalizations[i], token, i + 1, subindex, languages.Count);
             for(int i = 0; i < languages.Count; i++) {
                 string path = Path.Combine(_jaMod.Path, "localization", languages[i] + ".json");
-                if(!File.Exists(path)) File.Create(path);
                 _ = File.WriteAllTextAsync(path,
                     JsonConvert.SerializeObject(allLocalizations[i], Formatting.Indented));
             }
