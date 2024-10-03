@@ -36,10 +36,10 @@ public class JALibController extends CustomController {
         info(request, "GetModInfo: " + name + " " + version + ", beta: " + (beta == 1));
         ModData modData = ModData.getModData(name);
         @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-        boolean notSet = modData == null || (beta == 1 ? modData.getBetaVersion() : modData.getVersion()) == null;
-        output.writeBoolean(!notSet);
-        if(notSet) return output.toByteArray();
-        output.writeUTF((beta == 1 ? modData.getBetaVersion() : modData.getVersion()).toString());
+        Version ver = modData == null ? null : beta == 1 ? modData.getBetaVersion() : modData.getVersion();
+        output.writeBoolean(ver != null);
+        if(ver == null) return output.toByteArray();
+        output.writeUTF(ver.toString());
         output.writeBoolean(modData.isForceUpdate());
         Language[] languages = modData.getAvailableLanguages();
         output.writeByte((byte) languages.length);
