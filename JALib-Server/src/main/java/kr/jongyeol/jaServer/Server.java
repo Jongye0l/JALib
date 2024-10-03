@@ -53,5 +53,6 @@ public class Server {
     @SneakyThrows
     public static void nonLibrary() {
         ModData.LoadModData();
+        ConnectOtherLib.setupModData();
     }
 }
