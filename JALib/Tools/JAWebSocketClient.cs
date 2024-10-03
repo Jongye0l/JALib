@@ -69,12 +69,15 @@ public class JAWebSocketClient : IDisposable {
 
     private void Read() {
         thread = new Thread(() => {
-            while(Connected) {
-                if(read is not null) read.Invoke();
-                else Task.Yield();
+            try {
+                while(Connected) {
+                    if(read is not null) read.Invoke();
+                    else Task.Yield();
+                }
+                onClose?.Invoke();
+                thread = null;
+            } catch (ThreadAbortException) {
             }
-            onClose?.Invoke();
-            thread = null;
         });
         thread.Start();
     }
