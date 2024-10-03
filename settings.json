@@ -1,0 +1,10 @@
+{
+  "logPath": "D:/JALibServerTest/logs",
+  "userDataPath": "D:/JALibServerTest/userdata",
+  "discordUserDataPath": "D:/JALibServerTest/discordUserdata",
+  "modDataPath": "D:/JALibServerTest/mods",
+  "adminManagerPath": "D:/JALibServerTest/admin",
+  "tokenPath": "D:/JALibServerTest/token",
+  "otherLibURL": "https://jalib2.jongyeol.kr/",
+  "modFilePath": "D:/JALibServerTest/modFile"
+}

@@ -20,3 +20,6 @@ build/
 
 #IntelliJ Idea
 .idea/
+
+#Debug File
+settings.json
