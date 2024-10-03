@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
@@ -58,9 +59,15 @@ class JApi {
 
     private async void Connect(string domain, PingTest pingTest) {
         try {
-            long currentTime = DateTimeOffset.UtcNow.Ticks;
-            (await _httpClient.GetAsync($"https://{domain}/ping")).EnsureSuccessStatusCode();
-            int ping = (int) (DateTimeOffset.UtcNow.Ticks - currentTime) / 10000;
+            Stopwatch stopwatch = new();
+            Task<HttpResponseMessage> task = _httpClient.GetAsync($"https://{domain}/ping");
+            stopwatch.Start();
+            try {
+                (await task).EnsureSuccessStatusCode();
+            } finally {
+                stopwatch.Stop();
+            }
+            int ping = (int) stopwatch.ElapsedMilliseconds;
             JALib.Instance.Log("Ping to the server: " + domain + " " + ping + "ms");
             if(pingTest.ping == -1) {
                 pingTest.ping = ping;
