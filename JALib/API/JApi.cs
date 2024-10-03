@@ -149,7 +149,10 @@ class JApi {
     }
 
     internal static Task Send<T>(T packet) where T : RequestAPI {
-        if(Connected) return Task.FromResult(packet.Run(_instance._httpClient, $"https://{_instance.domain}/"));
+        if(Connected)
+            return Task.Run(async () => {
+                await packet.Run(_instance._httpClient, $"https://{_instance.domain}/");
+            });
         TaskCompletionSource<bool> taskCompletionSource = new();
         _queue.Enqueue((packet, taskCompletionSource));
         return taskCompletionSource.Task;
