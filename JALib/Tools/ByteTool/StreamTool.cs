@@ -94,7 +94,8 @@ public static class StreamTool {
     }
 
     public static string ReadUTF(this Stream stream) {
-        return Encoding.UTF8.GetString(ReadBytes(stream));
+        byte[] buffer = ReadBytes(stream);
+        return buffer == null ? null : Encoding.UTF8.GetString(buffer);
     }
 
     public static object ReadObject(this Stream stream, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
