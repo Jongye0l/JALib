@@ -32,15 +32,18 @@ public class ConnectInfo extends RequestPacket {
         steamID = input.readLong();
         connection.connectInfo = this;
         connection.logger.info("Connect Info Update(steam:" + steamID + ", discord:" + discordID + ")");
-        if(discordID != -1) UserData.addDiscordID(steamID, discordID);
+        if(discordID != -1 && steamID != 0) UserData.addDiscordID(steamID, discordID);
         requestMods = new ArrayList<>();
-        UserData.getUserData(steamID).forEach(l -> {
-            try {
-                requestMods.addAll(List.of(DiscordUserData.getUserData(l).getRequestMods()));
-            } catch (Exception e) {
-                if(connection.logger != null) connection.logger.error(e);
-            }
-        });
+        if(steamID == 0) if(discordID != -1) requestMods.addAll(List.of(DiscordUserData.getUserData(discordID).getRequestMods()));
+        else {
+            UserData.getUserData(steamID).forEach(l -> {
+                try {
+                    requestMods.addAll(List.of(DiscordUserData.getUserData(l).getRequestMods()));
+                } catch (Exception e) {
+                    if(connection.logger != null) connection.logger.error(e);
+                }
+            });
+        }
     }
 
     @Override
