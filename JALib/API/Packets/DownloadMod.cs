@@ -29,7 +29,7 @@ class DownloadMod : RequestAPI {
             Stream stream = await client.GetStreamAsync(url + $"downloadMod/{ModName}/{ModVersion}");
             Zipper.Unzip(stream, ModPath);
             JAMod mod = JAMod.GetMods(ModName);
-            mod.ForceReloadMod();
+            mod?.ForceReloadMod();
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + url);
             JALib.Instance.LogException(e);

@@ -97,7 +97,7 @@ public abstract class JAMod {
 
     private bool IsExistMethod(string name) => GetType().Method(name).DeclaringType == GetType();
 
-    public static JAMod GetMods(string name) => mods[name];
+    public static JAMod GetMods(string name) => mods.GetValueOrDefault(name);
 
     public static ICollection<JAMod> GetMods() => mods.Values;
 
