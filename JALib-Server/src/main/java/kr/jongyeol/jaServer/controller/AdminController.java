@@ -11,6 +11,7 @@ import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import lombok.Cleanup;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 @RestController
@@ -103,9 +104,9 @@ public class AdminController extends CustomController {
         info(request, "Get ModData");
         ModData[] modDatas = ModData.getModDataList();
         @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-        output.writeInt(modDatas.length);
-        for(ModData modData : modDatas) {
-            if(modData.getBetaVersion() == null) continue;
+        ModData[] filtered = Arrays.stream(modDatas).filter(modData -> modData.getBetaVersion() != null).toArray(ModData[]::new);
+        output.writeInt(filtered.length);
+        for(ModData modData : filtered) {
             output.writeUTF(modData.getName());
             output.writeUTF(modData.getVersion() == null ? null : modData.getVersion().toString());
             output.writeUTF(modData.getBetaVersion().toString());
