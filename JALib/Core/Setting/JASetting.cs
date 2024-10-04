@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using JALib.Tools;
@@ -94,11 +95,24 @@ public class JASetting : IDisposable {
                 }
                 if(castAttribute != null) o = Convert.ChangeType(o, castAttribute.CastType);
                 if(roundAttribute != null) o = Convert.ChangeType(Math.Round((double) o!, roundAttribute.Round), o.GetType());
-                JsonObject[name] = o == null ? NullValue : JToken.FromObject(o);
+                JsonObject[name] = o switch {
+                    null => NullValue,
+                    Color color => ColorToJson(color),
+                    _ => JToken.FromObject(o)
+                };
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }
+    }
+
+    private static JToken ColorToJson(Color color) {
+        return new JObject {
+            ["R"] = color.R,
+            ["G"] = color.G,
+            ["B"] = color.B,
+            ["A"] = color.A
+        };
     }
 
     public virtual void RemoveFieldData() {
