@@ -108,10 +108,10 @@ public class JASetting : IDisposable {
 
     private static JToken ColorToJson(Color color) {
         return new JObject {
-            ["R"] = color.R,
-            ["G"] = color.G,
-            ["B"] = color.B,
-            ["A"] = color.A
+            ["R"] = color.r,
+            ["G"] = color.g,
+            ["B"] = color.b,
+            ["A"] = color.a
         };
     }
 
