@@ -54,6 +54,7 @@ public class JALocalization {
                                               into value
                                               where value is { Type: JTokenType.String }
                                               select (SystemLanguage) Enum.Parse(typeof(SystemLanguage), value.ToString())).ToList();
+            if(languages.Count == 0) return;
             if(!languages.Contains(language)) {
                 language = SystemLanguage.English;
                 if(!languages.Contains(language)) language = languages[0];
