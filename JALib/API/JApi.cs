@@ -25,13 +25,10 @@ class JApi {
     }
 
     private static JApi _instance;
-#if DEBUG
-    private const string Domain1 = "jalibtest.jongyeol.kr";
-    private const string Domain2 = "jalibtest.jongyeol.kr";
-#else
+    //private const string Domain1 = "jalibtest.jongyeol.kr";
+    //private const string Domain2 = "jalibtest.jongyeol.kr";
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
-#endif
     private readonly HttpClient _httpClient = new();
     private JAWebSocketClient _client;
     private string domain;
