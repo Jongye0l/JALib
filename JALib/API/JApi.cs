@@ -7,7 +7,6 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using HarmonyLib;
 using JALib.API.Packets;
 using JALib.JAException;
 using JALib.Tools;
@@ -38,6 +37,7 @@ class JApi {
     private static ConcurrentQueue<(Request, TaskCompletionSource<bool>)> _queue = new();
     private static Discord.Discord discord;
     private TaskCompletionSource<bool> completeLoadTask = new();
+    private static int reconnectAttemps;
 
     public static void Initialize() {
         _instance ??= new JApi();
@@ -79,13 +79,16 @@ class JApi {
             else return;
             this.domain = domain;
             _client = new JAWebSocketClient(new JAction(JALib.Instance, Read));
+            _client.SetCloseAction(new JAction(JALib.Instance, Dispose));
             await _client.ConnectAsync($"wss://{domain}/ws");
             OnConnect();
+            reconnectAttemps = 0;
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
             if(pingTest.otherError) {
                 completeLoadTask.TrySetResult(false);
+                reconnectAttemps++;
                 Dispose();
             } else pingTest.otherError = true;
         }
@@ -215,6 +218,13 @@ class JApi {
         GC.SuppressFinalize(_requests);
         _instance = null;
         GC.SuppressFinalize(this);
+        if(!JALib.Instance.Enabled) return;
+        if(reconnectAttemps < 1) _instance ??= new JApi();
+        else
+            Task.Delay(60000 * reconnectAttemps).ContinueWith(_ => {
+                if(!JALib.Instance.Enabled) return;
+                _instance ??= new JApi();
+            });
     }
 
     private class PingTest {
