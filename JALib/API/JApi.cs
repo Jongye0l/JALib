@@ -231,10 +231,4 @@ class JApi {
         public int ping = -1;
         public bool otherError;
     }
-
-    private enum ReadMethod : byte {
-        Request = 0,
-        Response = 1,
-        Gzip = 2
-    }
 }
