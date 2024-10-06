@@ -210,16 +210,16 @@ public class SettingGUI {
         float result = GUILayout.HorizontalSlider(value, min, max, GUILayout.Width(300));
         if(result != value) {
             value = result;
-            valueString = $"{value:0.00}";
+            valueString = value.ToString();
             onChanged?.Invoke();
             mod.ModSetting.Save();
         }
-        valueString = GUILayout.TextField(valueString ?? $"{value:0.00}", GUILayout.Width(50));
+        valueString = GUILayout.TextField(valueString ?? value.ToString(), GUILayout.Width(50));
         try {
             result = valueString.IsNullOrEmpty() ? defaultValue : float.Parse(valueString);
         } catch (FormatException) {
             result = defaultValue;
-            valueString = $"{result:0.00}";
+            valueString = result.ToString();
         }
         if(result != value) {
             value = result;
