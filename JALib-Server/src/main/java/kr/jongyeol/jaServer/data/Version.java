@@ -63,4 +63,9 @@ public class Version {
     public boolean equals(Object obj) {
         return obj instanceof Version version && version.major == major && version.minor == minor && version.build == build && version.revision == revision;
     }
+
+    @Override
+    public int hashCode() {
+        return (major * 1000000000 + minor * 1000000 + build * 1000 + revision) * "Version".hashCode();
+    }
 }
