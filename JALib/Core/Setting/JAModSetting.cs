@@ -64,7 +64,7 @@ class JAModSetting : JASetting {
 
     public void Save() {
         try {
-            File.Copy(path, path + ".bak", true);
+            if(File.Exists(path)) File.Copy(path, path + ".bak", true);
             PutFieldData();
             File.WriteAllText(path, JsonObject.ToString());
             RemoveFieldData();
