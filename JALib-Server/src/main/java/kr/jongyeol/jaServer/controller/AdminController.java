@@ -17,7 +17,7 @@ import java.util.Collection;
 @RestController
 @RequestMapping("/admin")
 public class AdminController extends CustomController {
-    @PutMapping("/modData")
+    @PostMapping("/modData")
     public String addModData(HttpServletResponse response, HttpServletRequest request,
                              @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
@@ -29,7 +29,7 @@ public class AdminController extends CustomController {
         return "Complete Add ModData";
     }
 
-    @PatchMapping("/modData")
+    @PutMapping("/modData")
     public String changeModData(HttpServletResponse response, HttpServletRequest request,
                                 @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
@@ -122,7 +122,7 @@ public class AdminController extends CustomController {
         return GZipFile.gzipData(output.toByteArray());
     }
 
-    @PutMapping("/requestMods")
+    @PostMapping("/requestMods")
     public String addRequestMods(HttpServletResponse response, HttpServletRequest request,
                                  @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;
@@ -154,7 +154,7 @@ public class AdminController extends CustomController {
         return "Complete Remove RequestMods";
     }
 
-    @PatchMapping("/requestMods")
+    @PutMapping("/requestMods")
     public String changeRequestMods(HttpServletResponse response, HttpServletRequest request,
                                  @RequestBody byte[] data) throws Exception {
         if(checkPermission(response, request)) return null;

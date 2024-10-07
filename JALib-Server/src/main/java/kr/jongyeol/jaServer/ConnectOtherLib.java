@@ -31,7 +31,7 @@ public class ConnectOtherLib {
             HttpHeaders headers = new HttpHeaders();
             headers.add("token", TokenData.getTokens().get(0));
             HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(output.toByteArray()), headers);
-            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/modData", HttpMethod.PUT, entity, String.class);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/modData", HttpMethod.POST, entity, String.class);
         } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
         } catch (Exception e) {
@@ -189,7 +189,7 @@ public class ConnectOtherLib {
             HttpHeaders headers = new HttpHeaders();
             headers.add("token", TokenData.getTokens().get(0));
             HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(data), headers);
-            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/modData", HttpMethod.PATCH, entity, String.class);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/modData", HttpMethod.PUT, entity, String.class);
         } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
         } catch (Exception e) {
@@ -222,7 +222,7 @@ public class ConnectOtherLib {
             HttpHeaders headers = new HttpHeaders();
             headers.add("token", TokenData.getTokens().get(0));
             HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(output.toByteArray()), headers);
-            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.PUT, entity, String.class);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.POST, entity, String.class);
         } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
         } catch (Exception e) {
@@ -276,7 +276,7 @@ public class ConnectOtherLib {
             HttpHeaders headers = new HttpHeaders();
             headers.add("token", TokenData.getTokens().get(0));
             HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(output.toByteArray()), headers);
-            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.PATCH, entity, String.class);
+            restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.PUT, entity, String.class);
         } catch (HttpStatusCodeException e) {
             logger.error(e.getMessage());
         } catch (Exception e) {
