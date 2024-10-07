@@ -38,8 +38,8 @@ public class Logger {
     private LocalDate lastDate;
     private Path path;
     private int connectionCount = 1;
-    private Object saveLocker = new Object();
-    private Object sendLocker = new Object();
+    private final Object saveLocker = new Object();
+    private final Object sendLocker = new Object();
 
     private Logger(String name, String category) {
         this.name = name;
