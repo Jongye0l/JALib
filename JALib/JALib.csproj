@@ -581,6 +581,7 @@
 
     <Target Name="AfterBuild">
         <Copy SourceFiles="bin/Debug/JALib.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
+        <Copy SourceFiles="bin/Release/JALib.dll" DestinationFolder="D:\ModRelease/JALib"/>
     </Target>
 
 </Project>
