@@ -37,12 +37,14 @@ public class AdminController extends CustomController {
         ModData modData = ModData.getModData(input.readUTF());
         switch(input.readByte()) {
             case 0 -> {
-                Version version = new Version(input.readUTF());
+                String versionStr = input.readUTF();
+                Version version = versionStr == null ? null : new Version(versionStr);
                 modData.setVersion(version);
                 info(request, modData.getName() + " version changed to " + version);
             }
             case 1 -> {
-                Version version = new Version(input.readUTF());
+                String versionStr = input.readUTF();
+                Version version = versionStr == null ? null : new Version(versionStr);
                 modData.setBetaVersion(version);
                 info(request, modData.getName() + " betaVersion changed to " + version);
             }

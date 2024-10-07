@@ -45,7 +45,7 @@ public class ConnectOtherLib {
             @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
             output.writeUTF(modData.getName());
             output.writeByte((byte) 0);
-            output.writeUTF(version.toString());
+            output.writeUTF(version == null ? null : version.toString());
             changeModData(output.toByteArray());
         } catch (Exception e) {
             logger.error(e);
@@ -57,7 +57,7 @@ public class ConnectOtherLib {
             @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
             output.writeUTF(modData.getName());
             output.writeByte((byte) 1);
-            output.writeUTF(version.toString());
+            output.writeUTF(version == null ? null : version.toString());
             changeModData(output.toByteArray());
         } catch (Exception e) {
             logger.error(e);
