@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
@@ -49,11 +53,31 @@ class Installer {
             UnityModManager.ModInfo modInfo = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
             typeof(UnityModManager.ModEntry).GetField("Info", AccessTools.all).SetValue(modEntry, modInfo);
             return true;
+        } catch (ArgumentException) {
+            if(JABootstrap.harmony != null) return false;
+            JABootstrap.harmony = new Harmony(modEntry.Info.Id);
+            JABootstrap.harmony.Patch(typeof(CookieContainer).GetConstructor([]), transpiler: new HarmonyMethod(((Delegate) CookieDomainPatch).Method));
+            return await CheckMod(modEntry);
         } catch (Exception e) {
             modEntry.Logger.Error("Failed to connect to the auto installer server.");
             modEntry.Logger.LogException(e);
             modEntry.Info.DisplayName = modName;
             return false;
+        }
+    }
+
+    private static IEnumerable<CodeInstruction> CookieDomainPatch(IEnumerable<CodeInstruction> instructions) {
+        using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
+        while(enumerator.MoveNext()) {
+            CodeInstruction instruction = enumerator.Current;
+            if(instruction.opcode == OpCodes.Call && instruction.operand is MethodInfo method &&
+               method == typeof(IPGlobalProperties).GetMethod("InternalGetIPGlobalProperties", AccessTools.all)) {
+                yield return new CodeInstruction(OpCodes.Ldstr, "JALib-Custom");
+                enumerator.MoveNext();
+                enumerator.MoveNext();
+                instruction = enumerator.Current;
+            }
+            yield return instruction;
         }
     }
 }

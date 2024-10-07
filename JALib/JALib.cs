@@ -29,6 +29,7 @@ class JALib : JAMod {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         loadTask = LoadInfo();
+        Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
         Patcher = new JAPatcher(this);
         Patcher.Patch();
         OnEnable();
@@ -200,11 +201,9 @@ class JALib : JAMod {
         MainThread.Initialize();
         JApi.Initialize();
         EnableInit();
-        Harmony = new Harmony(ModEntry.Info.Id);
     }
 
     protected override void OnDisable() {
-        Harmony.UnpatchAll(ModEntry.Info.Id);
         DisableInit();
         JApi.Instance.Dispose();
         MainThread.Dispose();

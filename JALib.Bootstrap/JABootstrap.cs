@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using HarmonyLib;
 using TinyJson;
 using UnityModManagerNet;
 
@@ -12,6 +13,7 @@ public class JABootstrap {
     private static AppDomain domain;
     private static MethodInfo LoadJAMod;
     private static Task<bool> _task;
+    internal static Harmony harmony;
     private static async void Setup(UnityModManager.ModEntry modEntry) {
         domain ??= AppDomain.CurrentDomain;
         _task = Installer.CheckMod(modEntry);
