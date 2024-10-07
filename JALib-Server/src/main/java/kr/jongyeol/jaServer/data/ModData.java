@@ -27,6 +27,7 @@ public class ModData {
     private Version version;
     private Version betaVersion;
     private boolean forceUpdate;
+    private boolean forceUpdateBeta = true;
     private ForceUpdateHandle[] forceUpdateHandles = new ForceUpdateHandle[0];
     private Language[] availableLanguages = new Language[0];
     private String homepage;
@@ -66,6 +67,7 @@ public class ModData {
         if(versionString != null) modData.version = new Version(versionString);
         modData.betaVersion = new Version(input.readUTF());
         modData.forceUpdate = input.readBoolean();
+        modData.forceUpdateBeta = input.readBoolean();
         ForceUpdateHandle[] handles = new ForceUpdateHandle[input.readInt()];
         for(int j = 0; j < handles.length; j++) handles[j] = new ForceUpdateHandle(input);
         modData.forceUpdateHandles = handles;
@@ -159,6 +161,11 @@ public class ModData {
 
     public void setForceUpdate(boolean forceUpdate) throws IOException {
         this.forceUpdate = forceUpdate;
+        save();
+    }
+
+    public void setForceUpdateBeta(boolean forceUpdateBeta) throws IOException {
+        this.forceUpdateBeta = forceUpdateBeta;
         save();
     }
 

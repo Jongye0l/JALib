@@ -21,6 +21,7 @@ public class ConnectOtherLib {
             output.writeUTF(modData.getVersion().toString());
             output.writeUTF(modData.getBetaVersion().toString());
             output.writeBoolean(modData.isForceUpdate());
+            output.writeBoolean(modData.isForceUpdateBeta());
             ForceUpdateHandle[] handles = modData.getForceUpdateHandles();
             output.writeInt(handles.length);
             for(ForceUpdateHandle handle : handles) handle.write(output);
@@ -178,6 +179,18 @@ public class ConnectOtherLib {
             output.writeUTF(modData.getName());
             output.writeByte((byte) 11);
             output.writeUTF(discord);
+            changeModData(output.toByteArray());
+        } catch (Exception e) {
+            logger.error(e);
+        }
+    }
+
+    public static void setForceUpdateBeta(ModData modData, boolean forceUpdateBeta) {
+        try {
+            @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+            output.writeUTF(modData.getName());
+            output.writeByte((byte) 12);
+            output.writeBoolean(forceUpdateBeta);
             changeModData(output.toByteArray());
         } catch (Exception e) {
             logger.error(e);

@@ -94,6 +94,11 @@ public class AdminController extends CustomController {
                 modData.setDiscord(discord);
                 info(request, modData.getName() + " discord changed to " + discord);
             }
+            case 12 -> {
+                boolean forceUpdate = input.readBoolean();
+                modData.setForceUpdateBeta(forceUpdate);
+                info(request, modData.getName() + " forceUpdateBeta changed to " + forceUpdate);
+            }
         }
         return "Complete Change ModData";
     }
@@ -111,6 +116,7 @@ public class AdminController extends CustomController {
             output.writeUTF(modData.getVersion() == null ? null : modData.getVersion().toString());
             output.writeUTF(modData.getBetaVersion().toString());
             output.writeBoolean(modData.isForceUpdate());
+            output.writeBoolean(modData.isForceUpdateBeta());
             ForceUpdateHandle[] handles = modData.getForceUpdateHandles();
             output.writeInt(handles.length);
             for(ForceUpdateHandle handle : handles) handle.write(output);

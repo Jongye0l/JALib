@@ -40,7 +40,7 @@ public class JALibController extends CustomController {
         output.writeBoolean(ver != null);
         if(ver == null) return output.toByteArray();
         output.writeUTF(ver.toString());
-        output.writeBoolean(modData.isForceUpdate());
+        output.writeBoolean(beta != 0 ? modData.isForceUpdateBeta() : modData.isForceUpdate());
         Language[] languages = modData.getAvailableLanguages();
         output.writeByte((byte) languages.length);
         for(Language language : languages) output.writeByte((byte) language.ordinal());
