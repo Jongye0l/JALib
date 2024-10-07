@@ -190,6 +190,6 @@ public class AdminController extends CustomController {
                 output.writeUTF(mod.version.toString());
             }
         }
-        return GZipFile.gzipData(output.toByteArray());
+        return output.toByteArray();
     }
 }

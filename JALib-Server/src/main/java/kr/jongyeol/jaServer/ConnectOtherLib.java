@@ -303,13 +303,15 @@ public class ConnectOtherLib {
             headers.add("token", TokenData.getTokens().get(0));
             HttpEntity<?> entity = new HttpEntity<>(headers);
             byte[] data = restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.GET, entity, byte[].class).getBody();
-            ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
-            for(DiscordUserData userData : DiscordUserData.getUserData()) {
-                userData.resetRequestMods();
+            ByteArrayDataInput input = new ByteArrayDataInput(data);
+            int size = input.readInt();
+            for(int i = 0; i < size; i++) {
+                DiscordUserData userData = DiscordUserData.getUserData(input.readLong());
                 int length = input.readInt();
-                for(int i = 0; i < length; i++) {
-                    RawMod mod = new RawMod(ModData.getModData(input.readUTF()), new Version(input.readUTF()));
-                    userData.addRequestMod(mod);
+                for(int j = 0; j < length; j++) {
+                    String name = input.readUTF();
+                    Version version = new Version(input.readUTF());
+                    userData.addRequestMod(new RawMod(ModData.getModData(name), version));
                 }
             }
         } catch (HttpStatusCodeException e) {
