@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JALib.JAException;
 using JALib.Tools;
 
 namespace JALib.Core.Patch;
@@ -14,7 +15,9 @@ public class JAPatcher : IDisposable {
     private JAMod mod;
     public event FailPatch OnFailPatch;
     public bool patched { get; private set; }
+
     public delegate void FailPatch(string patchId);
+
     private static Dictionary<MethodInfo, HarmonyMethod> harmonyMethods = new();
 
     public JAPatcher(JAMod mod) {
@@ -87,10 +90,77 @@ public class JAPatcher : IDisposable {
                 MethodInfo originalMethod = attribute.Method;
                 if(attribute.TryingCatch && attribute.PatchType is PatchType.Prefix or PatchType.Postfix || attribute.PatchType == PatchType.Replace) {
                     TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JALib.Patch.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
-                    FieldBuilder exceptionCatchField = !attribute.TryingCatch ? null :
-                                                           typeBuilder.DefineField("ExceptionCatcher", typeof(Action<Exception>), FieldAttributes.Public | FieldAttributes.Static);
+                    FieldBuilder exceptionCatchField = !attribute.TryingCatch ? null : typeBuilder.DefineField("ExceptionCatcher", typeof(Action<Exception>), FieldAttributes.Public | FieldAttributes.Static);
                     MethodBuilder methodBuilder;
+                    List<CodeInstruction> instructions = null;
                     if(attribute.PatchType == PatchType.Replace) {
+                        Type originalReturnType = attribute.MethodBase is MethodInfo info ? info.ReturnType : typeof(void);
+                        if(originalMethod.ReturnType != originalReturnType) throw new PatchReturnException(originalReturnType, originalMethod.ReturnType);
+                        instructions = PatchProcessor.GetCurrentInstructions(originalMethod);
+                        Dictionary<int, int> parameterMap = new();
+                        Dictionary<int, FieldInfo> parameterFields = new();
+                        ParameterInfo[] parameters = attribute.MethodBase.GetParameters();
+                        foreach(ParameterInfo parameterInfo in originalMethod.GetParameters()) {
+                            ParameterInfo parameter = parameters.FirstOrDefault(info => info.Name == parameterInfo.Name);
+                            if(parameter != null) {
+                                if(parameter.ParameterType != parameterInfo.ParameterType) {
+                                    if(!parameter.Name.StartsWith("___")) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
+                                } else {
+                                    parameterMap[parameter.Position] = parameterInfo.Position;
+                                    continue;
+                                }
+                            }
+                            if(parameterInfo.Name.StartsWith("___")) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
+                            FieldInfo field = attribute.ClassType.Field(parameterInfo.Name[3..]);
+                            if(field == null) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
+                            parameterFields[parameterInfo.Position] = field;
+                        }
+                        for(int i = 0; i < instructions.Count; i++) {
+                            CodeInstruction instruction = instructions[i];
+                            int index = -1;
+                            bool set = false;
+                            if(instruction.opcode == OpCodes.Ldarg) index = (int) instruction.operand;
+                            else if(instruction.opcode == OpCodes.Ldarga) index = (int) instruction.operand;
+                            else if(instruction.opcode == OpCodes.Ldarg_S) index = (int) instruction.operand;
+                            else if(instruction.opcode == OpCodes.Ldarga_S) index = (int) instruction.operand;
+                            else if(instruction.opcode == OpCodes.Starg) {
+                                index = (int) instruction.operand;
+                                set = true;
+                            } else if(instruction.opcode == OpCodes.Starg_S) {
+                                index = (int) instruction.operand;
+                                set = true;
+                            } else if(instruction.opcode == OpCodes.Ldarg_0) {
+                                index = 0;
+                                instruction.opcode = OpCodes.Ldarg;
+                            } else if(instruction.opcode == OpCodes.Ldarg_1) {
+                                index = 1;
+                                instruction.opcode = OpCodes.Ldarg;
+                            } else if(instruction.opcode == OpCodes.Ldarg_2) {
+                                index = 2;
+                                instruction.opcode = OpCodes.Ldarg;
+                            } else if(instruction.opcode == OpCodes.Ldarg_3) {
+                                index = 3;
+                                instruction.opcode = OpCodes.Ldarg;
+                            }
+                            if(index == -1) return;
+                            if(parameterMap.TryGetValue(index, out int intValue)) {
+                                instructions[i].operand = intValue;
+                            } else if(parameterFields.TryGetValue(index, out FieldInfo field)) {
+                                if(set) {
+                                    if(field.IsStatic) instructions.Insert(i++, new CodeInstruction(OpCodes.Stsfld, field));
+                                    else {
+
+                                    }
+                                } else {
+                                    if(field.IsStatic) instructions.Insert(i++, new CodeInstruction(OpCodes.Ldsfld, field));
+                                    else {
+                                        instructions.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
+                                        instructions.Insert(i++, new CodeInstruction(OpCodes.Ldfld, field));
+                                    }
+                                }
+                                instructions[i].operand = field;
+                            } else throw new PatchParameterException("Unknown Parameter: " + index);
+                        }
                         methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Private | MethodAttributes.Static,
                             typeof(IEnumerable<CodeInstruction>), [typeof(IEnumerable<CodeInstruction>)]);
                         methodBuilder.DefineParameter(1, ParameterAttributes.None, "instructions");
@@ -146,7 +216,7 @@ public class JAPatcher : IDisposable {
                     }
                     Type patchType = typeBuilder.CreateType();
                     if(attribute.PatchType == PatchType.Replace) {
-                        patchType.SetValue("MethodData", PatchProcessor.GetCurrentInstructions(originalMethod));
+                        patchType.SetValue("MethodData", instructions);
                     } else {
                         patchType.SetValue("OriginalMethod", originalMethod);
                         patchType.SetValue("ExceptionCatcher", OnPatchException);
