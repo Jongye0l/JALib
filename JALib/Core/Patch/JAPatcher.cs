@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JALib.JAException;
 using JALib.Tools;
 
 namespace JALib.Core.Patch;
@@ -13,6 +15,7 @@ public class JAPatcher : IDisposable {
     private JAMod mod;
     public event FailPatch OnFailPatch;
     public bool patched { get; private set; }
+
 
     #region CustomPatchPatching
     private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
@@ -141,6 +144,8 @@ public class JAPatcher : IDisposable {
     #endregion
 
     public delegate void FailPatch(string patchId);
+
+    private static Dictionary<MethodInfo, HarmonyMethod> harmonyMethods = new();
 
     public JAPatcher(JAMod mod) {
         this.mod = mod;

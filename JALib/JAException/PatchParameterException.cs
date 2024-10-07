@@ -1,3 +1,3 @@
-﻿namespace JALib.JAException;
+namespace JALib.JAException;
 
 public class PatchParameterException(string message) : Exception(message);
