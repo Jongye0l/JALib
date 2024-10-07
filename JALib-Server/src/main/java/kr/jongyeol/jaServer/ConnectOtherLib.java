@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 public class ConnectOtherLib {
     private static final RestTemplate restTemplate = new RestTemplate();
-    private static final Logger logger = new Logger("ConnectOtherLib");
+    private static final Logger logger = Logger.createLogger("ConnectOtherLib");
 
     public static void addModData(ModData modData) {
         try {

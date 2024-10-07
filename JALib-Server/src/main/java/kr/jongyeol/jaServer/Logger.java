@@ -2,6 +2,7 @@ package kr.jongyeol.jaServer;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.java.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,29 +27,39 @@ public class Logger {
     static {
         logFolder = new File(Settings.getInstance().getLogPath());
         if(!logFolder.exists()) logFolder.mkdir();
-        MAIN_LOGGER = new Logger("Main");
+        MAIN_LOGGER = Logger.createLogger("Main");
     }
 
     @Getter
     private String name;
-
     @Getter
     private String category;
     private File file;
     private LocalDate lastDate;
     private Path path;
+    private int connectionCount = 1;
     private Object saveLocker = new Object();
     private Object sendLocker = new Object();
 
-    public Logger(String name) {
-        this(name, null);
-    }
-
-    public Logger(String name, String category) {
+    private Logger(String name, String category) {
         this.name = name;
         this.category = category;
         loadFile();
         loggerMap.put(name, this);
+        if(MAIN_LOGGER != null) MAIN_LOGGER.info("Logger " + name + " created.");
+    }
+
+    private Logger addConnection() {
+        connectionCount++;
+        return this;
+    }
+
+    public static Logger createLogger(String name) {
+        return createLogger(name, null);
+    }
+
+    public static Logger createLogger(String name, String category) {
+        return loggerMap.containsKey(name) ? loggerMap.get(name).addConnection() : new Logger(name, category);
     }
 
     public static Logger getLogger(String name) {
@@ -151,7 +162,9 @@ public class Logger {
     }
 
     public void close() {
+        if(--connectionCount > 0) return;
         loggerMap.remove(name, this);
+        if(MAIN_LOGGER != null) MAIN_LOGGER.info("Logger " + name + " closed.");
         Variables.executor.execute(() -> {
             synchronized(saveLocker) {
                 gzip();

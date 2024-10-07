@@ -35,8 +35,7 @@ public class Connection extends BinaryWebSocketHandler {
             String ip = session.getUri().getHost();
             if(session.getHandshakeHeaders().containsKey("X-Forwarded-For"))
                 ip = session.getHandshakeHeaders().get("X-Forwarded-For").get(0);
-            logger = new Logger(ip, "connect");
-            Logger.MAIN_LOGGER.info(ip + " 로그를 생성하였습니다.");
+            logger = Logger.createLogger(ip, "connect");
             logger.info(ip + "가 연결되었습니다.");
         } catch (Exception e) {
             logger.error("Error in Connection");
@@ -93,6 +92,7 @@ public class Connection extends BinaryWebSocketHandler {
         return !session.isOpen();
     }
 
+    @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         connectInfo = null;
         connections.remove(this);
