@@ -25,8 +25,21 @@ class JAModSetting : JASetting {
     }
 
     private static JObject LoadJson(JAMod mod, ref string path) {
-        path ??= Path.Combine(mod.Path, "Settings.json");
-        return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
+        try {
+            path ??= Path.Combine(mod.Path, "Settings.json");
+            return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
+        } catch (Exception e) {
+            JALib.Instance.Error("Failed to load settings.");
+            JALib.Instance.LogException(e);
+            try {
+                path += ".bak";
+                return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
+            } catch (Exception e2) {
+                JALib.Instance.Error("Failed to load backuped settings.");
+                JALib.Instance.LogException(e2);
+                return new JObject();
+            }
+        }
     }
 
     public override void PutFieldData() {
@@ -51,6 +64,7 @@ class JAModSetting : JASetting {
 
     public void Save() {
         try {
+            File.Copy(path, path + ".bak", true);
             PutFieldData();
             File.WriteAllText(path, JsonObject.ToString());
             RemoveFieldData();
