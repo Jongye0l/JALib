@@ -2,11 +2,7 @@
 
 namespace JALib.JAException;
 
-class ResponseException : Exception {
-    public readonly string Packet;
-    public readonly string ResponseMessage;
-    public ResponseException(string packet, string responseMessage) : base($"Response error in {nameof(packet)} {packet}: {responseMessage}") {
-        Packet = packet;
-        ResponseMessage = responseMessage;
-    }
+class ResponseException(string packet, string responseMessage) : Exception($"Response error in {nameof(packet)} {packet}: {responseMessage}") {
+    public readonly string Packet = packet;
+    public readonly string ResponseMessage = responseMessage;
 }
