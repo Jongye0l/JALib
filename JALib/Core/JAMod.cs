@@ -33,7 +33,6 @@ public abstract class JAMod {
     public string Name { get; private set; }
     public Version Version => ModEntry.Version;
     public string Path => ModEntry.Path;
-    protected bool ForceUpdate => ModSetting.ForceUpdate;
     protected Version LatestVersion => ModSetting.LatestVersion;
     public bool IsLatest => LatestVersion <= Version;
     protected internal List<Feature> Features { get; private set; }
@@ -129,7 +128,6 @@ public abstract class JAMod {
     internal void ModInfo(GetModInfo getModInfo) {
         if(ModEntry == null || !getModInfo.Success) return;
         ModSetting.LatestVersion = getModInfo.LatestVersion;
-        ModSetting.ForceUpdate = getModInfo.ForceUpdate;
         ModSetting.AvailableLanguages = getModInfo.AvailableLanguages;
         ModSetting.Homepage = getModInfo.Homepage;
         ModSetting.Discord = getModInfo.Discord;

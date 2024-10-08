@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
 using JALib.Tools;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -10,7 +9,6 @@ namespace JALib.Core.Setting;
 class JAModSetting : JASetting {
     private string path;
     public Version LatestVersion;
-    public bool ForceUpdate;
     public SystemLanguage[] AvailableLanguages;
     public string Homepage;
     public string Discord;
