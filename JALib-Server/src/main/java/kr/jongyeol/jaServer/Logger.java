@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +21,6 @@ import java.util.Map;
 public class Logger {
     public static final Logger MAIN_LOGGER;
     private static final File logFolder;
-    private static final SimpleDateFormat logFileDateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private static final DateTimeFormatter logFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final Map<String, Logger> loggerMap = new HashMap<>();
 
@@ -34,9 +34,7 @@ public class Logger {
     private String name;
     @Getter
     private String category;
-    private File file;
-    private LocalDate lastDate;
-    private Path path;
+    private Date lastDate;
     private int connectionCount = 1;
     private final Object saveLocker = new Object();
     private final Object sendLocker = new Object();
@@ -51,6 +49,7 @@ public class Logger {
 
     private Logger addConnection() {
         connectionCount++;
+        MAIN_LOGGER.info("Logger " + name + " connect added(" + connectionCount + ").");
         return this;
     }
 
@@ -73,28 +72,31 @@ public class Logger {
     private void loadFile() {
         File folder = category == null ? logFolder : new File(logFolder, category);
         if(!folder.exists()) folder.mkdir();
-        lastDate = LocalDate.now();
-        String date = logFileDateFormat.format(new Date());
-        if(file == null) file = new File(folder, String.format("%s-%s.log", name, date));
+        lastDate = new Date();
+        File file = new File(folder, getFileName());
         if(file.exists()) gzip();
         try {
             file.createNewFile();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        path = file.toPath();
+    }
+
+    private String getFileName() {
+        return String.format("%s-%s.log", name, new SimpleDateFormat("yyyy-MM-dd").format(lastDate));
     }
 
     @SneakyThrows(IOException.class)
     private void gzip() {
         File folder = category == null ? logFolder : new File(logFolder, category);
-        String defaultName = file.getName().replace(".log", "");
-        File file = null;
+        String defaultName = getFileName().replace(".log", "");
+        File file;
+        File original = new File(folder, defaultName + ".log");
         int i = 1;
-        while(file == null || file.exists())
-            file = new File(folder, String.format("%s-%d.log.gz", defaultName, i++));
-        GZipFile.gzipFile(this.file, file);
-        this.file.delete();
+        do file = new File(folder, String.format("%s-%d.log.gz", defaultName, i++));
+        while(file.exists());
+        GZipFile.gzipFile(original, file);
+        original.delete();
     }
 
     private void log(String type, String s) {
@@ -108,9 +110,13 @@ public class Logger {
 
     private void addQueue(String s) {
         Variables.executor.execute(() -> {
+            Path path = category == null ? Path.of(logFolder.getPath(), getFileName()) : Path.of(logFolder.getPath(), category, getFileName());
             synchronized(saveLocker) {
                 try {
-                    if(lastDate.isBefore(LocalDate.now()) || Files.size(path) > 1048576) loadFile();
+                    if(lastDate.getDate() != Calendar.getInstance().get(Calendar.DATE) || Files.size(path) > 1048576) {
+                        gzip();
+                        loadFile();
+                    }
                     Files.writeString(path, s + "\n", StandardOpenOption.APPEND);
                 } catch (OutOfMemoryError ignored) {
                 } catch (IOException e) {
@@ -162,7 +168,10 @@ public class Logger {
     }
 
     public void close() {
-        if(--connectionCount > 0) return;
+        if(--connectionCount > 0) {
+            if(MAIN_LOGGER != null) MAIN_LOGGER.info("Logger " + name + " connect removed(" + connectionCount + ").");
+            return;
+        }
         loggerMap.remove(name, this);
         if(MAIN_LOGGER != null) MAIN_LOGGER.info("Logger " + name + " closed.");
         Variables.executor.execute(() -> {
