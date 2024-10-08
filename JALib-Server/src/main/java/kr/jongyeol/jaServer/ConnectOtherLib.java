@@ -30,6 +30,7 @@ public class ConnectOtherLib {
     }
 
     public static void modToBytes(ByteArrayDataOutput output, ModData modData) {
+        output.writeUTF(modData.getName());
         output.writeUTF(modData.getVersion() == null ? null : modData.getVersion().toString());
         output.writeUTF(modData.getBetaVersion() == null ? null : modData.getBetaVersion().toString());
         output.writeBoolean(modData.isForceUpdate());
