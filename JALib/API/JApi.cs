@@ -102,8 +102,8 @@ class JApi {
             try {
                 requestPacket.ReceiveData(input);
                 if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.CompleteResponse();
-            } catch (Exception) {
-                if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.FailResponse();
+            } catch (Exception e) {
+                if(requestPacket is AsyncRequestPacket asyncPacket) asyncPacket.FailResponse(e);
                 throw;
             } finally {
                 _requests.Remove(id);
@@ -127,6 +127,7 @@ class JApi {
     internal static void Send(Request request) {
         if(!Connected) {
             _queue.Enqueue((request, null));
+            if(request is AsyncRequestPacket asyncRequestPacket) asyncRequestPacket.FailResponse(new Exception("Not connected to the server"));
             return;
         }
         if(Thread.CurrentThread == MainThread.Thread) {

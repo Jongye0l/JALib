@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace JALib.API;
 
@@ -13,10 +14,12 @@ abstract class AsyncRequestPacket : RequestPacket {
     public bool Success => tcs.Task.Result;
 
     internal void CompleteResponse() {
+        tcs ??= new TaskCompletionSource<bool>();
         tcs.TrySetResult(true);
     }
 
-    internal void FailResponse() {
-        tcs.TrySetResult(false);
+    internal void FailResponse(Exception e) {
+        tcs ??= new TaskCompletionSource<bool>();
+        tcs.TrySetException(e);
     }
 }
