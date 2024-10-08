@@ -1,9 +1,9 @@
 # JAMod 개발 가이드 - 설정 만들기
 ### [목차로 이동](DevelopGuide.md)
-1. [JASetting 상속](#JASetting 상속)
-2. [JASetting 함수](#JASetting 함수)
-3. [Setting 추가 방법](#Setting 추가 방법)
-4. [Setting Attribute](#Setting Attribute)
+1. [JASetting 상속](#jasetting-%EC%83%81%EC%86%8D)
+2. [JASetting 함수](#jasetting-%ED%95%A8%EC%88%98)
+3. [Setting 추가 방법](#setting-%EC%B6%94%EA%B0%80-%EB%B0%A9%EB%B2%95)
+4. [Setting Attribute](#setting-attribute)
 
 ## JASetting 상속
 우선 설정을 만들기 위해서는 설정에 메인이 되는 클래스에 'JASetting'를 상속받아야 합니다.

@@ -1,6 +1,6 @@
 # JAMod 개발 가이드 - 패치
 ### [목차로 이동](DevelopGuide.md)
-1. [패치 매서드 생성](#패치 매서드 생성)
+1. [패치 매서드 생성](#%ED%8C%A8%EC%B9%98-%EB%A7%A4%EC%84%9C%EB%93%9C-%EC%83%9D%EC%84%B1)
 2. [Prefix](#Prefix)
 3. [Postfix](#Postfix)
 4. [Transpiler](#Transpiler)

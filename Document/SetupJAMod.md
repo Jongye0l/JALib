@@ -1,10 +1,10 @@
 # JAMod 개발 가이드 - JA모드 설정하기
 ### [목차로 이동](DevelopGuide.md)
-1. [JAMod 상속](#JAMod 상속)
-2. [JAMod 이벤트](#JAMod 이벤트)
-3. [JAMod 변수](#JAMod 변수)
-4. [JAMod 함수](#JAMod 함수)
-5. [예시 코드](#예시 코드)
+1. [JAMod 상속](#jamod-%EC%83%81%EC%86%8D)
+2. [JAMod 이벤트](#jamod-%EC%9D%B4%EB%B2%A4%ED%8A%B8)
+3. [JAMod 변수](#jamod-%EB%B3%80%EC%88%98)
+4. [JAMod 함수](#jamod-%ED%95%A8%EC%88%98)
+5. [예시 코드](#%EC%98%88%EC%8B%9C-%EC%BD%94%EB%93%9C)
 
 ## JAMod 상속
 우선 JAMod를 만들기 위해서는 모드에 메인이 되는 클래스에 'JAMod'를 상속받아야 합니다.

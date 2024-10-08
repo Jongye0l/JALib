@@ -1,9 +1,9 @@
 # JAMod 개발 가이드 - 기능 설정하기
 ### [목차로 이동](DevelopGuide.md)
-1. [JAFeature 상속](#Feature 상속)
-2. [JAFeature 이벤트](#Feature 이벤트)
-3. [JAFeature 변수](#Feature 변수)
-4. [예시 코드](#예시 코드)
+1. [JAFeature 상속](#feature-%EC%83%81%EC%86%8D)
+2. [JAFeature 이벤트](#feature-%EC%9D%B4%EB%B2%A4%ED%8A%B8)
+3. [JAFeature 변수](#feature-%EB%B3%80%EC%88%98)
+4. [예시 코드](#%EC%98%88%EC%8B%9C-%EC%BD%94%EB%93%9C)
 
 ## Feature 상속
 우선 기능을 생성하기 위해서는 기능에 메인이 되는 클래스에 'Feature'를 상속받아야 합니다.
