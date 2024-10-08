@@ -17,7 +17,7 @@ public class JAPatchAttribute : Attribute {
     internal bool Disable;
     public string[] ArgumentTypes;
     public Type[] ArgumentTypesType;
-    internal MethodInfo Method;
+    public MethodInfo Method;
     internal MethodInfo Patch;
     public string GenericName;
     public Type GenericType;
