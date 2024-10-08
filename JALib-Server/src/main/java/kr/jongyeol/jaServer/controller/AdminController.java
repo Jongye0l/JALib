@@ -3,6 +3,7 @@ package kr.jongyeol.jaServer.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.jongyeol.jaServer.Compress;
+import kr.jongyeol.jaServer.ConnectOtherLib;
 import kr.jongyeol.jaServer.Connection;
 import kr.jongyeol.jaServer.GZipFile;
 import kr.jongyeol.jaServer.data.*;
@@ -111,22 +112,9 @@ public class AdminController extends CustomController {
         info(request, "Get ModData");
         ModData[] modDatas = ModData.getModDataList();
         @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-        ModData[] filtered = Arrays.stream(modDatas).filter(modData -> modData.getBetaVersion() != null).toArray(ModData[]::new);
+        ModData[] filtered = Arrays.stream(modDatas).toArray(ModData[]::new);
         output.writeInt(filtered.length);
-        for(ModData modData : filtered) {
-            output.writeUTF(modData.getName());
-            output.writeUTF(modData.getVersion() == null ? null : modData.getVersion().toString());
-            output.writeUTF(modData.getBetaVersion().toString());
-            output.writeBoolean(modData.isForceUpdate());
-            output.writeBoolean(modData.isForceUpdateBeta());
-            ForceUpdateHandle[] handles = modData.getForceUpdateHandles();
-            output.writeInt(handles.length);
-            for(ForceUpdateHandle handle : handles) handle.write(output);
-            output.writeUTF(modData.getHomepage());
-            output.writeUTF(modData.getDiscord());
-            modData.getDownloadLink().write(output);
-            output.writeInt(modData.getGid());
-        }
+        for(ModData modData : filtered) ConnectOtherLib.modToBytes(output, modData);
         return GZipFile.gzipData(output.toByteArray());
     }
 
@@ -192,6 +180,6 @@ public class AdminController extends CustomController {
                 output.writeUTF(mod.version.toString());
             }
         }
-        return output.toByteArray();
+        return GZipFile.gzipData(output.toByteArray());
     }
 }

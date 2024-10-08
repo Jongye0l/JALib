@@ -64,8 +64,9 @@ public class ModData {
         }
         modData.name = name;
         String versionString = input.readUTF();
-        if(versionString != null) modData.version = new Version(versionString);
-        modData.betaVersion = new Version(input.readUTF());
+        modData.version = versionString == null ? null : new Version(versionString);
+        versionString = input.readUTF();
+        modData.betaVersion = versionString == null ? null : new Version(versionString);
         modData.forceUpdate = input.readBoolean();
         modData.forceUpdateBeta = input.readBoolean();
         ForceUpdateHandle[] handles = new ForceUpdateHandle[input.readInt()];

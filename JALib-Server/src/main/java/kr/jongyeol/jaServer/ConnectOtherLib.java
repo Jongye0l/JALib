@@ -17,18 +17,7 @@ public class ConnectOtherLib {
     public static void addModData(ModData modData) {
         try {
             @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-            output.writeUTF(modData.getName());
-            output.writeUTF(modData.getVersion().toString());
-            output.writeUTF(modData.getBetaVersion().toString());
-            output.writeBoolean(modData.isForceUpdate());
-            output.writeBoolean(modData.isForceUpdateBeta());
-            ForceUpdateHandle[] handles = modData.getForceUpdateHandles();
-            output.writeInt(handles.length);
-            for(ForceUpdateHandle handle : handles) handle.write(output);
-            output.writeBoolean(modData.getHomepage() != null);
-            if(modData.getHomepage() != null) output.writeUTF(modData.getHomepage());
-            modData.getDownloadLink().write(output);
-            output.writeInt(modData.getGid());
+            modToBytes(output, modData);
             HttpHeaders headers = new HttpHeaders();
             headers.add("token", TokenData.getTokens().get(0));
             HttpEntity<byte[]> entity = new HttpEntity<>(GZipFile.gzipData(output.toByteArray()), headers);
@@ -38,6 +27,20 @@ public class ConnectOtherLib {
         } catch (Exception e) {
             logger.error(e);
         }
+    }
+
+    public static void modToBytes(ByteArrayDataOutput output, ModData modData) {
+        output.writeUTF(modData.getVersion() == null ? null : modData.getVersion().toString());
+        output.writeUTF(modData.getBetaVersion() == null ? null : modData.getBetaVersion().toString());
+        output.writeBoolean(modData.isForceUpdate());
+        output.writeBoolean(modData.isForceUpdateBeta());
+        ForceUpdateHandle[] handles = modData.getForceUpdateHandles();
+        output.writeInt(handles.length);
+        for(ForceUpdateHandle handle : handles) handle.write(output);
+        output.writeUTF(modData.getHomepage());
+        output.writeUTF(modData.getDiscord());
+        modData.getDownloadLink().write(output);
+        output.writeInt(modData.getGid());
     }
 
     public static void setVersion(ModData modData, Version version) {
@@ -303,7 +306,7 @@ public class ConnectOtherLib {
             headers.add("token", TokenData.getTokens().get(0));
             HttpEntity<?> entity = new HttpEntity<>(headers);
             byte[] data = restTemplate.exchange(Settings.getInstance().getOtherLibURL() + "admin/requestMods", HttpMethod.GET, entity, byte[].class).getBody();
-            ByteArrayDataInput input = new ByteArrayDataInput(data);
+            ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
             int size = input.readInt();
             for(int i = 0; i < size; i++) {
                 DiscordUserData userData = DiscordUserData.getUserData(input.readLong());
