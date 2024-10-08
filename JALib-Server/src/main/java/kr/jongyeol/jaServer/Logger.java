@@ -177,7 +177,6 @@ public class Logger {
         Variables.executor.execute(() -> {
             synchronized(saveLocker) {
                 gzip();
-                Variables.setNull(this);
             }
         });
     }
