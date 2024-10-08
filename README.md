@@ -41,6 +41,7 @@
 ---
 ### 사용 방법 How to use
 * [이 링크](https://github.com/Jongye0l/JALib/releases/latest) 에서 다운로드 후 모드매니저를 통해 적용시키면 됩니다.
+* [이 링크](Document/DevelopGuide.md) 에서 해당 라이브러리를 이용하여 모드 개발 하는 방법을 확인할 수 있습니다.
 ---
 ### 라이브러리 Library
 * [DnsClient.NET](https://github.com/MichaCo/DnsClient.NET)
