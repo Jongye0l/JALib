@@ -64,7 +64,12 @@ class JALib : JAMod {
         await LoadDependencies(modInfo);
         if(JApi.Connected) {
             modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Waiting ConnectInfo...]</color>";
-            await JApi.ConnectInfoTask;
+            try {
+                await JApi.ConnectInfoTask;
+            } catch (Exception e) {
+                modInfo.ModEntry.Logger.Log("Failed to ConnectInfo");
+                modInfo.ModEntry.Logger.LogException(e);
+            }
         }
         if(updateQueue.TryGetValue(modName, out Version version) && version > modInfo.ModEntry.Version) {
             Instance.Log("Update JAMod " + modName);
