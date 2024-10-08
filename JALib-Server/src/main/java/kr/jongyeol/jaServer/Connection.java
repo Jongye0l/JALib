@@ -29,7 +29,6 @@ public class Connection extends BinaryWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        if(this.session != null) return;
         try {
             this.session = session;
             session.setBinaryMessageSizeLimit(1024 * 8); // TODO: Set limit
