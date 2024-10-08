@@ -2,8 +2,8 @@ package kr.jongyeol.jaServer.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import kr.jongyeol.jaServer.Compress;
 import kr.jongyeol.jaServer.ConnectOtherLib;
+import kr.jongyeol.jaServer.ConnectHandler;
 import kr.jongyeol.jaServer.Connection;
 import kr.jongyeol.jaServer.GZipFile;
 import kr.jongyeol.jaServer.data.*;
@@ -127,7 +127,7 @@ public class AdminController extends CustomController {
         DiscordUserData userData = DiscordUserData.getUserData(discordID);
         RawMod mod = new RawMod(ModData.getModData(input.readUTF()), new Version(input.readUTF()));
         userData.addRequestMod(mod);
-        Connection.connections.stream().filter(c -> c.connectInfo.steamID == userData.steamID).forEach(Connection::loadModRequest);
+        ConnectHandler.connections.values().stream().filter(c -> c.connectInfo.steamID == userData.steamID).forEach(Connection::loadModRequest);
         info(request, "RequestMods Added: " + discordID + "(steam:" + userData.steamID + ") " + mod.mod.getName() + " " + mod.version);
         return "Complete Add RequestMods";
     }

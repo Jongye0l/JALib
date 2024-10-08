@@ -5,7 +5,6 @@ import kr.jongyeol.jaServer.data.CSharpException;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import kr.jongyeol.jaServer.packet.RequestPacket;
-import lombok.Cleanup;
 
 public class ExceptionReport extends RequestPacket {
 

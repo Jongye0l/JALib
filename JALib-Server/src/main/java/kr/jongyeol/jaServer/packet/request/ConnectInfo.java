@@ -7,8 +7,6 @@ import kr.jongyeol.jaServer.data.UserData;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import kr.jongyeol.jaServer.packet.RequestPacket;
-import kr.jongyeol.jaServer.packet.response.DownloadModRequest;
-import lombok.Cleanup;
 
 import java.util.ArrayList;
 import java.util.List;

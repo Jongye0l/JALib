@@ -6,7 +6,6 @@ import kr.jongyeol.jaServer.data.ModData;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import kr.jongyeol.jaServer.packet.RequestPacket;
-import lombok.Cleanup;
 
 public class GetModInfo extends RequestPacket {
 

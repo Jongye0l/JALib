@@ -9,26 +9,24 @@ import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import kr.jongyeol.jaServer.packet.RequestPacket;
 import kr.jongyeol.jaServer.packet.ResponsePacket;
 import kr.jongyeol.jaServer.packet.request.ConnectInfo;
-import kr.jongyeol.jaServer.packet.response.PacketResponseError;
 import kr.jongyeol.jaServer.packet.response.DownloadModRequest;
+import kr.jongyeol.jaServer.packet.response.PacketResponseError;
 import lombok.Cleanup;
+import lombok.SneakyThrows;
 import org.springframework.web.socket.BinaryMessage;
-import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
-import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
-public class Connection extends BinaryWebSocketHandler {
-    public static List<Connection> connections = new ArrayList<>();
+public class Connection {
     public Logger logger;
     private WebSocketSession session;
     public ConnectInfo connectInfo;
 
-    @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+    @SneakyThrows
+    public Connection(WebSocketSession session) {
+        this.session = session;
+        ConnectHandler.connections.put(session, this);
         try {
             this.session = session;
             session.setBinaryMessageSizeLimit(1024 * 8); // TODO: Set limit
@@ -45,8 +43,7 @@ public class Connection extends BinaryWebSocketHandler {
         }
     }
 
-    @Override
-    protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
+    public void readData(BinaryMessage message) {
         Variables.executor.execute(() -> {
             @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(message.getPayload().array());
             String method = new String(input.readBytes(), StandardCharsets.UTF_8);
@@ -64,43 +61,50 @@ public class Connection extends BinaryWebSocketHandler {
                 try {
                     sendData(new PacketResponseError(id, e));
                 } catch (Exception ex) {
-                    if(logger == null) return;
-                    logger.error(ex);
+                    if(logger != null) logger.error(ex);
                 }
             }
         });
     }
 
     public void sendData(ResponsePacket responsePacket) throws Exception {
-        @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-        if(responsePacket instanceof RequestPacket requestPacket) {
-            output.writeBoolean(true);
-            output.writeLong(requestPacket.id);
-        } else {
-            output.writeBoolean(false);
-            output.writeUTF(responsePacket.getClass().getSimpleName());
-        }
         try {
-            responsePacket.getBinary(output);
+            @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+            if(responsePacket instanceof RequestPacket requestPacket) {
+                output.writeBoolean(true);
+                output.writeLong(requestPacket.id);
+            } else {
+                output.writeBoolean(false);
+                output.writeUTF(responsePacket.getClass().getSimpleName());
+            }
+            try {
+                responsePacket.getBinary(output);
+            } catch (Exception e) {
+                throw new GetBinaryException(responsePacket.getClass().getSimpleName(), e);
+            }
+            session.sendMessage(new BinaryMessage(output.toByteArray()));
         } catch (Exception e) {
-            throw new GetBinaryException(responsePacket.getClass().getSimpleName(), e);
+            if(logger != null) logger.error(e);
         }
-        session.sendMessage(new BinaryMessage(output.toByteArray()));
     }
 
     public boolean isClosed() {
         return !session.isOpen();
     }
 
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        connectInfo = null;
-        connections.remove(this);
-        if(logger != null) {
-            logger.info("연결이 종료되었습니다.");
-            logger.close();
+    public void onClose() throws Exception {
+        try {
+            if(logger != null) {
+                logger.info("연결이 종료되었습니다.");
+                logger.close();
+            }
+            logger = null;
+            connectInfo = null;
+            ConnectHandler.connections.remove(session, this);
+        } catch (Exception e) {
+            if(logger != null) logger.error(e);
+            throw e;
         }
-        logger = null;
     }
 
     public void loadModRequest() {
