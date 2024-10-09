@@ -157,21 +157,32 @@ public class JAPatcher : IDisposable {
                             if(originalMethod.ReturnType != originalReturnType) throw new PatchReturnException(originalReturnType, originalMethod.ReturnType);
                             Dictionary<int, int> parameterMap = new();
                             Dictionary<int, FieldInfo> parameterFields = new();
+                            List<int> objects = [];
                             ParameterInfo[] parameters = attribute.MethodBase.GetParameters();
                             foreach(ParameterInfo parameterInfo in originalMethod.GetParameters()) {
                                 ParameterInfo parameter = parameters.FirstOrDefault(info => info.Name == parameterInfo.Name);
-                                if(parameter != null) {
-                                    if(parameter.ParameterType != parameterInfo.ParameterType) {
-                                        if(!parameter.Name.StartsWith("___")) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
-                                    } else {
-                                        parameterMap[parameterInfo.Position] = parameter.Position;
-                                        continue;
-                                    }
+                                if(parameterInfo.Name.ToLower() == "__instance") {
+                                    if(attribute.MethodBase.IsStatic) throw new PatchParameterException("Instance parameter in static method");
+                                    if(parameterInfo.ParameterType != attribute.MethodBase.DeclaringType) throw new PatchParameterException("Instance parameter type mismatch");
+                                    parameterMap[parameterInfo.Position] = 0;
+                                    continue;
                                 }
-                                if(parameterInfo.Name.StartsWith("___")) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
-                                FieldInfo field = attribute.ClassType.Field(parameterInfo.Name[3..]);
-                                if(field == null) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
-                                parameterFields[parameterInfo.Position] = field;
+                                if(parameterInfo.Name.ToLower() == "__arguments") {
+                                    if(parameterInfo.ParameterType != typeof(object[])) throw new PatchParameterException("Arguments parameter type mismatch");
+                                    objects.Add(parameterInfo.Position);
+                                    continue;
+                                }
+                                if(parameterInfo.Name.StartsWith("___")) {
+                                    FieldInfo field = attribute.ClassType.Field(parameterInfo.Name[3..]);
+                                    if(field == null) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
+                                    parameterFields[parameterInfo.Position] = field;
+                                }
+                                if(parameter != null) {
+                                    if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
+                                    parameterMap[parameterInfo.Position] = parameter.Position;
+                                    continue;
+                                }
+                                throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
                             }
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(originalMethod)) {
                                 int index = -1;
