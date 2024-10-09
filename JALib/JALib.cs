@@ -26,6 +26,7 @@ class JALib : JAMod {
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
     internal static JAPatcher Patcher;
+    private static bool enableInit = false;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
         Instance = this;
@@ -226,12 +227,15 @@ class JALib : JAMod {
     }
 
     protected override void OnEnable() {
+        if(enableInit) return;
         MainThread.Initialize();
         JApi.Initialize();
         EnableInit();
+        enableInit = true;
     }
 
     protected override void OnDisable() {
+        enableInit = false;
         DisableInit();
         JApi.Instance.Dispose();
         MainThread.Dispose();
