@@ -157,7 +157,6 @@ public class JAPatcher : IDisposable {
                             if(originalMethod.ReturnType != originalReturnType) throw new PatchReturnException(originalReturnType, originalMethod.ReturnType);
                             Dictionary<int, int> parameterMap = new();
                             Dictionary<int, FieldInfo> parameterFields = new();
-                            List<int> objects = [];
                             ParameterInfo[] parameters = attribute.MethodBase.GetParameters();
                             foreach(ParameterInfo parameterInfo in originalMethod.GetParameters()) {
                                 ParameterInfo parameter = parameters.FirstOrDefault(info => info.Name == parameterInfo.Name);
@@ -165,11 +164,6 @@ public class JAPatcher : IDisposable {
                                     if(attribute.MethodBase.IsStatic) throw new PatchParameterException("Instance parameter in static method");
                                     if(parameterInfo.ParameterType != attribute.MethodBase.DeclaringType) throw new PatchParameterException("Instance parameter type mismatch");
                                     parameterMap[parameterInfo.Position] = 0;
-                                    continue;
-                                }
-                                if(parameterInfo.Name.ToLower() == "__arguments") {
-                                    if(parameterInfo.ParameterType != typeof(object[])) throw new PatchParameterException("Arguments parameter type mismatch");
-                                    objects.Add(parameterInfo.Position);
                                     continue;
                                 }
                                 if(parameterInfo.Name.StartsWith("___")) {
