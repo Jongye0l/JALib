@@ -178,13 +178,13 @@ public class JAPatcher : IDisposable {
                                 bool set = false;
                                 if(instruction.opcode == OpCodes.Ldarg) index = (int) instruction.operand;
                                 else if(instruction.opcode == OpCodes.Ldarga) index = (int) instruction.operand;
-                                else if(instruction.opcode == OpCodes.Ldarg_S) index = (int) instruction.operand;
-                                else if(instruction.opcode == OpCodes.Ldarga_S) index = (int) instruction.operand;
+                                else if(instruction.opcode == OpCodes.Ldarg_S) index = (byte) instruction.operand;
+                                else if(instruction.opcode == OpCodes.Ldarga_S) index = (byte) instruction.operand;
                                 else if(instruction.opcode == OpCodes.Starg) {
                                     index = (int) instruction.operand;
                                     set = true;
                                 } else if(instruction.opcode == OpCodes.Starg_S) {
-                                    index = (int) instruction.operand;
+                                    index = (byte) instruction.operand;
                                     set = true;
                                 } else if(instruction.opcode == OpCodes.Ldarg_0) {
                                     index = 0;
