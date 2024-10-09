@@ -164,7 +164,7 @@ public class JAPatcher : IDisposable {
                                     if(parameter.ParameterType != parameterInfo.ParameterType) {
                                         if(!parameter.Name.StartsWith("___")) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
                                     } else {
-                                        parameterMap[parameter.Position] = parameterInfo.Position;
+                                        parameterMap[parameterInfo.Position] = parameter.Position;
                                         continue;
                                     }
                                 }
