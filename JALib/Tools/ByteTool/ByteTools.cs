@@ -78,45 +78,45 @@ public static class ByteTools {
         });
     }
 
-    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(bytes, typeof(T), start, declearing, includeClass, version);
+    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(bytes, typeof(T), start, declaring, includeClass, version);
     }
 
-    public static T ToObject<T>(Stream input, bool declearing = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(input, typeof(T), declearing, includeClass, version);
+    public static T ToObject<T>(Stream input, bool declaring = false, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(input, typeof(T), declaring, includeClass, version);
     }
 
-    public static T ToObject<T>(this byte[] bytes, Type type, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(bytes, type, start, declearing, includeClass, version);
+    public static T ToObject<T>(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(bytes, type, start, declaring, includeClass, version);
     }
 
-    public static T ToObject<T>(Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(input, type, declearing, includeClass, version);
+    public static T ToObject<T>(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null) {
+        return (T) ToObject(input, type, declaring, includeClass, version);
     }
 
-    public static T ChangeData<T>(this T obj, byte[] bytes, int start = 0, bool declearing = false, uint? version = null) {
-        return ChangeData(obj, bytes, typeof(T), start, declearing, version);
+    public static T ChangeData<T>(this T obj, byte[] bytes, int start = 0, bool declaring = false, uint? version = null) {
+        return ChangeData(obj, bytes, typeof(T), start, declaring, version);
     }
 
-    public static T ChangeData<T>(this T obj, Stream input, bool declearing = false, uint? version = null) {
-        return ChangeData(obj, input, typeof(T), declearing, version);
+    public static T ChangeData<T>(this T obj, Stream input, bool declaring = false, uint? version = null) {
+        return ChangeData(obj, input, typeof(T), declaring, version);
     }
 
-    public static T ChangeData<T>(this T obj, byte[] bytes, Type type, int start = 0, bool declearing = false, uint? version = null) {
-        return (T) ChangeData((object) obj, bytes, type, start, declearing, version);
+    public static T ChangeData<T>(this T obj, byte[] bytes, Type type, int start = 0, bool declaring = false, uint? version = null) {
+        return (T) ChangeData((object) obj, bytes, type, start, declaring, version);
     }
 
-    public static T ChangeData<T>(this T obj, Stream input, Type type, bool declearing = false, uint? version = null) {
-        return (T) ChangeData((object) obj, input, type, declearing, version);
+    public static T ChangeData<T>(this T obj, Stream input, Type type, bool declaring = false, uint? version = null) {
+        return (T) ChangeData((object) obj, input, type, declaring, version);
     }
 
-    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null) {
         using MemoryStream input = new(bytes);
         while(start-- > 0) input.ReadByte();
-        return ToObject(input, type, declearing, includeClass, version);
+        return ToObject(input, type, declaring, includeClass, version);
     }
 
-    public static object ToObject(Stream input, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static object ToObject(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null) {
         if(type == typeof(byte)) return (byte) input.ReadByte();
         if(type == typeof(sbyte)) return input.ReadSByte();
         if(type == typeof(short)) return input.ReadShort();
@@ -137,7 +137,7 @@ public static class ByteTools {
         IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
         DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
         if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
-        if(declear != null && declear.CheckCondition(version)) declearing = true;
+        if(declear != null && declear.CheckCondition(version)) declaring = true;
         if(includeClass) type = Type.GetType(input.ReadUTF());
         if(CheckType(type, typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             int size = input.ReadInt();
@@ -166,7 +166,7 @@ public static class ByteTools {
             object target = null;
             if(input.ReadBoolean()) {
                 Type targetType = Type.GetType(input.ReadUTF());
-                target = ToObject(input, targetType, declearing);
+                target = ToObject(input, targetType, declaring);
             }
             return Delegate.CreateDelegate(type, target, method);
         }
@@ -178,26 +178,30 @@ public static class ByteTools {
             string featureName = input.ReadUTF();
             return JAMod.GetMods(modName).Features.Find(feature => feature.Name == featureName);
         }
+            } else {
+                string methodName = input.ReadUTF();
+            }
+        }
         object obj = Activator.CreateInstance(type);
-        return ChangeData(obj, input, type, declearing, version);
+        return ChangeData(obj, input, type, declaring, version);
     }
 
-    public static object ChangeData(this object obj, byte[] bytes, int start = 0, bool declearing = false, uint? version = null) {
-        return ChangeData(obj, bytes, obj.GetType(), start, declearing, version);
+    public static object ChangeData(this object obj, byte[] bytes, int start = 0, bool declaring = false, uint? version = null) {
+        return ChangeData(obj, bytes, obj.GetType(), start, declaring, version);
     }
 
-    public static object ChangeData(this object obj, Stream input, bool declearing = false, uint? version = null) {
-        return ChangeData(obj, input, obj.GetType(), declearing, version);
+    public static object ChangeData(this object obj, Stream input, bool declaring = false, uint? version = null) {
+        return ChangeData(obj, input, obj.GetType(), declaring, version);
     }
 
-    public static object ChangeData(this object obj, byte[] bytes, Type type, int start = 0, bool declearing = false, uint? version = null) {
+    public static object ChangeData(this object obj, byte[] bytes, Type type, int start = 0, bool declaring = false, uint? version = null) {
         using MemoryStream input = new(bytes);
         while(start-- > 0) input.ReadByte();
-        return ChangeData(obj, input, type, declearing, version);
+        return ChangeData(obj, input, type, declaring, version);
     }
 
-    public static object ChangeData(this object obj, Stream input, Type type, bool declearing = false, uint? version = null) {
-        foreach(MemberInfo member in type.Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == type))) {
+    public static object ChangeData(this object obj, Stream input, Type type, bool declaring = false, uint? version = null) {
+        foreach(MemberInfo member in type.Members().Where(member => member is FieldInfo or PropertyInfo && (!declaring || member.DeclaringType == type))) {
             bool skip = false;
             bool memberDeclearing = false;
             foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
@@ -386,11 +390,11 @@ public static class ByteTools {
         buffer[start] = (byte) value;
     }
 
-    public static void ToBytes(this object value, Stream output, bool declearing = false, bool includeClass = false, uint? version = null) {
-        ToBytes(value, output, value.GetType(), declearing, includeClass, version);
+    public static void ToBytes(this object value, Stream output, bool declaring = false, bool includeClass = false, uint? version = null) {
+        ToBytes(value, output, value.GetType(), declaring, includeClass, version);
     }
 
-    public static void ToBytes(this object value, Stream output, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, Stream output, Type type, bool declaring = false, bool includeClass = false, uint? version = null) {
         bool front = true;
         if(type == typeof(byte)) output.WriteByte((byte) value);
         else if(type == typeof(sbyte)) output.WriteByte((byte) value);
@@ -414,7 +418,7 @@ public static class ByteTools {
         IncludeClassAttribute includeCl = type.GetCustomAttribute<IncludeClassAttribute>();
         DeclearingAttribute declear = type.GetCustomAttribute<DeclearingAttribute>();
         if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
-        if(declear != null && declear.CheckCondition(version)) declearing = true;
+        if(declear != null && declear.CheckCondition(version)) declaring = true;
         if(includeClass) output.WriteUTF(type.FullName);
         if(CheckType(type, typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             if(value == null) {
@@ -424,7 +428,7 @@ public static class ByteTools {
             if(type.IsArray) {
                 Array array = (Array) value;
                 output.WriteInt(array.Length);
-                foreach(object obj in array) ToBytes(obj, output, type.GetElementType(), declearing);
+                foreach(object obj in array) ToBytes(obj, output, type.GetElementType(), declaring);
                 return;
             }
             output.WriteInt(value.GetValue<int>("Count"));
@@ -433,12 +437,12 @@ public static class ByteTools {
                 Type valueType = type.GetGenericArguments()[1];
                 foreach(object obj in (IEnumerable) value) {
                     DictionaryEntry entry = (DictionaryEntry) obj;
-                    ToBytes(entry.Key, output, elementType, declearing);
-                    ToBytes(entry.Value, output, valueType, declearing);
+                    ToBytes(entry.Key, output, elementType, declaring);
+                    ToBytes(entry.Value, output, valueType, declaring);
                 }
                 return;
             }
-            foreach(object obj in (IEnumerable) value) ToBytes(obj, output, elementType, declearing);
+            foreach(object obj in (IEnumerable) value) ToBytes(obj, output, elementType, declaring);
             return;
         }
         if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
@@ -459,7 +463,7 @@ public static class ByteTools {
             }
             output.WriteBoolean(true);
             output.WriteUTF(del.Target.GetType().FullName);
-            del.Target.ToBytes(output, declearing);
+            del.Target.ToBytes(output, declaring);
             return;
         }
         if(CheckType(type, typeof(JAMod))) {
@@ -473,7 +477,7 @@ public static class ByteTools {
             output.WriteUTF(feature.Name);
             return;
         }
-        foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declearing || member.DeclaringType == type))) {
+        foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declaring || member.DeclaringType == type))) {
             bool skip = false;
             bool memberDeclearing = false;
             foreach(DataAttribute dataAttribute in member.GetCustomAttributes<DataAttribute>()) {
