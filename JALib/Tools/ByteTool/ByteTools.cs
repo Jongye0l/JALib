@@ -78,20 +78,20 @@ public static class ByteTools {
         });
     }
 
-    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(bytes, typeof(T), start, declaring, includeClass, version);
+    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        return (T) ToObject(bytes, typeof(T), start, declaring, includeClass, version, nullable);
     }
 
-    public static T ToObject<T>(Stream input, bool declaring = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(input, typeof(T), declaring, includeClass, version);
+    public static T ToObject<T>(Stream input, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        return (T) ToObject(input, typeof(T), declaring, includeClass, version, nullable);
     }
 
-    public static T ToObject<T>(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(bytes, type, start, declaring, includeClass, version);
+    public static T ToObject<T>(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        return (T) ToObject(bytes, type, start, declaring, includeClass, version, nullable);
     }
 
-    public static T ToObject<T>(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null) {
-        return (T) ToObject(input, type, declaring, includeClass, version);
+    public static T ToObject<T>(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        return (T) ToObject(input, type, declaring, includeClass, version, nullable);
     }
 
     public static T ChangeData<T>(this T obj, byte[] bytes, int start = 0, bool declaring = false, uint? version = null) {
@@ -110,13 +110,13 @@ public static class ByteTools {
         return (T) ChangeData((object) obj, input, type, declaring, version);
     }
 
-    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null) {
+    public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
         using MemoryStream input = new(bytes);
         while(start-- > 0) input.ReadByte();
-        return ToObject(input, type, declaring, includeClass, version);
+        return ToObject(input, type, declaring, includeClass, version, nullable);
     }
 
-    public static object ToObject(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null) {
+    public static object ToObject(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
         if(type == typeof(byte)) return (byte) input.ReadByte();
         if(type == typeof(sbyte)) return input.ReadSByte();
         if(type == typeof(short)) return input.ReadShort();
@@ -157,8 +157,7 @@ public static class ByteTools {
                 for(int i = 0; i < size; i++) addMethod.Invoke(collection, [ToObject(input, elementType)]);
             return collection;
         }
-        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null)
-            if(!input.ReadBoolean()) return null;
+        if(type.GetCustomAttribute<NotNullAttribute>() == null && nullable && !input.ReadBoolean()) return null;
         if(CheckType(type, typeof(Delegate))) {
             if(!includeClass) type = Type.GetType(input.ReadUTF());
             Type declaringType = Type.GetType(input.ReadUTF());
@@ -177,6 +176,35 @@ public static class ByteTools {
             string modName = input.ReadUTF();
             string featureName = input.ReadUTF();
             return JAMod.GetMods(modName).Features.Find(feature => feature.Name == featureName);
+        }
+        if(CheckType(type, typeof(Type))) {
+            string typeName = input.ReadUTF();
+            return Type.GetType(typeName);
+        }
+        if(CheckType(type, typeof(MethodInfo))) {
+            string typeName = input.ReadUTF();
+            string methodName = input.ReadUTF();
+            Type[] types = input.ReadObject<Type[]>();
+            return Type.GetType(typeName).Method(methodName, types);
+        }
+        if(CheckType(type, typeof(ConstructorInfo))) {
+            string typeName = input.ReadUTF();
+            Type[] types = input.ReadObject<Type[]>();
+            Type declaringType = Type.GetType(typeName);
+            return types == null ? declaringType.TypeInitializer : declaringType.Constructor(types);
+        }
+        if(CheckType(type, typeof(MethodBase))) {
+            string typeName = input.ReadUTF();
+            bool isConstructor = input.ReadBoolean();
+            Type declaringType = Type.GetType(typeName);
+            if(isConstructor) {
+                Type[] types = input.ReadObject<Type[]>();
+                return types == null ? declaringType.TypeInitializer : declaringType.Constructor(types);
+            } else {
+                string methodName = input.ReadUTF();
+                Type[] types = input.ReadObject<Type[]>();
+                return declaringType.Method(methodName, types);
+            }
         }
         object obj = Activator.CreateInstance(type);
         return ChangeData(obj, input, type, declaring, version);
@@ -311,9 +339,9 @@ public static class ByteTools {
         return buffer;
     }
 
-    public static byte[] ToBytes(this object value, bool declearing = false) {
+    public static byte[] ToBytes(this object value, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
         using MemoryStream output = new();
-        ToBytes(value, output, declearing);
+        ToBytes(value, output, declaring, includeClass, version, nullable);
         return output.ToArray();
     }
 
@@ -386,11 +414,11 @@ public static class ByteTools {
         buffer[start] = (byte) value;
     }
 
-    public static void ToBytes(this object value, Stream output, bool declaring = false, bool includeClass = false, uint? version = null) {
-        ToBytes(value, output, value.GetType(), declaring, includeClass, version);
+    public static void ToBytes(this object value, Stream output, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        ToBytes(value, output, value.GetType(), declaring, includeClass, version, nullable);
     }
 
-    public static void ToBytes(this object value, Stream output, Type type, bool declaring = false, bool includeClass = false, uint? version = null) {
+    public static void ToBytes(this object value, Stream output, Type type, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
         bool front = true;
         if(type == typeof(byte)) output.WriteByte((byte) value);
         else if(type == typeof(sbyte)) output.WriteByte((byte) value);
@@ -441,7 +469,7 @@ public static class ByteTools {
             foreach(object obj in (IEnumerable) value) ToBytes(obj, output, elementType, declaring);
             return;
         }
-        if(!type.IsValueType && type != typeof(string) && type.GetCustomAttribute<NotNullAttribute>() == null) {
+        if(type.GetCustomAttribute<NotNullAttribute>() == null && nullable) {
             if(value == null) {
                 output.WriteBoolean(false);
                 return;
@@ -451,15 +479,9 @@ public static class ByteTools {
         if(CheckType(type, typeof(Delegate))) {
             if(!includeClass) output.WriteUTF(type.FullName);
             Delegate del = (Delegate) value;
-            output.WriteUTF(del.Method.DeclaringType.FullName);
-            output.WriteUTF(del.Method.Name);
-            if(del.Target == null) {
-                output.WriteBoolean(false);
-                return;
-            }
-            output.WriteBoolean(true);
-            output.WriteUTF(del.Target.GetType().FullName);
-            del.Target.ToBytes(output, declaring);
+            output.WriteObject(del.Method, typeof(MethodInfo));
+            output.WriteObject(del.Target, includeClass: true);
+            del.Target.ToBytes(output, declaring, nullable: true);
             return;
         }
         if(CheckType(type, typeof(JAMod))) {
@@ -471,6 +493,37 @@ public static class ByteTools {
             Feature feature = (Feature) value;
             output.WriteUTF(feature.Mod.Name);
             output.WriteUTF(feature.Name);
+            return;
+        }
+        if(CheckType(type, typeof(Type))) {
+            Type typeValue = (Type) value;
+            output.WriteUTF(typeValue.FullName);
+            return;
+        }
+        if(CheckType(type, typeof(MethodInfo))) {
+            MethodInfo method = (MethodInfo) value;
+            output.WriteUTF(method.DeclaringType.FullName);
+            output.WriteUTF(method.Name);
+            output.WriteObject(method.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+            return;
+        }
+        if(CheckType(type, typeof(ConstructorInfo))) {
+            ConstructorInfo constructor = (ConstructorInfo) value;
+            output.WriteUTF(constructor.DeclaringType.FullName);
+            output.WriteObject(constructor.IsStatic ? null : constructor.GetParameters().Select(parameter => parameter.ParameterType).ToArray(), typeof(Type[]));
+            return;
+        }
+        if(CheckType(type, typeof(MethodBase))) {
+            MethodBase method = (MethodBase) value;
+            output.WriteUTF(method.DeclaringType.FullName);
+            if(method is ConstructorInfo info) {
+                output.WriteBoolean(true);
+                output.WriteObject(info.IsStatic ? null : info.GetParameters().Select(parameter => parameter.ParameterType).ToArray(), typeof(Type[]));
+            } else {
+                output.WriteBoolean(false);
+                output.WriteUTF(method.Name);
+                output.WriteObject(method.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+            }
             return;
         }
         foreach(MemberInfo member in value.GetType().Members().Where(member => member is FieldInfo or PropertyInfo && (!declaring || member.DeclaringType == type))) {

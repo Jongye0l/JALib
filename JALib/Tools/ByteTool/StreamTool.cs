@@ -98,12 +98,12 @@ public static class StreamTool {
         return buffer == null ? null : Encoding.UTF8.GetString(buffer);
     }
 
-    public static object ReadObject(this Stream stream, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
-        return ByteTools.ToObject(stream, type, declearing, includeClass, version);
+    public static object ReadObject(this Stream stream, Type type, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        return ByteTools.ToObject(stream, type, declearing, includeClass, version, nullable);
     }
 
-    public static T ReadObject<T>(this Stream stream, bool declearing = false, bool includeClass = false, uint? version = null) {
-        return ByteTools.ToObject<T>(stream, declearing, includeClass, version);
+    public static T ReadObject<T>(this Stream stream, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        return ByteTools.ToObject<T>(stream, declearing, includeClass, version, nullable);
     }
 
     public static object ReadObject(this Stream stream, object obj, Type type, bool declearing = false, uint? version = null) {
@@ -198,11 +198,11 @@ public static class StreamTool {
         stream.WriteBytes(Encoding.UTF8.GetBytes(value));
     }
 
-    public static void WriteObject(this Stream stream, object obj, bool declearing = false, bool includeClass = false, uint? version = null) {
-        obj.ToBytes(stream, declearing, includeClass, version);
+    public static void WriteObject(this Stream stream, object obj, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        obj.ToBytes(stream, declearing, includeClass, version, nullable);
     }
 
-    public static void WriteObject(this Stream stream, object obj, Type type, bool declearing = false, bool includeClass = false, uint? version = null) {
-        obj.ToBytes(stream, type, declearing, includeClass, version);
+    public static void WriteObject(this Stream stream, object obj, Type type, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) {
+        obj.ToBytes(stream, type, declearing, includeClass, version, nullable);
     }
 }
