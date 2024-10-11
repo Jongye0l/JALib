@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -77,37 +76,25 @@ public static class ByteTools {
         });
     }
 
-    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
-        return (T) ToObject(bytes, typeof(T), start, declaring, includeClass, version, nullable);
-    }
+    public static T ToObject<T>(this byte[] bytes, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) =>
+        (T) ToObject(bytes, typeof(T), start, declaring, includeClass, version, nullable);
 
-    public static T ToObject<T>(Stream input, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
-        return (T) ToObject(input, typeof(T), declaring, includeClass, version, nullable);
-    }
+    public static T ToObject<T>(Stream input, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) =>
+        (T) ToObject(input, typeof(T), declaring, includeClass, version, nullable);
 
-    public static T ToObject<T>(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
-        return (T) ToObject(bytes, type, start, declaring, includeClass, version, nullable);
-    }
+    public static T ToObject<T>(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) =>
+        (T) ToObject(bytes, type, start, declaring, includeClass, version, nullable);
 
-    public static T ToObject<T>(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
-        return (T) ToObject(input, type, declaring, includeClass, version, nullable);
-    }
+    public static T ToObject<T>(Stream input, Type type, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) =>
+        (T) ToObject(input, type, declaring, includeClass, version, nullable);
 
-    public static T ChangeData<T>(this T obj, byte[] bytes, int start = 0, bool declaring = false, uint? version = null) {
-        return ChangeData(obj, bytes, typeof(T), start, declaring, version);
-    }
+    public static T ChangeData<T>(this T obj, byte[] bytes, int start = 0, bool declaring = false, uint? version = null) => ChangeData(obj, bytes, typeof(T), start, declaring, version);
 
-    public static T ChangeData<T>(this T obj, Stream input, bool declaring = false, uint? version = null) {
-        return ChangeData(obj, input, typeof(T), declaring, version);
-    }
+    public static T ChangeData<T>(this T obj, Stream input, bool declaring = false, uint? version = null) => ChangeData(obj, input, typeof(T), declaring, version);
 
-    public static T ChangeData<T>(this T obj, byte[] bytes, Type type, int start = 0, bool declaring = false, uint? version = null) {
-        return (T) ChangeData((object) obj, bytes, type, start, declaring, version);
-    }
+    public static T ChangeData<T>(this T obj, byte[] bytes, Type type, int start = 0, bool declaring = false, uint? version = null) => (T) ChangeData((object) obj, bytes, type, start, declaring, version);
 
-    public static T ChangeData<T>(this T obj, Stream input, Type type, bool declaring = false, uint? version = null) {
-        return (T) ChangeData((object) obj, input, type, declaring, version);
-    }
+    public static T ChangeData<T>(this T obj, Stream input, Type type, bool declaring = false, uint? version = null) => (T) ChangeData((object) obj, input, type, declaring, version);
 
     public static object ToObject(this byte[] bytes, Type type, int start = 0, bool declaring = false, bool includeClass = false, uint? version = null, bool nullable = true) {
         using MemoryStream input = new(bytes);
@@ -211,13 +198,9 @@ public static class ByteTools {
         return ChangeData(obj, input, type, declaring, version);
     }
 
-    public static object ChangeData(this object obj, byte[] bytes, int start = 0, bool declaring = false, uint? version = null) {
-        return ChangeData(obj, bytes, obj.GetType(), start, declaring, version);
-    }
+    public static object ChangeData(this object obj, byte[] bytes, int start = 0, bool declaring = false, uint? version = null) => ChangeData(obj, bytes, obj.GetType(), start, declaring, version);
 
-    public static object ChangeData(this object obj, Stream input, bool declaring = false, uint? version = null) {
-        return ChangeData(obj, input, obj.GetType(), declaring, version);
-    }
+    public static object ChangeData(this object obj, Stream input, bool declaring = false, uint? version = null) => ChangeData(obj, input, obj.GetType(), declaring, version);
 
     public static object ChangeData(this object obj, byte[] bytes, Type type, int start = 0, bool declaring = false, uint? version = null) {
         using MemoryStream input = new(bytes);
@@ -326,13 +309,9 @@ public static class ByteTools {
         return buffer;
     }
 
-    public static byte[] ToBytes(this float value) {
-        return BitConverter.GetBytes(value).Reverse();
-    }
+    public static byte[] ToBytes(this float value) => BitConverter.GetBytes(value).Reverse();
 
-    public static byte[] ToBytes(this double value) {
-        return BitConverter.GetBytes(value).Reverse();
-    }
+    public static byte[] ToBytes(this double value) => BitConverter.GetBytes(value).Reverse();
 
     public static byte[] ToBytes(this decimal value) {
         byte[] buffer = new byte[16];
@@ -587,9 +566,7 @@ public static class ByteTools {
         }
     }
 
-    private static bool CheckType(Type type, Type check) {
-        return check.IsAssignableFrom(type);
-    }
+    private static bool CheckType(Type type, Type check) => check.IsAssignableFrom(type);
 
     private static void CheckStart(int start, int length) {
         if(start < 0 || start >= length) throw new ArgumentException("Start must be within the byte array");

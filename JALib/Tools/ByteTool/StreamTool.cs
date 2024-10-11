@@ -22,58 +22,46 @@ public static class StreamTool {
         return (byte) value;
     }
 
-    public static sbyte ReadSByte(this Stream stream) {
-        return (sbyte) stream.ReadByteSafe();
-    }
+    public static sbyte ReadSByte(this Stream stream) => (sbyte) stream.ReadByteSafe();
 
-    public static short ReadShort(this Stream stream) {
-        return (short) ((stream.ReadByteSafe() << 8) + stream.ReadByteSafe());
-    }
+    public static short ReadShort(this Stream stream) => (short) ((stream.ReadByteSafe() << 8) + stream.ReadByteSafe());
 
-    public static ushort ReadUShort(this Stream stream) {
-        return (ushort) ((stream.ReadByteSafe() << 8) + stream.ReadByteSafe());
-    }
+    public static ushort ReadUShort(this Stream stream) => (ushort) ((stream.ReadByteSafe() << 8) + stream.ReadByteSafe());
 
-    public static int ReadInt(this Stream stream) {
-        return (stream.ReadByteSafe() << 24) + (stream.ReadByteSafe() << 16) + (stream.ReadByteSafe() << 8) + stream.ReadByteSafe();
-    }
+    public static int ReadInt(this Stream stream) => (stream.ReadByteSafe() << 24) + (stream.ReadByteSafe() << 16) + (stream.ReadByteSafe() << 8) + stream.ReadByteSafe();
 
-    public static uint ReadUInt(this Stream stream) {
-        return (uint) ((stream.ReadByteSafe() << 24) + (stream.ReadByteSafe() << 16) + (stream.ReadByteSafe() << 8) + stream.ReadByteSafe());
-    }
+    public static uint ReadUInt(this Stream stream) => (uint) ((stream.ReadByteSafe() << 24) + (stream.ReadByteSafe() << 16) + (stream.ReadByteSafe() << 8) + stream.ReadByteSafe());
 
-    public static long ReadLong(this Stream stream) {
-        return ((long) stream.ReadByteSafe() << 56) +
-               ((long) (stream.ReadByteSafe() & 255) << 48) +
-               ((long) (stream.ReadByteSafe() & 255) << 40) +
-               ((long) (stream.ReadByteSafe() & 255) << 32) +
-               ((long) (stream.ReadByteSafe() & 255) << 24) +
-               ((long) (stream.ReadByteSafe() & 255) << 16) +
-               ((long) (stream.ReadByteSafe() & 255) << 8) +
-               ((long) (stream.ReadByteSafe() & 255) << 0);
-    }
+    public static long ReadLong(this Stream stream) =>
+        ((long) stream.ReadByteSafe() << 56) +
+        ((long) (stream.ReadByteSafe() & 255) << 48) +
+        ((long) (stream.ReadByteSafe() & 255) << 40) +
+        ((long) (stream.ReadByteSafe() & 255) << 32) +
+        ((long) (stream.ReadByteSafe() & 255) << 24) +
+        ((long) (stream.ReadByteSafe() & 255) << 16) +
+        ((long) (stream.ReadByteSafe() & 255) << 8) +
+        ((long) (stream.ReadByteSafe() & 255) << 0);
 
-    public static ulong ReadULong(this Stream stream) {
-        return ((ulong) stream.ReadByteSafe() << 56) +
-               ((ulong) (stream.ReadByteSafe() & 255) << 48) +
-               ((ulong) (stream.ReadByteSafe() & 255) << 40) +
-               ((ulong) (stream.ReadByteSafe() & 255) << 32) +
-               ((ulong) (stream.ReadByteSafe() & 255) << 24) +
-               ((ulong) (stream.ReadByteSafe() & 255) << 16) +
-               ((ulong) (stream.ReadByteSafe() & 255) << 8) +
-               ((ulong) (stream.ReadByteSafe() & 255) << 0);
-    }
+    public static ulong ReadULong(this Stream stream) =>
+        ((ulong) stream.ReadByteSafe() << 56) +
+        ((ulong) (stream.ReadByteSafe() & 255) << 48) +
+        ((ulong) (stream.ReadByteSafe() & 255) << 40) +
+        ((ulong) (stream.ReadByteSafe() & 255) << 32) +
+        ((ulong) (stream.ReadByteSafe() & 255) << 24) +
+        ((ulong) (stream.ReadByteSafe() & 255) << 16) +
+        ((ulong) (stream.ReadByteSafe() & 255) << 8) +
+        ((ulong) (stream.ReadByteSafe() & 255) << 0);
 
     public static float ReadFloat(this Stream stream) {
         byte[] data = new byte[4];
-        for(int i = 0; i < 4; i++) data[i] = (byte) stream.ReadByteSafe();
+        for(int i = 0; i < 4; i++) data[i] = stream.ReadByteSafe();
         Array.Reverse(data);
         return BitConverter.ToSingle(data, 0);
     }
 
     public static double ReadDouble(this Stream stream) {
         byte[] data = new byte[8];
-        for(int i = 0; i < 8; i++) data[i] = (byte) stream.ReadByteSafe();
+        for(int i = 0; i < 8; i++) data[i] = stream.ReadByteSafe();
         Array.Reverse(data);
         return BitConverter.ToDouble(data, 0);
     }
@@ -84,34 +72,24 @@ public static class StreamTool {
         return new decimal(bits);
     }
 
-    public static bool ReadBoolean(this Stream stream) {
-        return stream.ReadByteSafe() != 0;
-    }
+    public static bool ReadBoolean(this Stream stream) => stream.ReadByteSafe() != 0;
 
-    public static char ReadChar(this Stream stream) {
-        return (char) stream.ReadShort();
-    }
+    public static char ReadChar(this Stream stream) => (char) stream.ReadShort();
 
     public static string ReadUTF(this Stream stream) {
         byte[] buffer = ReadBytes(stream);
         return buffer == null ? null : Encoding.UTF8.GetString(buffer);
     }
 
-    public static object ReadObject(this Stream stream, Type type, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) {
-        return ByteTools.ToObject(stream, type, declearing, includeClass, version, nullable);
-    }
+    public static object ReadObject(this Stream stream, Type type, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) =>
+        ByteTools.ToObject(stream, type, declearing, includeClass, version, nullable);
 
-    public static T ReadObject<T>(this Stream stream, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) {
-        return ByteTools.ToObject<T>(stream, declearing, includeClass, version, nullable);
-    }
+    public static T ReadObject<T>(this Stream stream, bool declearing = false, bool includeClass = false, uint? version = null, bool nullable = true) =>
+        ByteTools.ToObject<T>(stream, declearing, includeClass, version, nullable);
 
-    public static object ReadObject(this Stream stream, object obj, Type type, bool declearing = false, uint? version = null) {
-        return obj.ChangeData(stream, type, declearing, version);
-    }
+    public static object ReadObject(this Stream stream, object obj, Type type, bool declearing = false, uint? version = null) => obj.ChangeData(stream, type, declearing, version);
 
-    public static T ReadObject<T>(this Stream stream, T obj, bool declearing = false, uint? version = null) {
-        return obj.ChangeData(stream, declearing, version);
-    }
+    public static T ReadObject<T>(this Stream stream, T obj, bool declearing = false, uint? version = null) => obj.ChangeData(stream, declearing, version);
 
     public static void WriteBytes(this Stream stream, byte[] buffer) {
         stream.WriteInt(buffer.Length);
