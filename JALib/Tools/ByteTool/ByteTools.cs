@@ -431,10 +431,10 @@ public static class ByteTools {
             Type elementType = type.GetGenericArguments()[0];
             if(CheckType(type, typeof(IDictionary))) {
                 Type valueType = type.GetGenericArguments()[1];
-                foreach(object obj in (IEnumerable) value) {
-                    DictionaryEntry entry = (DictionaryEntry) obj;
-                    ToBytes(entry.Key, output, elementType, declearing);
-                    ToBytes(entry.Value, output, valueType, declearing);
+                IDictionary dictionary = (IDictionary) value;
+                foreach(object key in dictionary.Keys) {
+                    ToBytes(key, output, elementType, declearing);
+                    ToBytes(dictionary[key], output, valueType, declearing);
                 }
                 return;
             }
