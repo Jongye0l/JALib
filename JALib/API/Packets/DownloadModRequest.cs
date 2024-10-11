@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using JALib.Core;
 using JALib.Tools.ByteTool;
 

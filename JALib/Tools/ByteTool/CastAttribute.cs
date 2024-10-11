@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JALib.Tools.ByteTool;
+﻿namespace JALib.Tools.ByteTool;
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public class CastAttribute : DataAttribute {
@@ -15,9 +13,4 @@ public class CastAttribute : DataAttribute {
         Type = type;
         FirstCast = firstCast;
     }
-}
-
-public enum FirstCast {
-    Implicit,
-    Explicit
 }

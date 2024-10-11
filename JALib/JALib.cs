@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -59,13 +58,13 @@ class JALib : JAMod {
         GetModInfo getModInfo = null;
         if(JApi.Connected) {
             getModInfo = new GetModInfo(modInfo);
-            modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Loading Info...]</color>";
+            modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
             await JApi.Send(getModInfo);
-            if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload( modName, getModInfo.LatestVersion);
+            if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload(modName, getModInfo.LatestVersion);
         }
         await LoadDependencies(modInfo);
         if(JApi.Connected) {
-            modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Waiting ConnectInfo...]</color>";
+            modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Waiting ConnectInfo...]</color>";
             await JApi.ConnectInfoTask;
         }
         if(updateQueue.TryGetValue(modName, out Version version) && version > modInfo.ModEntry.Version) {
@@ -178,7 +177,7 @@ class JALib : JAMod {
         Type accessCacheType = typeof(Traverse).Assembly.GetType("HarmonyLib.AccessCache");
         object accessCache = typeof(Traverse).GetValue("Cache");
         string[] fields = ["declaredFields", "declaredProperties", "declaredMethods", "inheritedFields", "inheritedProperties", "inheritedMethods"];
-        foreach (string field in fields) accessCacheType.GetValue<IDictionary>(field, accessCache).Clear();
+        foreach(string field in fields) accessCacheType.GetValue<IDictionary>(field, accessCache).Clear();
         string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
         if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
         UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();

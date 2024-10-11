@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JALib.JAException;
+﻿namespace JALib.JAException;
 
 class ResponseException(string packet, string responseMessage) : Exception($"Response error in {nameof(packet)} {packet}: {responseMessage}") {
     public readonly string Packet = packet;

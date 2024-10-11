@@ -1,5 +1,4 @@
-﻿using System;
-using JALib.Core.Patch;
+﻿using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
 using UnityEngine;
