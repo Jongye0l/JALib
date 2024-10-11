@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JALib.Tools.ByteTool;
+﻿namespace JALib.Tools.ByteTool;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class VersionAttribute : Attribute {
