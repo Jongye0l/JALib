@@ -512,6 +512,10 @@
         <Compile Include="Core\JALocalization.cs" />
         <Compile Include="Core\JAMod.cs" />
         <Compile Include="Core\ModReloadCache.cs" />
+        <Compile Include="Core\Patch\JAEmitter.cs" />
+        <Compile Include="Core\Patch\JAMethodPatcher.cs" />
+        <Compile Include="Core\Patch\JAMethodCopier.cs" />
+        <Compile Include="Core\Patch\JAPatchInfo.cs" />
         <Compile Include="Core\Patch\JAPatchAttribute.cs" />
         <Compile Include="Core\Patch\JAPatcher.cs" />
         <Compile Include="Core\Patch\PatchType.cs" />
