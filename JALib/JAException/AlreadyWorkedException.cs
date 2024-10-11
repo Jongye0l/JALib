@@ -1,5 +1,3 @@
-﻿using System;
-
-namespace JALib.JAException;
+﻿namespace JALib.JAException;
 
 public class AlreadyWorkedException(string message) : Exception(message);

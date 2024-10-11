@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -132,6 +131,7 @@ public abstract class JAMod {
     internal void ModInfo(GetModInfo getModInfo) {
         if(ModEntry == null || !getModInfo.Success) return;
         ModSetting.LatestVersion = getModInfo.LatestVersion;
+        ModSetting.ForceUpdate = getModInfo.ForceUpdate;
         ModSetting.AvailableLanguages = getModInfo.AvailableLanguages;
         ModSetting.Homepage = getModInfo.Homepage;
         ModSetting.Discord = getModInfo.Discord;

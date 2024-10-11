@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JALib.Tools.ByteTool;
+﻿namespace JALib.Tools.ByteTool;
 
 public abstract class DataAttribute : Attribute {
     public uint MinimumVersion = uint.MinValue;

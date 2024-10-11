@@ -529,6 +529,7 @@
         <Compile Include="Core\Setting\SettingNameAttribute.cs" />
         <Compile Include="Core\Setting\SettingRoundAttribute.cs" />
         <Compile Include="Data\RawFile.cs" />
+        <Compile Include="GlobalUsings.cs" />
         <Compile Include="JAException\AlreadyWorkedException.cs" />
         <Compile Include="JAException\PatchParameterException.cs" />
         <Compile Include="JAException\PatchReturnException.cs" />
@@ -542,6 +543,7 @@
         <Compile Include="Tools\ByteTool\DataIncludeAttribute.cs" />
         <Compile Include="Tools\ByteTool\DeclearingAttribute.cs" />
         <Compile Include="Tools\ByteTool\DummyAttribute.cs" />
+        <Compile Include="Tools\ByteTool\FirstCast.cs" />
         <Compile Include="Tools\ByteTool\IgnoreArrayAttribute.cs" />
         <Compile Include="Tools\ByteTool\IncludeClassAttribute.cs" />
         <Compile Include="Tools\ByteTool\StreamTool.cs" />

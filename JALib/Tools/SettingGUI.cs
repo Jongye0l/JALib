@@ -1,5 +1,4 @@
-﻿using System;
-using JALib.Core;
+﻿using JALib.Core;
 using UnityEngine;
 
 namespace JALib.Tools;

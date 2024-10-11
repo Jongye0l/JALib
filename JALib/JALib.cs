@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using HarmonyLib;
 using JALib.API;
@@ -87,7 +86,7 @@ class JALib : JAMod {
         try {
             if(JApi.Instance != null) {
                 getModInfo = new GetModInfo(modInfo);
-                modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Loading Info...]</color>";
+                modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
                 await JApi.Send(getModInfo);
                 if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload(modName, getModInfo.LatestVersion);
             }
@@ -206,7 +205,7 @@ class JALib : JAMod {
         Type accessCacheType = typeof(Traverse).Assembly.GetType("HarmonyLib.AccessCache");
         object accessCache = typeof(Traverse).GetValue("Cache");
         string[] fields = ["declaredFields", "declaredProperties", "declaredMethods", "inheritedFields", "inheritedProperties", "inheritedMethods"];
-        foreach (string field in fields) accessCacheType.GetValue<IDictionary>(field, accessCache).Clear();
+        foreach(string field in fields) accessCacheType.GetValue<IDictionary>(field, accessCache).Clear();
         string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
         if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
         UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
