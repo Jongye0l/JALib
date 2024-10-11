@@ -31,6 +31,7 @@ public abstract class JAMod {
             return _moduleBuilder;
         }
     }
+
     protected internal UnityModManager.ModEntry ModEntry { get; private set; }
     public UnityModManager.ModEntry.ModLogger Logger => ModEntry.Logger;
     public string Name { get; private set; }

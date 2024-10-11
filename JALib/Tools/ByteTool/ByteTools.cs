@@ -151,9 +151,11 @@ public static class ByteTools {
             object collection = (constructorInfo = type.Constructor(typeof(int))) != null ? constructorInfo.Invoke([size]) : type.New();
             MethodInfo addMethod = type.Method("Add");
             if(CheckType(type, typeof(IDictionary)))
-                for(int i = 0; i < size; i++) addMethod.Invoke(collection, [ToObject(input, elementType), ToObject(input, type.GetGenericArguments()[1])]);
+                for(int i = 0; i < size; i++)
+                    addMethod.Invoke(collection, [ToObject(input, elementType), ToObject(input, type.GetGenericArguments()[1])]);
             else
-                for(int i = 0; i < size; i++) addMethod.Invoke(collection, [ToObject(input, elementType)]);
+                for(int i = 0; i < size; i++)
+                    addMethod.Invoke(collection, [ToObject(input, elementType)]);
             return collection;
         }
         if(type.GetCustomAttribute<NotNullAttribute>() == null && nullable && !input.ReadBoolean()) return null;

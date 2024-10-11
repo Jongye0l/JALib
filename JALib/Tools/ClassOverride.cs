@@ -13,14 +13,18 @@ public class ClassOverride {
         Type baseType = type.BaseType;
         if(Type.GetType($"JALib.ClassOverride.{type.FullName}") != null) throw new AlreadyWorkedException("This class has already been overridden.");
         List<(MethodInfo, MethodInfo)> overrides = [];
-        overrides.AddRange(from method in type.GetMethods() where !method.IsStatic && method.GetBaseDefinition() == null && method.DeclaringType == type
+        overrides.AddRange(from method in type.GetMethods()
+                           where !method.IsStatic && method.GetBaseDefinition() == null && method.DeclaringType == type
                            let originalMethod = baseType.GetMethod(method.Name, flags, null, method.GetParameters().Select(p => p.ParameterType).ToArray(), null)
-                           where originalMethod != null && originalMethod.IsPublic == method.IsPublic && originalMethod.ReturnType.IsAssignableFrom(method.ReturnType) select (originalMethod, method));
+                           where originalMethod != null && originalMethod.IsPublic == method.IsPublic && originalMethod.ReturnType.IsAssignableFrom(method.ReturnType)
+                           select (originalMethod, method));
         if(overrides.Count == 0) return;
         TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JALib.ClassOverride.{type.FullName}", TypeAttributes.NotPublic);
         foreach((MethodInfo originalMethod, MethodInfo replaceMethod) in overrides) {
-            FieldBuilder fieldBuilder = originalMethod.IsPublic ? null : typeBuilder.DefineField($"OriginalMethod_{originalMethod.GetHashCode()}",
-                                            typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static);
+            FieldBuilder fieldBuilder = originalMethod.IsPublic
+                                            ? null
+                                            : typeBuilder.DefineField($"OriginalMethod_{originalMethod.GetHashCode()}",
+                                                typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static);
             Type[] parameterTypes = new Type[originalMethod.GetParameters().Length + (originalMethod.ReturnType == typeof(void) ? 1 : 2)];
             parameterTypes[0] = originalMethod.DeclaringType;
             foreach(ParameterInfo parameter in originalMethod.GetParameters()) parameterTypes[parameter.Position + 1] = parameter.ParameterType;
@@ -68,7 +72,7 @@ public class ClassOverride {
             ilGenerator.Emit(OpCodes.Ldc_I4_0);
             ilGenerator.Emit(OpCodes.Ret);
             CustomAttributeBuilder attributeBuilder = new(typeof(JAPatchAttribute).Constructor(typeof(MethodInfo), typeof(PatchType), typeof(bool)),
-                [ originalMethod, PatchType.Prefix, false ]);
+                [originalMethod, PatchType.Prefix, false]);
             methodBuilder.SetCustomAttribute(attributeBuilder);
             Type patchType = typeBuilder.CreateType();
             JALib.Patcher.AddPatch(patchType);
