@@ -5,12 +5,12 @@ namespace JALib.API;
 abstract class AsyncRequestPacket : RequestPacket {
     private TaskCompletionSource<bool> tcs;
 
+    public bool Success => tcs.Task.Result;
+
     public async Task WaitResponse() {
         tcs ??= new TaskCompletionSource<bool>();
         await tcs.Task;
     }
-
-    public bool Success => tcs.Task.Result;
 
     internal void CompleteResponse() {
         tcs.TrySetResult(true);

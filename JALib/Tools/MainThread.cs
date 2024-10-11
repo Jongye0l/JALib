@@ -40,13 +40,9 @@ public static class MainThread {
         queue.Enqueue(action);
     }
 
-    public static bool IsMainThread() {
-        return Thread.CurrentThread == Thread;
-    }
+    public static bool IsMainThread() => Thread.CurrentThread == Thread;
 
-    public static Coroutine StartCoroutine(IEnumerator routine) {
-        return staticCoroutine.StartCoroutine(routine);
-    }
+    public static Coroutine StartCoroutine(IEnumerator routine) => staticCoroutine.StartCoroutine(routine);
 
     public static void StopCoroutine(Coroutine routine) {
         staticCoroutine.StopCoroutine(routine);

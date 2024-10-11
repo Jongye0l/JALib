@@ -4,7 +4,7 @@ using JALib.Core;
 
 namespace JALib.Tools;
 
-public class JATask {
+public static class JATask {
     public static Task Run(JAMod mod, Action action) {
         return Task.Run(() => {
             try {
@@ -16,9 +16,7 @@ public class JATask {
         });
     }
 
-    public static Task Run(JAction action) {
-        return Task.Run(action.Invoke);
-    }
+    public static Task Run(JAction action) => Task.Run(action.Invoke);
 
     public static Task Run(JAMod mod, Action action, CancellationToken cancellationToken) {
         return Task.Run(() => {
@@ -31,9 +29,7 @@ public class JATask {
         }, cancellationToken);
     }
 
-    public static Task Run(JAction action, CancellationToken cancellationToken) {
-        return Task.Run(action.Invoke, cancellationToken);
-    }
+    public static Task Run(JAction action, CancellationToken cancellationToken) => Task.Run(action.Invoke, cancellationToken);
 
     public static Task Run(JAMod mod, Func<Task> action) {
         return Task.Run(async () => {
@@ -46,9 +42,7 @@ public class JATask {
         });
     }
 
-    public static Task Run(Func<Task> action) {
-        return Task.Run(action);
-    }
+    public static Task Run(Func<Task> action) => Task.Run(action);
 
     public static Task Run(JAMod mod, Func<Task> action, CancellationToken cancellationToken) {
         return Task.Run(async () => {

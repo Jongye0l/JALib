@@ -2,5 +2,4 @@
 
 [AttributeUsage(AttributeTargets.Field)]
 public class SettingIgnoreAttribute : Attribute {
-
 }

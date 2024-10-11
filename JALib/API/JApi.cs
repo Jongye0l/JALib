@@ -36,7 +36,7 @@ class JApi {
     private static ConcurrentQueue<(Request, TaskCompletionSource<bool>)> _queue = new();
     private static Discord.Discord discord;
     private TaskCompletionSource<bool> completeLoadTask = new();
-    private static int reconnectAttemps;
+    private static int reconnectAttempts;
 
     public static void Initialize() {
         _instance ??= new JApi();
@@ -81,13 +81,13 @@ class JApi {
             _client.SetCloseAction(new JAction(JALib.Instance, Dispose));
             await _client.ConnectAsync($"wss://{domain}/ws");
             OnConnect();
-            reconnectAttemps = 0;
+            reconnectAttempts = 0;
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
             if(pingTest.otherError) {
                 completeLoadTask.TrySetResult(false);
-                reconnectAttemps++;
+                reconnectAttempts++;
                 Dispose();
             } else pingTest.otherError = true;
         }
@@ -218,9 +218,9 @@ class JApi {
         _instance = null;
         GC.SuppressFinalize(this);
         if(!JALib.Instance.Enabled) return;
-        if(reconnectAttemps < 1) _instance ??= new JApi();
+        if(reconnectAttempts < 1) _instance ??= new JApi();
         else
-            Task.Delay(60000 * reconnectAttemps).ContinueWith(_ => {
+            Task.Delay(60000 * reconnectAttempts).ContinueWith(_ => {
                 if(!JALib.Instance.Enabled) return;
                 _instance ??= new JApi();
             });

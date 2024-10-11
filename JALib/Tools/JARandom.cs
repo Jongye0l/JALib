@@ -12,37 +12,21 @@ public class JARandom : Random {
     public JARandom(int seed) : base(seed) {
     }
 
-    public short NextShort() {
-        return (short) Next();
-    }
+    public short NextShort() => (short) Next();
 
-    public ushort NextUShort() {
-        return (ushort) Next();
-    }
+    public ushort NextUShort() => (ushort) Next();
 
-    public int NextInt() {
-        return Next();
-    }
+    public int NextInt() => Next();
 
-    public uint NextUInt() {
-        return Next().ToBytes().ToUInt();
-    }
+    public uint NextUInt() => Next().ToBytes().ToUInt();
 
-    public long NextLong() {
-        return NextBytes(8).ToLong();
-    }
+    public long NextLong() => NextBytes(8).ToLong();
 
-    public ulong NextULong() {
-        return NextBytes(8).ToULong();
-    }
+    public ulong NextULong() => NextBytes(8).ToULong();
 
-    public float NextFloat() {
-        return (float) NextDouble();
-    }
+    public float NextFloat() => (float) NextDouble();
 
-    public decimal NextDecimal() {
-        return new decimal(new[] { Next(), Next(), Next(), Next() });
-    }
+    public decimal NextDecimal() => new([Next(), Next(), Next(), Next()]);
 
     public override void NextBytes(byte[] buffer) {
         int i = 0;

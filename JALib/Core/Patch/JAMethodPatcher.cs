@@ -9,21 +9,21 @@ using MonoMod.Utils;
 namespace JALib.Core.Patch;
 
 class JAMethodPatcher {
-    private MethodBase original;
-    private MethodBase source;
-    private object originalPatcher;
-    private bool debug;
+    private readonly bool debug;
+    private readonly JAEmitter emitter;
+    private readonly List<MethodInfo> finalizers;
+    private readonly int idx;
+    private readonly ILGenerator il;
+    private readonly MethodBase original;
+    private readonly object originalPatcher;
+    private readonly List<MethodInfo> postfixes;
     private List<MethodInfo> prefixes;
-    private List<MethodInfo> postfixes;
-    private List<MethodInfo> transpilers;
-    private List<MethodInfo> finalizers;
-    private List<MethodInfo> replaces;
-    private List<MethodInfo> removes;
-    private ILGenerator il;
-    private int idx;
-    private JAEmitter emitter;
-    private Type returnType;
-    private bool useStructReturnBuffer;
+    private readonly List<MethodInfo> removes;
+    private readonly List<MethodInfo> replaces;
+    private readonly Type returnType;
+    private readonly MethodBase source;
+    private readonly List<MethodInfo> transpilers;
+    private readonly bool useStructReturnBuffer;
 
     public JAMethodPatcher(MethodBase original, MethodBase source, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
         this.original = original;
@@ -53,9 +53,8 @@ class JAMethodPatcher {
         }).ToList();
     }
 
-    private static List<MethodInfo> SortPatchMethods(MethodBase original, HarmonyLib.Patch[] patches, bool debug) {
-        return Type.GetType("HarmonyLib.PatchSorter").New(patches, debug).Invoke<List<MethodInfo>>("Sort", original);
-    }
+    private static List<MethodInfo> SortPatchMethods(MethodBase original, HarmonyLib.Patch[] patches, bool debug) =>
+        Type.GetType("HarmonyLib.PatchSorter").New(patches, debug).Invoke<List<MethodInfo>>("Sort", original);
 
     internal MethodInfo CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions) {
         Type methodPatcher = Type.GetType("HarmonyLib.MethodPatcher");
