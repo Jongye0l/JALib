@@ -1,10 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using JALib.API;
-using JALib.API.Packets;
 using JALib.Tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -14,14 +11,16 @@ namespace JALib.Core;
 
 public class JALocalization {
     private const string LOCALIZATION_URL = "https://docs.google.com/spreadsheets/d/1kx12GMqK9lgpiZimBSAMdj51xY4IuQUSLXzmQFZ6Sk4/gviz/tq?tqx=out:json&tq&gid=";
-    internal SortedDictionary<string, string> _localizations;
-    internal JAMod _jaMod;
     internal SystemLanguage? _curLang;
+    internal JAMod _jaMod;
+    internal SortedDictionary<string, string> _localizations;
 
     internal JALocalization(JAMod jaMod) {
         _jaMod = jaMod;
         Load();
     }
+
+    public string this[string key] => Get(key);
 
     internal async void Load() {
         SystemLanguage language = _jaMod.CustomLanguage ?? RDString.language;
@@ -97,8 +96,6 @@ public class JALocalization {
         TryGet(key, out string value);
         return value;
     }
-
-    public string this[string key] => Get(key);
 
     public bool TryGet(string key, out string value) {
         if(_localizations != null && _localizations.TryGetValue(key, out value)) return true;

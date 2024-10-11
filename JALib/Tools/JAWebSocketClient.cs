@@ -8,20 +8,12 @@ using JALib.Tools.ByteTool;
 
 namespace JALib.Tools;
 
-public class JAWebSocketClient : IDisposable {
-    private ClientWebSocket socket;
-    private JAction read;
+public class JAWebSocketClient(JAction read = null, bool autoConnect = true) : IDisposable {
+    private readonly ClientWebSocket socket = new();
     private Thread thread;
     private JAction onClose;
     private JAction onConnect;
-    private readonly bool autoConnect;
     public bool Connected => socket.State == WebSocketState.Open;
-
-    public JAWebSocketClient(JAction read = null, bool autoConnect = true) {
-        socket = new ClientWebSocket();
-        this.read = read;
-        this.autoConnect = autoConnect;
-    }
 
     public JAWebSocketClient(Uri uri, JAction read = null, bool autoConnect = true) : this(read, autoConnect) {
         Connect(uri);
@@ -29,6 +21,11 @@ public class JAWebSocketClient : IDisposable {
 
     public JAWebSocketClient(string uri, JAction read = null, bool autoConnect = true) : this(read, autoConnect) {
         Connect(uri);
+    }
+
+    public void Dispose() {
+        socket.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public void Connect(Uri uri, CancellationToken token = default) {
@@ -62,9 +59,7 @@ public class JAWebSocketClient : IDisposable {
         }
     }
 
-    public Task ConnectAsync(string uri, CancellationToken token = default) {
-        return ConnectAsync(new Uri(uri), token);
-    }
+    public Task ConnectAsync(string uri, CancellationToken token = default) => ConnectAsync(new Uri(uri), token);
 
     private void Read() {
         thread = new Thread(() => {
@@ -94,29 +89,17 @@ public class JAWebSocketClient : IDisposable {
         if(!Connected) throw new InvalidOperationException(nameof(Socket) + " is not connected");
     }
 
-    public byte ReadByte() {
-        return ReadBytes(1)[0];
-    }
+    public byte ReadByte() => ReadBytes(1)[0];
 
-    public short ReadShort() {
-        return ReadBytes(2).ToShort();
-    }
+    public short ReadShort() => ReadBytes(2).ToShort();
 
-    public int ReadInt() {
-        return ReadBytes(4).ToInt();
-    }
+    public int ReadInt() => ReadBytes(4).ToInt();
 
-    public long ReadLong() {
-        return ReadBytes(8).ToLong();
-    }
+    public long ReadLong() => ReadBytes(8).ToLong();
 
-    public float ReadFloat() {
-        return ReadBytes(4).ToFloat();
-    }
+    public float ReadFloat() => ReadBytes(4).ToFloat();
 
-    public double ReadDouble() {
-        return ReadBytes(8).ToDouble();
-    }
+    public double ReadDouble() => ReadBytes(8).ToDouble();
 
     public byte[] ReadBytes(int count, bool force = true) {
         CheckConnect();
@@ -145,41 +128,23 @@ public class JAWebSocketClient : IDisposable {
         return stream;
     }
 
-    public bool ReadBoolean() {
-        return ReadByte() != 0;
-    }
+    public bool ReadBoolean() => ReadByte() != 0;
 
-    public byte[] ReadBytesAndCount() {
-        return ReadBytes(ReadInt());
-    }
+    public byte[] ReadBytesAndCount() => ReadBytes(ReadInt());
 
-    public string ReadUTF() {
-        return Encoding.UTF8.GetString(ReadBytesAndCount());
-    }
+    public string ReadUTF() => Encoding.UTF8.GetString(ReadBytesAndCount());
 
-    public async Task<byte> ReadAsyncByte() {
-        return (await ReadAsyncBytes(1))[0];
-    }
+    public async Task<byte> ReadAsyncByte() => (await ReadAsyncBytes(1))[0];
 
-    public async Task<short> ReadAsyncShort() {
-        return (await ReadAsyncBytes(2)).ToShort();
-    }
+    public async Task<short> ReadAsyncShort() => (await ReadAsyncBytes(2)).ToShort();
 
-    public async Task<int> ReadAsyncInt() {
-        return (await ReadAsyncBytes(4)).ToInt();
-    }
+    public async Task<int> ReadAsyncInt() => (await ReadAsyncBytes(4)).ToInt();
 
-    public async Task<long> ReadAsyncLong() {
-        return (await ReadAsyncBytes(8)).ToLong();
-    }
+    public async Task<long> ReadAsyncLong() => (await ReadAsyncBytes(8)).ToLong();
 
-    public async Task<float> ReadAsyncFloat() {
-        return (await ReadAsyncBytes(4)).ToFloat();
-    }
+    public async Task<float> ReadAsyncFloat() => (await ReadAsyncBytes(4)).ToFloat();
 
-    public async Task<double> ReadAsyncDouble() {
-        return (await ReadAsyncBytes(8)).ToDouble();
-    }
+    public async Task<double> ReadAsyncDouble() => (await ReadAsyncBytes(8)).ToDouble();
 
     public async Task<byte[]> ReadAsyncBytes(int count, bool force = true) {
         CheckConnect();
@@ -190,17 +155,11 @@ public class JAWebSocketClient : IDisposable {
         return buffer;
     }
 
-    public async Task<bool> ReadAsyncBoolean() {
-        return await ReadAsyncByte() != 0;
-    }
+    public async Task<bool> ReadAsyncBoolean() => await ReadAsyncByte() != 0;
 
-    public async Task<byte[]> ReadAsyncBytesAndCount() {
-        return await ReadAsyncBytes(await ReadAsyncInt());
-    }
+    public async Task<byte[]> ReadAsyncBytesAndCount() => await ReadAsyncBytes(await ReadAsyncInt());
 
-    public async Task<string> ReadAsyncUTF() {
-        return Encoding.UTF8.GetString(await ReadAsyncBytes(await ReadAsyncInt()));
-    }
+    public async Task<string> ReadAsyncUTF() => Encoding.UTF8.GetString(await ReadAsyncBytes(await ReadAsyncInt()));
 
     public void WriteBytes(byte[] data, bool endOfMessage = true) {
         CheckConnect();
@@ -284,10 +243,5 @@ public class JAWebSocketClient : IDisposable {
 
     public async Task WriteAsyncUTF(string value, bool endOfMessage = true) {
         await WriteAsyncBytesAndCount(Encoding.UTF8.GetBytes(value), endOfMessage);
-    }
-
-    public void Dispose() {
-        socket.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

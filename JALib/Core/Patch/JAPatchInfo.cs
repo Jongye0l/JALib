@@ -7,9 +7,6 @@ class JAPatchInfo {
     public HarmonyLib.Patch[] replaces = [];
     public HarmonyLib.Patch[] removes = [];
 
-    public JAPatchInfo() {
-    }
-
     public void AddReplaces(string owner, HarmonyMethod methods) {
         replaces = Add(owner, methods, replaces);
     }

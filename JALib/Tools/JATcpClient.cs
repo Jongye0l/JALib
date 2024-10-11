@@ -133,25 +133,15 @@ public class JATcpClient : TcpClient {
         return (byte) stream.ReadByte();
     }
 
-    public short ReadShort() {
-        return ReadBytes(2).ToShort();
-    }
+    public short ReadShort() => ReadBytes(2).ToShort();
 
-    public int ReadInt() {
-        return ReadBytes(4).ToInt();
-    }
+    public int ReadInt() => ReadBytes(4).ToInt();
 
-    public long ReadLong() {
-        return ReadBytes(8).ToLong();
-    }
+    public long ReadLong() => ReadBytes(8).ToLong();
 
-    public float ReadFloat() {
-        return ReadBytes(4).ToFloat();
-    }
+    public float ReadFloat() => ReadBytes(4).ToFloat();
 
-    public double ReadDouble() {
-        return ReadBytes(8).ToDouble();
-    }
+    public double ReadDouble() => ReadBytes(8).ToDouble();
 
     public byte[] ReadBytes(int count, bool force = true) {
         CheckConnect();
@@ -164,17 +154,11 @@ public class JATcpClient : TcpClient {
         return buffer;
     }
 
-    public bool ReadBoolean() {
-        return ReadByte() != 0;
-    }
+    public bool ReadBoolean() => ReadByte() != 0;
 
-    public byte[] ReadBytesAndCount() {
-        return ReadBytes(ReadInt());
-    }
+    public byte[] ReadBytesAndCount() => ReadBytes(ReadInt());
 
-    public string ReadUTF() {
-        return Encoding.UTF8.GetString(ReadBytesAndCount());
-    }
+    public string ReadUTF() => Encoding.UTF8.GetString(ReadBytesAndCount());
 
     public async Task<byte> ReadAsyncByte() {
         CheckConnect();
@@ -183,25 +167,15 @@ public class JATcpClient : TcpClient {
         return buffer[0];
     }
 
-    public async Task<short> ReadAsyncShort() {
-        return (await ReadAsyncBytes(2)).ToShort();
-    }
+    public async Task<short> ReadAsyncShort() => (await ReadAsyncBytes(2)).ToShort();
 
-    public async Task<int> ReadAsyncInt() {
-        return (await ReadAsyncBytes(4)).ToInt();
-    }
+    public async Task<int> ReadAsyncInt() => (await ReadAsyncBytes(4)).ToInt();
 
-    public async Task<long> ReadAsyncLong() {
-        return (await ReadAsyncBytes(8)).ToLong();
-    }
+    public async Task<long> ReadAsyncLong() => (await ReadAsyncBytes(8)).ToLong();
 
-    public async Task<float> ReadAsyncFloat() {
-        return (await ReadAsyncBytes(4)).ToFloat();
-    }
+    public async Task<float> ReadAsyncFloat() => (await ReadAsyncBytes(4)).ToFloat();
 
-    public async Task<double> ReadAsyncDouble() {
-        return (await ReadAsyncBytes(8)).ToDouble();
-    }
+    public async Task<double> ReadAsyncDouble() => (await ReadAsyncBytes(8)).ToDouble();
 
     public async Task<byte[]> ReadAsyncBytes(int count, bool force = true) {
         CheckConnect();
@@ -214,17 +188,11 @@ public class JATcpClient : TcpClient {
         return buffer;
     }
 
-    public async Task<bool> ReadAsyncBoolean() {
-        return await ReadAsyncByte() != 0;
-    }
+    public async Task<bool> ReadAsyncBoolean() => await ReadAsyncByte() != 0;
 
-    public async Task<byte[]> ReadAsyncBytesAndCount() {
-        return await ReadAsyncBytes(await ReadAsyncInt());
-    }
+    public async Task<byte[]> ReadAsyncBytesAndCount() => await ReadAsyncBytes(await ReadAsyncInt());
 
-    public async Task<string> ReadAsyncUTF() {
-        return Encoding.UTF8.GetString(await ReadAsyncBytes(await ReadAsyncInt()));
-    }
+    public async Task<string> ReadAsyncUTF() => Encoding.UTF8.GetString(await ReadAsyncBytes(await ReadAsyncInt()));
 
     public void WriteBytes(byte[] data) {
         CheckConnect();
