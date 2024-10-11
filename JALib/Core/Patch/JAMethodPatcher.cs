@@ -196,28 +196,4 @@ class JAMethodPatcher {
         emitter.Emit(OpCodes.Stloc, local1);
         return local1;
     }
-
-    private static void InitializeOutParameter(int argIndex, Type type, JAEmitter emitter) {
-        if(type.IsByRef) type = type.GetElementType();
-        emitter.Emit(OpCodes.Ldarg, argIndex);
-        if(AccessTools.IsStruct(type)) emitter.Emit(OpCodes.Initobj, type);
-        else if(AccessTools.IsValue(type)) {
-            if(type == typeof(float)) {
-                emitter.Emit(OpCodes.Ldc_R4, 0.0f);
-                emitter.Emit(OpCodes.Stind_R4);
-            } else if(type == typeof(double)) {
-                emitter.Emit(OpCodes.Ldc_R8, 0.0);
-                emitter.Emit(OpCodes.Stind_R8);
-            } else if(type == typeof(long)) {
-                emitter.Emit(OpCodes.Ldc_I8, 0L);
-                emitter.Emit(OpCodes.Stind_I8);
-            } else {
-                emitter.Emit(OpCodes.Ldc_I4, 0);
-                emitter.Emit(OpCodes.Stind_I4);
-            }
-        } else {
-            emitter.Emit(OpCodes.Ldnull);
-            emitter.Emit(OpCodes.Stind_Ref);
-        }
-    }
 }

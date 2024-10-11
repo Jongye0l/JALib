@@ -7,7 +7,6 @@ using HarmonyLib;
 using JALib.JAException;
 using JALib.Tools;
 using JALib.Tools.ByteTool;
-using MonoMod.Utils;
 
 namespace JALib.Core.Patch;
 
@@ -39,8 +38,7 @@ public class JAPatcher : IDisposable {
     }
 
     private static MethodInfo PatchUpdateWrapper(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        Dictionary<int, CodeInstruction> finalInstructions1;
-        MethodInfo replacement = new JAMethodPatcher(original, null, patchInfo, jaPatchInfo).CreateReplacement(out finalInstructions1);
+        MethodInfo replacement = new JAMethodPatcher(original, null, patchInfo, jaPatchInfo).CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions1);
         if(replacement == null)
             throw new MissingMethodException("Cannot create replacement for " + original.FullDescription());
         try {
@@ -211,9 +209,6 @@ public class JAPatcher : IDisposable {
                                     continue;
                                 }
                                 throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
-                            }
-                            {
-                                IList<LocalVariableInfo> originalVariables = attribute.MethodBase.GetMethodBody().LocalVariables;
                             }
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(originalMethod)) {
                                 JALib.Instance.Log(instruction.opcode + " " + instruction.operand);
