@@ -6,6 +6,8 @@ using System.Reflection.Emit;
 using HarmonyLib;
 using JALib.JAException;
 using JALib.Tools;
+using JALib.Tools.ByteTool;
+using MonoMod.Utils;
 
 namespace JALib.Core.Patch;
 
@@ -19,6 +21,35 @@ public class JAPatcher : IDisposable {
     public delegate void FailPatch(string patchId);
 
     private static Dictionary<MethodInfo, HarmonyMethod> harmonyMethods = new();
+    private static Dictionary<MethodBase, byte[]> jaPatches = new();
+
+    static JAPatcher() {
+        JALib.Harmony.Patch(Type.GetType("HarmonyLib.PatchFunctions").Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
+    }
+
+    private static bool PatchUpdateWrapperPatch(MethodBase original, PatchInfo patchInfo, ref MethodInfo __result) {
+        try {
+            if(!jaPatches.TryGetValue(original, out byte[] value)) return true;
+            __result = PatchUpdateWrapper(original, patchInfo, value.ToObject<JAPatchInfo>(nullable: false));
+            return false;
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            return true;
+        }
+    }
+
+    private static MethodInfo PatchUpdateWrapper(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+        Dictionary<int, CodeInstruction> finalInstructions1;
+        MethodInfo replacement = new JAMethodPatcher(original, null, patchInfo, jaPatchInfo).CreateReplacement(out finalInstructions1);
+        if(replacement == null)
+            throw new MissingMethodException("Cannot create replacement for " + original.FullDescription());
+        try {
+            typeof(Memory).Invoke("DetourMethodAndPersist", original, replacement);
+        } catch (Exception ex) {
+            throw typeof(HarmonyException).Invoke<Exception>("Create", ex, finalInstructions1);
+        }
+        return replacement;
+    }
 
     public JAPatcher(JAMod mod) {
         this.mod = mod;
@@ -97,7 +128,8 @@ public class JAPatcher : IDisposable {
                             typeof(IEnumerable<CodeInstruction>), [typeof(IEnumerable<CodeInstruction>), typeof(ILGenerator)]);
                         methodBuilder.DefineParameter(1, ParameterAttributes.None, "instructions");
                         methodBuilder.DefineParameter(2, ParameterAttributes.None, "generator");
-                        FieldBuilder runner = typeBuilder.DefineField("Runner", typeof(Func<IEnumerable<CodeInstruction>, ILGenerator, IEnumerable<CodeInstruction>>), FieldAttributes.Private | FieldAttributes.Static);
+                        FieldBuilder runner = typeBuilder.DefineField("Runner", typeof(Func<IEnumerable<CodeInstruction>, ILGenerator, IEnumerable<CodeInstruction>>),
+                            FieldAttributes.Private | FieldAttributes.Static);
                         ILGenerator ilGenerator = methodBuilder.GetILGenerator();
                         ilGenerator.Emit(OpCodes.Ldsfld, runner);
                         ilGenerator.Emit(OpCodes.Ldarg_0);
@@ -159,7 +191,6 @@ public class JAPatcher : IDisposable {
                             Dictionary<int, FieldInfo> parameterFields = new();
                             ParameterInfo[] parameters = attribute.MethodBase.GetParameters();
                             foreach(ParameterInfo parameterInfo in originalMethod.GetParameters()) {
-                                ParameterInfo parameter = parameters.FirstOrDefault(info => info.Name == parameterInfo.Name);
                                 if(parameterInfo.Name.ToLower() == "__instance") {
                                     if(attribute.MethodBase.IsStatic) throw new PatchParameterException("Instance parameter in static method");
                                     if(parameterInfo.ParameterType != attribute.MethodBase.DeclaringType) throw new PatchParameterException("Instance parameter type mismatch");
@@ -167,10 +198,13 @@ public class JAPatcher : IDisposable {
                                     continue;
                                 }
                                 if(parameterInfo.Name.StartsWith("___")) {
-                                    FieldInfo field = attribute.ClassType.Field(parameterInfo.Name[3..]);
-                                    if(field == null) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
-                                    parameterFields[parameterInfo.Position] = field;
+                                    FieldInfo field = attribute.MethodBase.DeclaringType.Field(parameterInfo.Name[3..]);
+                                    if(field != null) {
+                                        parameterFields[parameterInfo.Position] = field;
+                                        continue;
+                                    }
                                 }
+                                ParameterInfo parameter = parameters.FirstOrDefault(info => info.Name == parameterInfo.Name);
                                 if(parameter != null) {
                                     if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
                                     parameterMap[parameterInfo.Position] = parameter.Position;
@@ -178,7 +212,11 @@ public class JAPatcher : IDisposable {
                                 }
                                 throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
                             }
+                            {
+                                IList<LocalVariableInfo> originalVariables = attribute.MethodBase.GetMethodBody().LocalVariables;
+                            }
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(originalMethod)) {
+                                JALib.Instance.Log(instruction.opcode + " " + instruction.operand);
                                 int index = -1;
                                 bool set = false;
                                 if(instruction.opcode == OpCodes.Ldarg) index = (int) instruction.operand;
@@ -206,7 +244,8 @@ public class JAPatcher : IDisposable {
                                 }
                                 if(index != -1) {
                                     if(parameterMap.TryGetValue(index, out int intValue)) {
-                                        instruction.operand = intValue;
+                                        JALib.Instance.Log("Parameter: " + index + " -> " + intValue);
+                                        yield return new CodeInstruction(OpCodes.Ldarg, intValue);
                                     } else if(parameterFields.TryGetValue(index, out FieldInfo field)) {
                                         if(set) {
                                             if(field.IsStatic) yield return new CodeInstruction(OpCodes.Stsfld, field);
@@ -224,12 +263,13 @@ public class JAPatcher : IDisposable {
                                                 yield return new CodeInstruction(OpCodes.Ldfld, field);
                                             }
                                         }
-                                        continue;
                                     } else throw new PatchParameterException("Unknown Parameter: " + index);
+                                    continue;
                                 }
                                 yield return instruction;
                             }
                         }
+
                         patchType.SetValue("Runner", Runner);
                     } else {
                         patchType.SetValue("OriginalMethod", originalMethod);
@@ -238,11 +278,7 @@ public class JAPatcher : IDisposable {
                     harmonyMethods[originalMethod] = value = new HarmonyMethod(patchType.Method(originalMethod.Name));
                 } else harmonyMethods[originalMethod] = value = new HarmonyMethod(originalMethod);
             }
-            attribute.Patch = JALib.Harmony.Patch(attribute.MethodBase,
-                attribute.PatchType == PatchType.Prefix ? value : null,
-                attribute.PatchType == PatchType.Postfix ? value : null,
-                attribute.PatchType is PatchType.Transpiler or PatchType.Replace ? value : null,
-                attribute.PatchType == PatchType.Finalizer ? value : null);
+            attribute.Patch = CustomPatch(attribute.MethodBase, value, (byte) attribute.PatchType);
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
             mod.LogException(e);
@@ -251,6 +287,39 @@ public class JAPatcher : IDisposable {
             mod.Error($"Mod {mod.Name} is Disabled.");
             Unpatch();
             throw;
+        }
+    }
+
+    private static MethodInfo CustomPatch(MethodBase original, HarmonyMethod patchMethod, byte patchType) {
+        Harmony harmony = JALib.Harmony;
+        lock (typeof(PatchProcessor).GetValue("locker")) {
+            PatchInfo patchInfo = Type.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]);
+            JAPatchInfo jaPatchInfo = jaPatches.TryGetValue(original, out byte[] value) ? value.ToObject<JAPatchInfo>(nullable: false) : new JAPatchInfo();
+            switch(patchType) {
+                case 0:
+                    patchInfo.Invoke("AddPrefixes", harmony.Id, patchMethod);
+                    break;
+                case 1:
+                    patchInfo.Invoke("AddPostfixes", harmony.Id, patchMethod);
+                    break;
+                case 2:
+                    patchInfo.Invoke("AddTranspilers", harmony.Id, patchMethod);
+                    break;
+                case 3:
+                    patchInfo.Invoke("AddFinalizers", harmony.Id, patchMethod);
+                    break;
+                case 4:
+                    jaPatchInfo.AddReplaces(harmony.Id, patchMethod);
+                    break;
+                case 5:
+                    patchInfo.Invoke("AddPrefixes", harmony.Id, patchMethod);
+                    jaPatchInfo.AddRemoves(harmony.Id, patchMethod);
+                    break;
+            }
+            PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+            object[] args = [original, null, patchInfo];
+            Type.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", args);
+            return (MethodInfo) args[1];
         }
     }
 
