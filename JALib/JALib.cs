@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using HarmonyLib;
 using JALib.API;
@@ -203,6 +204,8 @@ class JALib : JAMod {
         MainThread.Initialize();
         JApi.Initialize();
         EnableInit();
+        Patcher.AddPatch(printesp);
+        Log(Test(3, true, 5));
         enableInit = true;
     }
 
@@ -225,5 +228,19 @@ class JALib : JAMod {
 
     protected override void OnUpdate(float deltaTime) {
         MainThread.OnUpdate();
+    }
+
+    public static string Test(int a, bool b, int c) {
+        object[] args = [a, b, c];
+        return "Test: " + a + " " + b + " " + c;
+    }
+
+    [JAPatch(typeof(JALib), "Test", PatchType.Replace, false)]
+    private static string printesp(int a, bool b) {
+        Instance.Log(a.GetType());
+        //enableInit = !___enableInit;
+        //__instance.Log(enableInit);
+        //enableInit = !___enableInit;
+        return "Test: " + 1 + " " + b + " " + 2;
     }
 }
