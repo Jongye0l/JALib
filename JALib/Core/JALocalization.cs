@@ -66,7 +66,9 @@ public class JALocalization {
             MainThread.Run(new JAction(_jaMod, () => _jaMod.OnLocalizationUpdate0()));
             IDictionary<string, string>[] allLocalizations = new IDictionary<string, string>[languages.Count];
             for(int i = 0; i < languages.Count; i++) allLocalizations[i] = new Dictionary<string, string>();
-            foreach(JToken token in array.Skip(1)) for(int i = 0; i < languages.Count; i++) SetLocalization(allLocalizations[i], token, i + 1, subindex, languages.Count);
+            foreach(JToken token in array.Skip(1))
+                for(int i = 0; i < languages.Count; i++)
+                    SetLocalization(allLocalizations[i], token, i + 1, subindex, languages.Count);
             for(int i = 0; i < languages.Count; i++) {
                 string path = Path.Combine(_jaMod.Path, "localization", languages[i] + ".json");
                 _ = File.WriteAllTextAsync(path,
@@ -79,7 +81,9 @@ public class JALocalization {
         JArray row = token["c"] as JArray;
         string key = row[0]["v"].ToString();
         JToken valueToken = GetGoogleJToken(row[index]) ?? GetGoogleJToken(row[subindex]);
-        if(valueToken == null) for(int i = 0; i < count && valueToken == null; i++) valueToken = GetGoogleJToken(row[i + 1]);
+        if(valueToken == null)
+            for(int i = 0; i < count && valueToken == null; i++)
+                valueToken = GetGoogleJToken(row[i + 1]);
         localizations[key] = valueToken?.ToString() ?? key;
     }
 

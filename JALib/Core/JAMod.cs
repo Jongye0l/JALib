@@ -27,6 +27,7 @@ public abstract class JAMod {
             return _moduleBuilder;
         }
     }
+
     protected internal UnityModManager.ModEntry ModEntry { get; private set; }
     public UnityModManager.ModEntry.ModLogger Logger => ModEntry.Logger;
     public string Name { get; private set; }
@@ -313,7 +314,8 @@ public abstract class JAMod {
                     try {
                         Type[] parameters = method.GetGenericArguments();
                         for(int i = 0; i < parameters.Length; i++)
-                            if(parameters[i].Assembly == newAssembly) parameters[i] = newAssembly.GetType(parameters[i].FullName);
+                            if(parameters[i].Assembly == newAssembly)
+                                parameters[i] = newAssembly.GetType(parameters[i].FullName);
                         MethodInfo newMethod = newType.Method(method.Name, method.GetGenericArguments());
                         if(newMethod == null) return;
                         int count = methodCount.GetValueOrDefault(method.Name);
@@ -349,7 +351,7 @@ public abstract class JAMod {
                         ilGenerator.Emit(OpCodes.Ldc_I4_0);
                         ilGenerator.Emit(OpCodes.Ret);
                         CustomAttributeBuilder attributeBuilder = new(typeof(JAPatchAttribute).Constructor(typeof(MethodInfo), typeof(PatchType), typeof(bool)),
-                            [ method, PatchType.Prefix, false ]);
+                            [method, PatchType.Prefix, false]);
                         methodBuilder.SetCustomAttribute(attributeBuilder);
                     } catch (Exception e) {
                         JALib.Instance.Log("Failed to reload method " + method.Name + " of type " + type.FullName);
