@@ -36,7 +36,7 @@ class JAMethodPatcher {
         replaces = SortPatchMethods(original, jaPatchInfo.replaces, debug);
         removes = SortPatchMethods(original, jaPatchInfo.removes, debug);
         SetupPrefixRemove();
-        originalPatcher = Type.GetType("HarmonyLib.MethodPatcher").New(original, source, prefixes, postfixes, transpilers, finalizers, debug);
+        originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source, prefixes, postfixes, transpilers, finalizers, debug);
         il = originalPatcher.GetValue<ILGenerator>("il");
         idx = prefixes.Count + postfixes.Count + finalizers.Count;
         emitter = new JAEmitter(originalPatcher.GetValue("emitter"));
@@ -54,10 +54,10 @@ class JAMethodPatcher {
     }
 
     private static List<MethodInfo> SortPatchMethods(MethodBase original, HarmonyLib.Patch[] patches, bool debug) =>
-        Type.GetType("HarmonyLib.PatchSorter").New(patches, debug).Invoke<List<MethodInfo>>("Sort", original);
+        typeof(Harmony).Assembly.GetType("HarmonyLib.PatchSorter").New(patches, debug).Invoke<List<MethodInfo>>("Sort", original);
 
     internal MethodInfo CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions) {
-        Type methodPatcher = Type.GetType("HarmonyLib.MethodPatcher");
+        Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
         LocalBuilder[] originalVariables = removes.Count > 0 ? [] : methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", il, replaces.Count > 0 ? replaces.Last() : source ?? original);
         Dictionary<string, LocalBuilder> privateVars = new();
         List<MethodInfo> fixes = removes.Count == 0 ? prefixes.Union(postfixes).Union(finalizers).ToList() : prefixes;
@@ -166,7 +166,7 @@ class JAMethodPatcher {
             FileLog.FlushBuffer();
         }
         MethodInfo replacement = originalPatcher.GetValue<DynamicMethodDefinition>("patch").Generate();
-        Type.GetType("HarmonyLib.DetourHelper").Method("Pin").MakeGenericMethod(typeof(MethodInfo)).Invoke([replacement]);
+        typeof(Harmony).Assembly.GetType("HarmonyLib.DetourHelper").Method("Pin").MakeGenericMethod(typeof(MethodInfo)).Invoke([replacement]);
         return replacement;
     }
 
