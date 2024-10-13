@@ -287,7 +287,7 @@ public class JAPatcher : IDisposable {
     private static MethodInfo CustomPatch(MethodBase original, HarmonyMethod patchMethod, byte patchType) {
         Harmony harmony = JALib.Harmony;
         lock (typeof(PatchProcessor).GetValue("locker")) {
-            PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]);
+            PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]) ?? new PatchInfo();
             JAPatchInfo jaPatchInfo = jaPatches.TryGetValue(original, out byte[] value) ? value.ToObject<JAPatchInfo>(nullable: false) : new JAPatchInfo();
             switch(patchType) {
                 case 0:

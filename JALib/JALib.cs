@@ -77,7 +77,7 @@ class JALib : JAMod {
         SetupModInfo(modInfo);
         Type type = await loadTask;
         if(type == null) loadTasks[modInfo.ModEntry.Info.Id] = SetupMod(modInfo);
-        else type.Invoke("SetupMod", null, modInfo);
+        else type.Invoke("SetupMod", [null, modInfo]);
     }
 
     private static async Task SetupMod(JAModInfo modInfo) {
