@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using HarmonyLib;
 using JALib.Tools;
 
 namespace JALib.Core.Patch;
@@ -10,7 +11,7 @@ class JAMethodCopier {
     private List<MethodInfo> transpilers;
 
     public JAMethodCopier(MethodBase fromMethod, ILGenerator toILGenerator, LocalBuilder[] existingVariables = null) {
-        original = Type.GetType("HarmonyLib.MethodCopier").New(fromMethod, toILGenerator, existingVariables);
+        original = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodCopier").New(fromMethod, toILGenerator, existingVariables);
         transpilers = original.GetValue<List<MethodInfo>>("transpilers");
     }
 
