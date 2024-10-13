@@ -22,7 +22,7 @@ public class JAPatcher : IDisposable {
     private static Dictionary<MethodBase, byte[]> jaPatches = new();
 
     static JAPatcher() {
-        JALib.Harmony.Patch(Type.GetType("HarmonyLib.PatchFunctions").Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
+        JALib.Harmony.Patch(typeof(Harmony).Assembly.GetType("HarmonyLib.PatchFunctions").Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
     }
 
     private static bool PatchUpdateWrapperPatch(MethodBase original, PatchInfo patchInfo, ref MethodInfo __result) {
@@ -287,7 +287,7 @@ public class JAPatcher : IDisposable {
     private static MethodInfo CustomPatch(MethodBase original, HarmonyMethod patchMethod, byte patchType) {
         Harmony harmony = JALib.Harmony;
         lock (typeof(PatchProcessor).GetValue("locker")) {
-            PatchInfo patchInfo = Type.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]);
+            PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]);
             JAPatchInfo jaPatchInfo = jaPatches.TryGetValue(original, out byte[] value) ? value.ToObject<JAPatchInfo>(nullable: false) : new JAPatchInfo();
             switch(patchType) {
                 case 0:
@@ -312,7 +312,7 @@ public class JAPatcher : IDisposable {
             }
             PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
             object[] args = [original, null, patchInfo];
-            Type.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", args);
+            typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", args);
             return (MethodInfo) args[1];
         }
     }
