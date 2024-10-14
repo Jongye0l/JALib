@@ -116,7 +116,7 @@ public class JAPatcher : IDisposable {
             }
             if(!harmonyMethods.TryGetValue(attribute.Method, out HarmonyMethod value)) {
                 MethodInfo originalMethod = attribute.Method;
-                if(attribute.TryingCatch && attribute.PatchType is PatchType.Prefix or PatchType.Postfix || attribute.PatchType == PatchType.Replace) {
+                if(attribute.TryingCatch && attribute.PatchType is PatchType.Prefix or PatchType.Postfix) {
                     TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JALib.Patch.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
                     FieldBuilder exceptionCatchField = !attribute.TryingCatch ? null : typeBuilder.DefineField("ExceptionCatcher", typeof(Action<Exception>), FieldAttributes.Public | FieldAttributes.Static);
                     MethodBuilder methodBuilder;
@@ -310,10 +310,9 @@ public class JAPatcher : IDisposable {
                     jaPatchInfo.AddRemoves(harmony.Id, patchMethod);
                     break;
             }
-            PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
-            object[] args = [original, null, patchInfo];
-            typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", args);
-            return (MethodInfo) args[1];
+            MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+            typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", original, replacement, patchInfo);
+            return replacement;
         }
     }
 
