@@ -19,7 +19,7 @@ class JAMethodCopier {
     public void SetDebugging(bool debug) => original.Invoke("SetDebugging", debug);
     public void AddTranspiler(List<MethodInfo> transpiler) => transpilers.AddRange(transpiler);
     public void Finalize(JAEmitter emitter, List<Label> endLabels, out bool hasReturnCode) {
-        object[] args = [emitter, endLabels, false];
+        object[] args = [emitter.GetOriginal(), endLabels, false];
         original.Invoke("Finalize", [typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter"), typeof(List<Label>), typeof(bool).MakeByRefType()], args);
         hasReturnCode = (bool) args[2];
     }
