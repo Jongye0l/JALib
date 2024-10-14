@@ -166,7 +166,7 @@ class JAMethodPatcher {
             FileLog.FlushBuffer();
         }
         MethodInfo replacement = originalPatcher.GetValue<DynamicMethodDefinition>("patch").Generate();
-        typeof(Harmony).Assembly.GetType("HarmonyLib.DetourHelper").Method("Pin").MakeGenericMethod(typeof(MethodInfo)).Invoke([replacement]);
+        typeof(Harmony).Assembly.GetType("MonoMod.RuntimeDetour.DetourHelper").Method("Pin").MakeGenericMethod(typeof(MethodInfo)).Invoke([replacement]);
         return replacement;
     }
 
