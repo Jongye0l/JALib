@@ -63,7 +63,7 @@ class JAMethodPatcher {
         List<MethodInfo> fixes = removes.Count == 0 ? prefixes.Union(postfixes).Union(finalizers).ToList() : prefixes;
         LocalBuilder resultVariable = null;
         if(idx > 0) {
-            resultVariable = DeclareLocalVariable(returnType);
+            resultVariable = DeclareLocalVariable(returnType, true);
             privateVars["__result"] = resultVariable;
         }
         if(fixes.Any(fix => fix.GetParameters().Any(p => p.Name == "__args"))) {
@@ -74,7 +74,7 @@ class JAMethodPatcher {
         }
         Label? skipOriginalLabel = null;
         LocalBuilder runOriginalVariable = null;
-        bool prefixAffectsOriginal = prefixes.Any(fix => methodPatcher.Invoke<bool>("PrefixAffectsOriginal", fix));
+        bool prefixAffectsOriginal = prefixes.Any(fix => methodPatcher.Invoke<bool>("PrefixAffectsOriginal", [fix]));
         bool anyFixHasRunOriginalVar = fixes.Any(fix => fix.GetParameters().Any(p => p.Name == "__runOriginal"));
         if(prefixAffectsOriginal || anyFixHasRunOriginalVar) {
             runOriginalVariable = DeclareLocalVariable(typeof(bool));
@@ -148,8 +148,8 @@ class JAMethodPatcher {
             }
             emitter.MarkLabel(label3);
             emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
+            if(resultVariable != null) emitter.Emit(OpCodes.Ldloc, resultVariable);
         }
-        if(resultVariable != null) emitter.Emit(OpCodes.Ldloc, resultVariable);
         if(useStructReturnBuffer) {
             LocalBuilder local4 = DeclareLocalVariable(returnType);
             emitter.Emit(OpCodes.Stloc, local4);
@@ -170,7 +170,8 @@ class JAMethodPatcher {
         return replacement;
     }
 
-    private LocalBuilder DeclareLocalVariable(Type type) {
+    private LocalBuilder DeclareLocalVariable(Type type, bool isReturnValue = false) {
+        if(type.IsByRef && !isReturnValue) type = type.GetElementType();
         if(type.IsEnum)
             type = Enum.GetUnderlyingType(type);
         if(AccessTools.IsClass(type)) {
@@ -186,12 +187,12 @@ class JAMethodPatcher {
             return local;
         }
         if(!AccessTools.IsValue(type)) return null;
-        LocalBuilder local1 = il.DeclareLocal(type);
+        LocalBuilder v = il.DeclareLocal(type);
         if(type == typeof(float)) emitter.Emit(OpCodes.Ldc_R4, 0.0f);
         else if(type == typeof(double)) emitter.Emit(OpCodes.Ldc_R8, 0.0);
         else if(type == typeof(long) || type == typeof(ulong)) emitter.Emit(OpCodes.Ldc_I8, 0L);
         else emitter.Emit(OpCodes.Ldc_I4, 0);
-        emitter.Emit(OpCodes.Stloc, local1);
-        return local1;
+        emitter.Emit(OpCodes.Stloc, v);
+        return v;
     }
 }
