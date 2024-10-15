@@ -120,21 +120,7 @@ public class JAPatcher : IDisposable {
                     TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JALib.Patch.{attribute.PatchId}.{JARandom.Instance.NextInt()}", TypeAttributes.NotPublic);
                     FieldBuilder exceptionCatchField = !attribute.TryingCatch ? null : typeBuilder.DefineField("ExceptionCatcher", typeof(Action<Exception>), FieldAttributes.Public | FieldAttributes.Static);
                     MethodBuilder methodBuilder;
-                    if(attribute.PatchType == PatchType.Replace) {
-                        methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Private | MethodAttributes.Static,
-                            typeof(IEnumerable<CodeInstruction>), [typeof(IEnumerable<CodeInstruction>), typeof(ILGenerator)]);
-                        methodBuilder.DefineParameter(1, ParameterAttributes.None, "instructions");
-                        methodBuilder.DefineParameter(2, ParameterAttributes.None, "generator");
-                        FieldBuilder runner = typeBuilder.DefineField("Runner", typeof(Func<IEnumerable<CodeInstruction>, ILGenerator, IEnumerable<CodeInstruction>>),
-                            FieldAttributes.Private | FieldAttributes.Static);
-                        ILGenerator ilGenerator = methodBuilder.GetILGenerator();
-                        ilGenerator.Emit(OpCodes.Ldsfld, runner);
-                        ilGenerator.Emit(OpCodes.Ldarg_0);
-                        ilGenerator.Emit(OpCodes.Ldarg_1);
-                        ilGenerator.Emit(OpCodes.Call, typeof(Func<IEnumerable<CodeInstruction>, ILGenerator, IEnumerable<CodeInstruction>>).Method("Invoke"));
-                        ilGenerator.Emit(OpCodes.Ret);
-                    } else {
-                        FieldBuilder methodField = typeBuilder.DefineField("OriginalMethod", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static);
+                    FieldBuilder methodField = typeBuilder.DefineField("OriginalMethod", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static);
                         methodBuilder = typeBuilder.DefineMethod(originalMethod.Name, MethodAttributes.Private | MethodAttributes.Static,
                             originalMethod.ReturnType, originalMethod.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                         foreach(ParameterInfo parameter in originalMethod.GetParameters()) methodBuilder.DefineParameter(parameter.Position + 1, parameter.Attributes, parameter.Name);
@@ -178,97 +164,9 @@ public class JAPatcher : IDisposable {
                             if(originalMethod.ReturnType.IsValueType) ilGenerator.Emit(OpCodes.Unbox_Any, originalMethod.ReturnType);
                         }
                         ilGenerator.Emit(OpCodes.Ret);
-                    }
                     Type patchType = typeBuilder.CreateType();
-                    if(attribute.PatchType == PatchType.Replace) {
-                        IEnumerable<CodeInstruction> Runner(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
-                            Type originalReturnType = attribute.MethodBase is MethodInfo info ? info.ReturnType : typeof(void);
-                            if(originalMethod.ReturnType != originalReturnType) throw new PatchReturnException(originalReturnType, originalMethod.ReturnType);
-                            Dictionary<int, int> parameterMap = new();
-                            Dictionary<int, FieldInfo> parameterFields = new();
-                            ParameterInfo[] parameters = attribute.MethodBase.GetParameters();
-                            foreach(ParameterInfo parameterInfo in originalMethod.GetParameters()) {
-                                if(parameterInfo.Name.ToLower() == "__instance") {
-                                    if(attribute.MethodBase.IsStatic) throw new PatchParameterException("Instance parameter in static method");
-                                    if(parameterInfo.ParameterType != attribute.MethodBase.DeclaringType) throw new PatchParameterException("Instance parameter type mismatch");
-                                    parameterMap[parameterInfo.Position] = 0;
-                                    continue;
-                                }
-                                if(parameterInfo.Name.StartsWith("___")) {
-                                    FieldInfo field = attribute.MethodBase.DeclaringType.Field(parameterInfo.Name[3..]);
-                                    if(field != null) {
-                                        parameterFields[parameterInfo.Position] = field;
-                                        continue;
-                                    }
-                                }
-                                ParameterInfo parameter = parameters.FirstOrDefault(info => info.Name == parameterInfo.Name);
-                                if(parameter != null) {
-                                    if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
-                                    parameterMap[parameterInfo.Position] = parameter.Position;
-                                    continue;
-                                }
-                                throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
-                            }
-                            foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(originalMethod)) {
-                                JALib.Instance.Log(instruction.opcode + " " + instruction.operand);
-                                int index = -1;
-                                bool set = false;
-                                if(instruction.opcode == OpCodes.Ldarg) index = (int) instruction.operand;
-                                else if(instruction.opcode == OpCodes.Ldarga) index = (int) instruction.operand;
-                                else if(instruction.opcode == OpCodes.Ldarg_S) index = (byte) instruction.operand;
-                                else if(instruction.opcode == OpCodes.Ldarga_S) index = (byte) instruction.operand;
-                                else if(instruction.opcode == OpCodes.Starg) {
-                                    index = (int) instruction.operand;
-                                    set = true;
-                                } else if(instruction.opcode == OpCodes.Starg_S) {
-                                    index = (byte) instruction.operand;
-                                    set = true;
-                                } else if(instruction.opcode == OpCodes.Ldarg_0) {
-                                    index = 0;
-                                    instruction.opcode = OpCodes.Ldarg;
-                                } else if(instruction.opcode == OpCodes.Ldarg_1) {
-                                    index = 1;
-                                    instruction.opcode = OpCodes.Ldarg;
-                                } else if(instruction.opcode == OpCodes.Ldarg_2) {
-                                    index = 2;
-                                    instruction.opcode = OpCodes.Ldarg;
-                                } else if(instruction.opcode == OpCodes.Ldarg_3) {
-                                    index = 3;
-                                    instruction.opcode = OpCodes.Ldarg;
-                                }
-                                if(index != -1) {
-                                    if(parameterMap.TryGetValue(index, out int intValue)) {
-                                        JALib.Instance.Log("Parameter: " + index + " -> " + intValue);
-                                        yield return new CodeInstruction(OpCodes.Ldarg, intValue);
-                                    } else if(parameterFields.TryGetValue(index, out FieldInfo field)) {
-                                        if(set) {
-                                            if(field.IsStatic) yield return new CodeInstruction(OpCodes.Stsfld, field);
-                                            else {
-                                                LocalBuilder localBuilder = generator.DeclareLocal(field.FieldType);
-                                                yield return new CodeInstruction(OpCodes.Stloc, localBuilder);
-                                                yield return new CodeInstruction(OpCodes.Ldarg_0);
-                                                yield return new CodeInstruction(OpCodes.Ldloc, localBuilder);
-                                                yield return new CodeInstruction(OpCodes.Stfld, field);
-                                            }
-                                        } else {
-                                            if(field.IsStatic) yield return new CodeInstruction(OpCodes.Ldsfld, field);
-                                            else {
-                                                yield return new CodeInstruction(OpCodes.Ldarg_0);
-                                                yield return new CodeInstruction(OpCodes.Ldfld, field);
-                                            }
-                                        }
-                                    } else throw new PatchParameterException("Unknown Parameter: " + index);
-                                    continue;
-                                }
-                                yield return instruction;
-                            }
-                        }
-
-                        patchType.SetValue("Runner", Runner);
-                    } else {
-                        patchType.SetValue("OriginalMethod", originalMethod);
-                        patchType.SetValue("ExceptionCatcher", OnPatchException);
-                    }
+                    patchType.SetValue("OriginalMethod", originalMethod);
+                    patchType.SetValue("ExceptionCatcher", OnPatchException);
                     harmonyMethods[originalMethod] = value = new HarmonyMethod(patchType.Method(originalMethod.Name));
                 } else harmonyMethods[originalMethod] = value = new HarmonyMethod(originalMethod);
             }
