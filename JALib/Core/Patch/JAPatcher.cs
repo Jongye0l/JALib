@@ -291,22 +291,22 @@ public class JAPatcher : IDisposable {
             JAPatchInfo jaPatchInfo = jaPatches.TryGetValue(original, out byte[] value) ? value.ToObject<JAPatchInfo>(nullable: false) : new JAPatchInfo();
             switch(patchType) {
                 case 0:
-                    patchInfo.Invoke("AddPrefixes", harmony.Id, patchMethod);
+                    patchInfo.Invoke("AddPrefixes", harmony.Id, new[] { patchMethod });
                     break;
                 case 1:
-                    patchInfo.Invoke("AddPostfixes", harmony.Id, patchMethod);
+                    patchInfo.Invoke("AddPostfixes", harmony.Id, new[] { patchMethod });
                     break;
                 case 2:
-                    patchInfo.Invoke("AddTranspilers", harmony.Id, patchMethod);
+                    patchInfo.Invoke("AddTranspilers", harmony.Id, new[] { patchMethod });
                     break;
                 case 3:
-                    patchInfo.Invoke("AddFinalizers", harmony.Id, patchMethod);
+                    patchInfo.Invoke("AddFinalizers", harmony.Id, new[] { patchMethod });
                     break;
                 case 4:
                     jaPatchInfo.AddReplaces(harmony.Id, patchMethod);
                     break;
                 case 5:
-                    patchInfo.Invoke("AddPrefixes", harmony.Id, patchMethod);
+                    patchInfo.Invoke("AddPrefixes", harmony.Id, new[] { patchMethod });
                     jaPatchInfo.AddRemoves(harmony.Id, patchMethod);
                     break;
             }
