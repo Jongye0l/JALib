@@ -17,7 +17,7 @@ class JAEmitter(object original) {
     public void Emit(OpCode opcode, Type arg) => original.Invoke("Emit", [typeof(OpCode), typeof(Type)], opcode, arg);
     public void Emit(OpCode opcode, MethodInfo arg) => original.Invoke("Emit", [typeof(OpCode), typeof(MethodInfo)], opcode, arg);
     public void Emit(OpCode opcode, LocalBuilder arg) => original.Invoke("Emit", [typeof(OpCode), typeof(LocalBuilder)], opcode, arg);
-    public void MarkBlockBefore(ExceptionBlock block) => original.Invoke("MarkBlockBefore", [typeof(ExceptionBlock), typeof(Label).MakeByRefType()], block, null);
+    public void MarkBlockBefore(ExceptionBlock block) => original.Invoke("MarkBlockBefore", [typeof(ExceptionBlock), typeof(Label?).MakeByRefType()], block, null);
     public void MarkLabel(Label label) => original.Invoke("MarkLabel", [typeof(Label)], label);
     public void MarkBlockAfter(ExceptionBlock block) => original.Invoke("MarkBlockAfter", [typeof(ExceptionBlock)], block);
     public Dictionary<int, CodeInstruction> GetInstructions() => original.Invoke<Dictionary<int, CodeInstruction>>("GetInstructions");
