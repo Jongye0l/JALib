@@ -143,7 +143,7 @@ class JAMethodPatcher {
 
     internal MethodInfo CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions) {
         Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
-        LocalBuilder[] originalVariables = removes.Length > 0 ? [] : methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", il, replaces.Length > 0 ? replaces.Last() : source ?? original);
+        LocalBuilder[] originalVariables = removes.Length > 0 ? [] : methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", il, replaces.Length > 0 ? replaces.Last().PatchMethod : source ?? original);
         Dictionary<string, LocalBuilder> privateVars = new();
         HarmonyLib.Patch[] fixes = removes.Length == 0 ? prefixes.Union(postfixes).Union(finalizers).ToArray() : prefixes;
         LocalBuilder resultVariable = null;
@@ -159,7 +159,7 @@ class JAMethodPatcher {
         }
         Label? skipOriginalLabel = null;
         LocalBuilder runOriginalVariable = null;
-        bool prefixAffectsOriginal = prefixes.Any(fix => methodPatcher.Invoke<bool>("PrefixAffectsOriginal", [fix]));
+        bool prefixAffectsOriginal = prefixes.Any(fix => methodPatcher.Invoke<bool>("PrefixAffectsOriginal", [fix.PatchMethod]));
         bool anyFixHasRunOriginalVar = fixes.Any(fix => fix.PatchMethod.GetParameters().Any(p => p.Name == "__runOriginal"));
         if(prefixAffectsOriginal || anyFixHasRunOriginalVar) {
             runOriginalVariable = DeclareLocalVariable(typeof(bool));
@@ -368,10 +368,6 @@ class JAMethodPatcher {
                 emitter.Emit(OpCodes.Ldstr, "An error occurred while invoking a postfix patch " + patch.owner);
                 emitter.Emit(OpCodes.Ldloc, exceptionVar);
                 emitter.Emit(OpCodes.Call, typeof(JAMod).Method("LogException", typeof(string), typeof(Exception)));
-                if(returnType == typeof(bool)) {
-                    emitter.Emit(OpCodes.Ldc_I4_1);
-                    emitter.Emit(OpCodes.Stloc, runOriginalVariable);
-                }
                 emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
             }
             if(fix.ReturnType == typeof(void)) continue;
