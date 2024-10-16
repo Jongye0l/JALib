@@ -70,11 +70,8 @@ public class JAPatcher : IDisposable {
             if(attribute.MinVersion > GCNS.releaseNumber || attribute.MaxVersion < GCNS.releaseNumber) return;
             if(attribute.MethodBase == null) {
                 attribute.ClassType ??= Type.GetType(attribute.Class);
-                if(attribute.ArgumentTypesType == null && attribute.ArgumentTypes != null) {
-                    attribute.ArgumentTypesType = new Type[attribute.ArgumentTypes.Length];
-                    for(int i = 0; i < attribute.ArgumentTypes.Length; i++)
-                        attribute.ArgumentTypesType[i] = Type.GetType(attribute.ArgumentTypes[i]);
-                }
+                if(attribute.ArgumentTypesType == null && attribute.ArgumentTypes != null) attribute.ArgumentTypesType = new Type[attribute.ArgumentTypes.Length];
+                if(attribute.ArgumentTypesType != null && attribute.ArgumentTypes != null) for(int i = 0; i < attribute.ArgumentTypes.Length; i++) attribute.ArgumentTypesType[i] ??= Type.GetType(attribute.ArgumentTypes[i]);
                 if(attribute.MethodName == ".ctor")
                     attribute.MethodBase = attribute.ArgumentTypesType == null ? attribute.ClassType.Constructor() : attribute.ClassType.Constructor(attribute.ArgumentTypesType);
                 else if(attribute.MethodName == ".cctor") attribute.MethodBase = attribute.ClassType.TypeInitializer;
@@ -109,7 +106,9 @@ public class JAPatcher : IDisposable {
                 else if(attribute.MethodName.EndsWith(".get")) attribute.MethodBase = attribute.ClassType.Getter(attribute.MethodName[..4]);
                 else if(attribute.MethodName.EndsWith(".set")) attribute.MethodBase = attribute.ClassType.Setter(attribute.MethodName[..4]);
                 else attribute.MethodBase = attribute.ArgumentTypesType == null ? attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
-                if(attribute.GenericType != null || attribute.GenericName != null) {
+                if(attribute.GenericType == null && attribute.GenericName != null) attribute.GenericType = new Type[attribute.GenericName.Length];
+                if(attribute.GenericType != null) {
+                    if(attribute.GenericName != null) for(int i = 0; i < attribute.GenericType.Length; i++) attribute.GenericType[i] ??= Type.GetType(attribute.GenericName[i]);
                     attribute.GenericType ??= attribute.GenericName.Select(name => Type.GetType(name)).ToArray();
                     attribute.MethodBase = ((MethodInfo) attribute.MethodBase).MakeGenericMethod(attribute.GenericType);
                 }
