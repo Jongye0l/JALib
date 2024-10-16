@@ -7,7 +7,6 @@ using JALib.Tools;
 namespace JALib.Core.Patch;
 
 class JAEmitter(object original) {
-
     public void Emit(OpCode opcode) => original.Invoke("Emit", [typeof(OpCode)], opcode);
     public void Emit(OpCode opcode, int arg) => original.Invoke("Emit", [typeof(OpCode), typeof(int)], opcode, arg);
     public void Emit(OpCode opcode, long arg) => original.Invoke("Emit", [typeof(OpCode), typeof(long)], opcode, arg);
