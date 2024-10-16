@@ -30,13 +30,14 @@ class JAMethodPatcher {
         this.original = original;
         this.source = source;
         debug = patchInfo.Debugging || Harmony.DEBUG;
-        List<MethodInfo> prefix = SortPatchMethods(original, patchInfo.prefixes.Concat(jaPatchInfo.tryPrefixes).Concat(jaPatchInfo.removes).ToArray(), debug, out prefixes);
+        SortPatchMethods(original, patchInfo.prefixes.Concat(jaPatchInfo.tryPrefixes).Concat(jaPatchInfo.removes).ToArray(), debug, out prefixes);
         List<MethodInfo> postfix = SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
         List<MethodInfo> transpiler = SortPatchMethods(original, patchInfo.transpilers, debug, out transpilers);
         List<MethodInfo> finalizer = SortPatchMethods(original, patchInfo.finalizers, debug, out finalizers);
         SortPatchMethods(original, jaPatchInfo.replaces, debug, out replaces);
         SortPatchMethods(original, jaPatchInfo.removes, debug, out removes);
         SetupPrefixRemove();
+        List<MethodInfo> prefix = prefixes.Select(patch => patch.PatchMethod).ToList();
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source, prefix, postfix, transpiler, finalizer, debug);
         il = originalPatcher.GetValue<ILGenerator>("il");
         idx = prefixes.Length + postfixes.Length + finalizers.Length;
