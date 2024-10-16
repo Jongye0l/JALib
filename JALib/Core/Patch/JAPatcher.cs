@@ -110,7 +110,7 @@ public class JAPatcher : IDisposable {
                 else if(attribute.MethodName.EndsWith(".set")) attribute.MethodBase = attribute.ClassType.Setter(attribute.MethodName[..4]);
                 else attribute.MethodBase = attribute.ArgumentTypesType == null ? attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
                 if(attribute.GenericType != null || attribute.GenericName != null) {
-                    attribute.GenericType ??= Type.GetType(attribute.GenericName);
+                    attribute.GenericType ??= attribute.GenericName.Select(name => Type.GetType(name)).ToArray();
                     attribute.MethodBase = ((MethodInfo) attribute.MethodBase).MakeGenericMethod(attribute.GenericType);
                 }
             }
