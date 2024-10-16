@@ -116,7 +116,7 @@ public class JAPatcher : IDisposable {
             }
             MethodInfo originalMethod = attribute.Method;
             if(!harmonyMethods.TryGetValue(originalMethod, out HarmonyMethod value)) harmonyMethods[originalMethod] = value = new HarmonyMethod(originalMethod);
-            attribute.Patch = CustomPatch(attribute.MethodBase, value, (byte) attribute.PatchType, attribute.TryingCatch ? mod : null);
+            attribute.Patch = CustomPatch(attribute.MethodBase, value, attribute.PatchType, attribute.TryingCatch ? mod : null);
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
             mod.LogException(e);
@@ -128,27 +128,28 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static MethodInfo CustomPatch(MethodBase original, HarmonyMethod patchMethod, byte patchType, JAMod mod) {
+    private static MethodInfo CustomPatch(MethodBase original, HarmonyMethod patchMethod, PatchType patchType, JAMod mod) {
         Harmony harmony = JALib.Harmony;
         lock (typeof(PatchProcessor).GetValue("locker")) {
             PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]) ?? new PatchInfo();
             JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
             switch(patchType) {
-                case 0:
-                    if(mod != null) jaPatchInfo.AddTryPrefixes(harmony.Id, patchMethod, mod);
+                case PatchType.Prefix:
+                    if(CheckRemove(patchMethod)) jaPatchInfo.AddRemoves(harmony.Id, patchMethod);
+                    else if(mod != null) jaPatchInfo.AddTryPrefixes(harmony.Id, patchMethod, mod);
                     else patchInfo.Invoke("AddPrefixes", harmony.Id, new[] { patchMethod });
                     break;
-                case 1:
+                case PatchType.Postfix:
                     if(mod != null) jaPatchInfo.AddTryPostfixes(harmony.Id, patchMethod, mod);
                     else patchInfo.Invoke("AddPostfixes", harmony.Id, new[] { patchMethod });
                     break;
-                case 2:
+                case PatchType.Transpiler:
                     patchInfo.Invoke("AddTranspilers", harmony.Id, new[] { patchMethod });
                     break;
-                case 3:
+                case PatchType.Finalizer:
                     patchInfo.Invoke("AddFinalizers", harmony.Id, new[] { patchMethod });
                     break;
-                case 4:
+                case PatchType.Replace:
                     jaPatchInfo.AddReplaces(harmony.Id, patchMethod);
                     break;
             }
@@ -157,6 +158,14 @@ public class JAPatcher : IDisposable {
             jaPatches[original] = jaPatchInfo;
             return replacement;
         }
+    }
+
+    private static bool CheckRemove(HarmonyMethod method) {
+        if(method.method.ReturnType != typeof(bool)) return false;
+        List<CodeInstruction> code = PatchProcessor.GetCurrentInstructions(method.method);
+        IEnumerator<CodeInstruction> enumerator = code.Where(c => c.opcode != OpCodes.Nop).GetEnumerator();
+        return enumerator.MoveNext() && enumerator.Current.opcode == OpCodes.Ldc_I4_0 &&
+               enumerator.MoveNext() && enumerator.Current.opcode == OpCodes.Ret;
     }
 
     private void OnPatchException(Exception exception) {
