@@ -103,11 +103,14 @@ class JAMethodPatcher {
             SortPatchMethods(original, patchInfo.Transpilers.ToArray(), debug, out transpilers);
             transpilers = transpilers.Concat(children).ToArray();
         } else transpilers = children;
+        children = customPatchMethods.Where(method => method.Name.Contains("Finalizer")).Select(CreateEmptyPatch).ToArray();
         if(attribute.PatchType.HasFlag(ReversePatchType.FinalizerCombine)) {
             SortPatchMethods(original, patchInfo.Finalizers.ToArray(), debug, out finalizers);
             finalizers = finalizers.Concat(children).ToArray();
         } else finalizers = children;
-        SortPatchMethods(original, jaPatchInfo.replaces, debug, out replaces);
+        if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) {
+            SortPatchMethods(original, jaPatchInfo.replaces, debug, out replaces);
+        } else replaces = [];
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source,
             prefixes.Select(patch => patch.PatchMethod).ToList(),
             postfixes.Select(patch => patch.PatchMethod).ToList(),
