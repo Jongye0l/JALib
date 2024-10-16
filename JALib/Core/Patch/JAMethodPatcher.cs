@@ -118,10 +118,10 @@ class JAMethodPatcher {
             foreach(Label label in endLabels) emitter.MarkLabel(label);
             if(resultVariable != null & hasReturnCode) emitter.Emit(OpCodes.Stloc, resultVariable);
             if(skipOriginalLabel.HasValue) emitter.MarkLabel(skipOriginalLabel.Value);
-            originalPatcher.Invoke("AddPostfixes", privateVars, runOriginalVariable, false);
+            AddPostfixes(privateVars, runOriginalVariable, false);
             if(resultVariable != null & hasReturnCode)
                 emitter.Emit(OpCodes.Ldloc, resultVariable);
-            needsToStorePassthroughResult = originalPatcher.Invoke<bool>("AddPostfixes", privateVars, runOriginalVariable, true);
+            needsToStorePassthroughResult = AddPostfixes(privateVars, runOriginalVariable, true);
         }
         bool hasFinalizers = finalizers.Length > 0;
         if(hasFinalizers) {
@@ -254,5 +254,55 @@ class JAMethodPatcher {
             emitter.MarkLabel(skipLabel.Value);
             emitter.Emit(OpCodes.Nop);
         }
+    }
+
+    private bool AddPostfixes(Dictionary<string, LocalBuilder> variables, LocalBuilder runOriginalVariable, bool passthroughPatches) {
+        bool result = false;
+        foreach(HarmonyLib.Patch patch in postfixes) {
+            MethodInfo fix = patch.PatchMethod;
+            if(passthroughPatches != (fix.ReturnType != typeof(void))) continue;
+            LocalBuilder exceptionVar = jaPatchInfo.tryPostfixes.Contains(patch) ? il.DeclareLocal(typeof(Exception)) : null;
+            if(exceptionVar != null) emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
+            List<KeyValuePair<LocalBuilder, Type>> tmpBoxVars = [];
+            object[] args = [fix, variables, runOriginalVariable, false, null, tmpBoxVars];
+            originalPatcher.Invoke("EmitCallParameter", args);
+            LocalBuilder tmpObjectVar = (LocalBuilder) args[4];
+            emitter.Emit(OpCodes.Call, fix);
+            if(fix.GetParameters().Any(p => p.Name == "__args"))
+                originalPatcher.Invoke("RestoreArgumentArray", variables);
+            if(tmpObjectVar != null) {
+                emitter.Emit(OpCodes.Ldloc, tmpObjectVar);
+                emitter.Emit(OpCodes.Unbox_Any, AccessTools.GetReturnedType(original));
+                emitter.Emit(OpCodes.Stloc, variables["__result"]);
+            }
+            tmpBoxVars.Do(tmpBoxVar => {
+                emitter.Emit(original.IsStatic ? OpCodes.Ldarg_0 : OpCodes.Ldarg_1);
+                emitter.Emit(OpCodes.Ldloc, tmpBoxVar.Key);
+                emitter.Emit(OpCodes.Unbox_Any, tmpBoxVar.Value);
+                emitter.Emit(OpCodes.Stobj, tmpBoxVar.Value);
+            });
+            if(exceptionVar != null) {
+                emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock));
+                emitter.Emit(OpCodes.Stloc, exceptionVar);
+                emitter.Emit(OpCodes.Ldstr, ((TriedPatchData) patch).mod.Name);
+                emitter.Emit(OpCodes.Call, typeof(JAMod).Method("GetMods", typeof(string)));
+                emitter.Emit(OpCodes.Ldstr, "An error occurred while invoking a postfix patch " + patch.owner);
+                emitter.Emit(OpCodes.Ldloc, exceptionVar);
+                emitter.Emit(OpCodes.Call, typeof(JAMod).Method("LogException", typeof(string), typeof(Exception)));
+                if(returnType == typeof(bool)) {
+                    emitter.Emit(OpCodes.Ldc_I4_1);
+                    emitter.Emit(OpCodes.Stloc, runOriginalVariable);
+                }
+                emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
+            }
+            if(fix.ReturnType == typeof(void)) continue;
+            ParameterInfo firstFixParam = fix.GetParameters().FirstOrDefault();
+            if(firstFixParam != null && fix.ReturnType == firstFixParam.ParameterType) result = true;
+            else {
+                if(firstFixParam != null) throw new Exception($"Return type of pass through postfix {(object) fix} does not match type of its first parameter");
+                throw new Exception($"Postfix patch {(object) fix} must have a \"void\" return type");
+            }
+        }
+        return result;
     }
 }
