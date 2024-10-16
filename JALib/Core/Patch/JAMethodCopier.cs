@@ -17,7 +17,11 @@ class JAMethodCopier {
 
     public void SetArgumentShift(bool useShift) => original.Invoke("SetArgumentShift", useShift);
     public void SetDebugging(bool debug) => original.Invoke("SetDebugging", debug);
-    public void AddTranspiler(List<MethodInfo> transpiler) => transpilers.AddRange(transpiler);
+
+    public void AddTranspiler(HarmonyLib.Patch[] transpiler) {
+        foreach(HarmonyLib.Patch patch in transpiler) transpilers.Add(patch.PatchMethod);
+    }
+
     public void Finalize(JAEmitter emitter, List<Label> endLabels, out bool hasReturnCode) {
         object[] args = [emitter.GetOriginal(), endLabels, false];
         original.Invoke("Finalize", [typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter"), typeof(List<Label>), typeof(bool).MakeByRefType()], args);
