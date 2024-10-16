@@ -519,6 +519,7 @@
         <Compile Include="Core\Patch\JAPatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatcher.cs"/>
         <Compile Include="Core\Patch\PatchType.cs"/>
+        <Compile Include="Core\Patch\TriedPatchData.cs" />
         <Compile Include="Core\Setting\JAFeatureSetting.cs"/>
         <Compile Include="Core\Setting\JALibSetting.cs"/>
         <Compile Include="Core\Setting\JASetting.cs"/>
