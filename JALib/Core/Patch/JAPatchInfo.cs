@@ -4,6 +4,8 @@ using HarmonyLib;
 namespace JALib.Core.Patch;
 
 class JAPatchInfo {
+    public TriedPatchData[] tryPrefixes = [];
+    public TriedPatchData[] tryPostfixes = [];
     public HarmonyLib.Patch[] replaces = [];
     public HarmonyLib.Patch[] removes = [];
 
@@ -15,12 +17,21 @@ class JAPatchInfo {
         removes = Add(owner, methods, removes);
     }
 
+    public void AddTryPrefixes(string owner, HarmonyMethod methods, JAMod mod) {
+        tryPrefixes = Add(owner, methods, tryPrefixes, mod);
+    }
+
+    public void AddTryPostfixes(string owner, HarmonyMethod methods, JAMod mod) {
+        tryPostfixes = Add(owner, methods, tryPostfixes, mod);
+    }
+
     public static HarmonyLib.Patch[] Add(string owner, HarmonyMethod add, HarmonyLib.Patch[] current) {
         int initialIndex = current.Length;
         return current.Concat([new HarmonyLib.Patch(add, initialIndex, owner)]).ToArray();
     }
 
-    public bool HasData() {
-        return replaces.Length > 0 || removes.Length > 0;
+    public static TriedPatchData[] Add(string owner, HarmonyMethod add, TriedPatchData[] current, JAMod mod) {
+        int initialIndex = current.Length;
+        return current.Concat([new TriedPatchData(add, initialIndex, owner, mod)]).ToArray();
     }
 }
