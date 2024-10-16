@@ -3,24 +3,9 @@
 namespace JALib.Core.Patch;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public class JAPatchAttribute : Attribute {
-    internal static int GetCurrentVersion => GCNS.releaseNumber;
-    internal string PatchId => Method.DeclaringType.FullName + "." + Method.Name;
-    internal string Class;
-    internal Type ClassType;
-    internal string MethodName;
-    internal MethodBase MethodBase;
-    internal PatchType PatchType;
-    public int MinVersion = GetCurrentVersion;
-    public int MaxVersion = GetCurrentVersion;
+public class JAPatchAttribute : JAPatchBaseAttribute {
     internal bool Disable;
-    public string[] ArgumentTypes;
-    public Type[] ArgumentTypesType;
-    public MethodInfo Method;
-    internal MethodInfo Patch;
-    public string[] GenericName;
-    public Type[] GenericType;
-    public bool TryingCatch = true;
+    internal PatchType PatchType;
 
     public JAPatchAttribute(string @class, string methodName, PatchType patchType, bool disable) {
         Class = @class;

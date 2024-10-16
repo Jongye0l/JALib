@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 
 namespace JALib.Core.Patch;
@@ -8,6 +9,7 @@ class JAPatchInfo {
     public TriedPatchData[] tryPostfixes = [];
     public HarmonyLib.Patch[] replaces = [];
     public HarmonyLib.Patch[] removes = [];
+    public List<ReversePatchData> reversePatches = [];
 
     public void AddReplaces(string owner, HarmonyMethod methods) {
         replaces = Add(owner, methods, replaces);
