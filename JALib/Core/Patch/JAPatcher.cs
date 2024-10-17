@@ -13,7 +13,6 @@ public class JAPatcher : IDisposable {
     private JAMod mod;
     public event FailPatch OnFailPatch;
     public bool patched { get; private set; }
-    private static Dictionary<MethodInfo, HarmonyMethod> harmonyMethods = new();
 
     #region CustomPatchPatching
     private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
