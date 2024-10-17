@@ -3,12 +3,15 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JALib.JAException;
 using JALib.Tools;
 using MonoMod.Utils;
 
 namespace JALib.Core.Patch;
 
 class JAMethodPatcher {
+    private static Dictionary<int, int> _parameterMap = new();
+    private static Dictionary<int, FieldInfo> _parameterFields = new();
     private readonly MethodBase original;
     private readonly MethodBase source;
     private readonly bool debug;
@@ -17,7 +20,7 @@ class JAMethodPatcher {
     private HarmonyLib.Patch[] transpilers;
     private HarmonyLib.Patch[] finalizers;
     private HarmonyLib.Patch[] removes;
-    private HarmonyLib.Patch[] replaces;
+    private HarmonyLib.Patch replace;
     private TriedPatchData[] tryPrefixes;
     private TriedPatchData[] tryPostfixes;
     private readonly object originalPatcher;
@@ -26,20 +29,31 @@ class JAMethodPatcher {
     private readonly JAEmitter emitter;
     private readonly Type returnType;
     private readonly bool useStructReturnBuffer;
+    private readonly bool customReverse;
 
     public JAMethodPatcher(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
         this.original = original;
         debug = patchInfo.Debugging || Harmony.DEBUG;
         SortPatchMethods(original, patchInfo.prefixes.Concat(jaPatchInfo.tryPrefixes).Concat(jaPatchInfo.removes).ToArray(), debug, out prefixes);
-        List<MethodInfo> postfix = SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
-        List<MethodInfo> transpiler = SortPatchMethods(original, patchInfo.transpilers, debug, out transpilers);
-        List<MethodInfo> finalizer = SortPatchMethods(original, patchInfo.finalizers, debug, out finalizers);
-        SortPatchMethods(original, jaPatchInfo.replaces, debug, out replaces);
         removes = jaPatchInfo.removes;
-        tryPrefixes = jaPatchInfo.tryPrefixes;
-        tryPostfixes = jaPatchInfo.tryPostfixes;
         SetupPrefixRemove();
         List<MethodInfo> prefix = prefixes.Select(patch => patch.PatchMethod).ToList();
+        tryPrefixes = jaPatchInfo.tryPrefixes;
+        List<MethodInfo> postfix, transpiler, finalizer;
+        if(removes.Length > 0) {
+            postfix = transpiler = finalizer = [];
+            postfixes = transpilers = finalizers = tryPostfixes = [];
+        } else {
+            postfix = SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
+            transpiler = SortPatchMethods(original, patchInfo.transpilers, debug, out transpilers);
+            finalizer = SortPatchMethods(original, patchInfo.finalizers, debug, out finalizers);
+            SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
+            replace = replaces.Last();
+            tryPostfixes = jaPatchInfo.tryPostfixes;
+            MethodInfo method = ((Delegate) ChangeParameter).Method;
+            transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
+            transpiler.Insert(0, method);
+        }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, null, prefix, postfix, transpiler, finalizer, debug);
         il = originalPatcher.GetValue<ILGenerator>("il");
         idx = prefixes.Length + postfixes.Length + finalizers.Length;
@@ -59,7 +73,13 @@ class JAMethodPatcher {
             transpiler.Add(postTranspiler);
             transpilers = transpilers.Concat([CreateEmptyPatch(postTranspiler)]).ToArray();
         }
-        SortPatchMethods(original, jaPatchInfo.replaces, debug, out replaces);
+        SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
+        replace = replaces.Last();
+        if(replace != null) {
+            MethodInfo method = ((Delegate) ChangeParameter).Method;
+            transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
+            transpiler.Insert(0, method);
+        }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source, none, none, transpiler, none, debug);
         il = originalPatcher.GetValue<ILGenerator>("il");
         idx = prefixes.Length + postfixes.Length + finalizers.Length;
@@ -86,31 +106,40 @@ class JAMethodPatcher {
             prefixes = prefixes.Concat(children).ToArray();
         } else {
             prefixes = children;
+            removes = [];
             tryPrefixes = attribute.TryCatchChildren ? children.Select(patch => (TriedPatchData) patch).ToArray() : [];
         }
-        children = customPatchMethods.Where(method => method.Name.Contains("Postfix")).Select(changeFunc).ToArray();
-        if(attribute.PatchType.HasFlag(ReversePatchType.PostfixCombine)) {
-            SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
-            tryPostfixes = jaPatchInfo.tryPostfixes;
-            if(attribute.TryCatchChildren) tryPostfixes = tryPostfixes.Concat(children.Select(patch => (TriedPatchData) patch)).ToArray();
-            postfixes = postfixes.Concat(children).ToArray();
-        } else {
-            postfixes = children;
-            tryPostfixes = attribute.TryCatchChildren ? children.Select(patch => (TriedPatchData) patch).ToArray() : [];
+        if(removes.Length > 0) postfixes = transpilers = finalizers = tryPostfixes = [];
+        else {
+            children = customPatchMethods.Where(method => method.Name.Contains("Postfix")).Select(changeFunc).ToArray();
+            if(attribute.PatchType.HasFlag(ReversePatchType.PostfixCombine)) {
+                SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
+                tryPostfixes = jaPatchInfo.tryPostfixes;
+                if(attribute.TryCatchChildren) tryPostfixes = tryPostfixes.Concat(children.Select(patch => (TriedPatchData) patch)).ToArray();
+                postfixes = postfixes.Concat(children).ToArray();
+            } else {
+                postfixes = children;
+                tryPostfixes = attribute.TryCatchChildren ? children.Select(patch => (TriedPatchData) patch).ToArray() : [];
+            }
+            children = customPatchMethods.Where(method => method.Name.Contains("Transpiler")).Select(CreateEmptyPatch).ToArray();
+            if(attribute.PatchType.HasFlag(ReversePatchType.TranspilerCombine)) {
+                SortPatchMethods(original, patchInfo.transpilers.ToArray(), debug, out transpilers);
+                transpilers = transpilers.Concat(children).ToArray();
+            } else transpilers = children;
+            children = customPatchMethods.Where(method => method.Name.Contains("Finalizer")).Select(CreateEmptyPatch).ToArray();
+            if(attribute.PatchType.HasFlag(ReversePatchType.FinalizerCombine)) {
+                SortPatchMethods(original, patchInfo.finalizers.ToArray(), debug, out finalizers);
+                finalizers = finalizers.Concat(children).ToArray();
+            } else finalizers = children;
+            if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) {
+                SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
+                replace = replaces.Last();
+                if(replace != null) {
+                    MethodInfo method = ((Delegate) ChangeParameter).Method;
+                    transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
+                }
+            }
         }
-        children = customPatchMethods.Where(method => method.Name.Contains("Transpiler")).Select(CreateEmptyPatch).ToArray();
-        if(attribute.PatchType.HasFlag(ReversePatchType.TranspilerCombine)) {
-            SortPatchMethods(original, patchInfo.transpilers.ToArray(), debug, out transpilers);
-            transpilers = transpilers.Concat(children).ToArray();
-        } else transpilers = children;
-        children = customPatchMethods.Where(method => method.Name.Contains("Finalizer")).Select(CreateEmptyPatch).ToArray();
-        if(attribute.PatchType.HasFlag(ReversePatchType.FinalizerCombine)) {
-            SortPatchMethods(original, patchInfo.finalizers.ToArray(), debug, out finalizers);
-            finalizers = finalizers.Concat(children).ToArray();
-        } else finalizers = children;
-        if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) {
-            SortPatchMethods(original, jaPatchInfo.replaces, debug, out replaces);
-        } else replaces = [];
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source,
             prefixes.Select(patch => patch.PatchMethod).ToList(),
             postfixes.Select(patch => patch.PatchMethod).ToList(),
@@ -121,6 +150,7 @@ class JAMethodPatcher {
         emitter = new JAEmitter(originalPatcher.GetValue("emitter"));
         useStructReturnBuffer = originalPatcher.GetValue<bool>("useStructReturnBuffer");
         returnType = original is MethodInfo info ? info.ReturnType : typeof(void);
+        customReverse = true;
     }
 
     private HarmonyLib.Patch CreateEmptyPatch(MethodInfo method) => new(method, 0, "", 0, [], [], debug);
@@ -146,7 +176,7 @@ class JAMethodPatcher {
 
     internal MethodInfo CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions) {
         Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
-        LocalBuilder[] originalVariables = removes.Length > 0 ? [] : methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", il, replaces.Length > 0 ? replaces.Last().PatchMethod : source ?? original);
+        LocalBuilder[] originalVariables = removes.Length > 0 ? [] : methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", il, replace?.PatchMethod ?? source ?? original);
         Dictionary<string, LocalBuilder> privateVars = new();
         HarmonyLib.Patch[] fixes = removes.Length == 0 ? prefixes.Union(postfixes).Union(finalizers).ToArray() : prefixes;
         LocalBuilder resultVariable = null;
@@ -191,10 +221,39 @@ class JAMethodPatcher {
         bool needsToStorePassthroughResult = false;
         bool hasReturnCode = false;
         if(removes.Length == 0) {
-            JAMethodCopier copier = new(replaces.Length > 0 ? replaces.Last().PatchMethod : source ?? original, il, originalVariables);
+            JAMethodCopier copier = new(replace?.PatchMethod ?? source ?? original, il, originalVariables);
             copier.SetArgumentShift(useStructReturnBuffer);
             copier.SetDebugging(debug);
             copier.AddTranspiler(transpilers);
+            if(replace != null || customReverse) {
+                ParameterInfo[] replaceParameter = replace != null ? replace.PatchMethod.GetParameters() : source.GetParameters();
+                ParameterInfo[] originalParameter = original.GetParameters();
+                lock(_parameterMap) {
+                    _parameterMap.Clear();
+                    _parameterFields.Clear();
+                    foreach(ParameterInfo parameterInfo in replaceParameter) {
+                        if(parameterInfo.Name.ToLower() == "__instance" && !original.IsStatic) {
+                            _parameterMap[parameterInfo.Position] = 0;
+                            continue;
+                        }
+                        if(parameterInfo.Name.StartsWith("___")) {
+                            FieldInfo field = original.DeclaringType.Field(parameterInfo.Name[3..]);
+                            if(field != null) {
+                                _parameterFields[parameterInfo.Position] = field;
+                                continue;
+                            }
+                        }
+                        ParameterInfo parameter = originalParameter.FirstOrDefault(info => info.Name == parameterInfo.Name);
+                        if(parameter != null) {
+                            if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
+                            _parameterMap[parameterInfo.Position] = parameter.Position;
+                            continue;
+                        }
+                        if(!customReverse) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
+                    }
+                }
+
+            }
             List<Label> endLabels = [];
             copier.Finalize(emitter, endLabels, out hasReturnCode);
             foreach(Label label in endLabels) emitter.MarkLabel(label);
@@ -382,5 +441,53 @@ class JAMethodPatcher {
             }
         }
         return result;
+    }
+
+    private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions) {
+        lock(_parameterMap) {
+            foreach(CodeInstruction instruction in instructions) {
+                int index = GetParameterIndex(instruction, out bool set);
+                if(index > -1) {
+                    if(_parameterMap.TryGetValue(index, out int newIndex)) {
+                        yield return GetParameterInstruction(newIndex, set);
+                    } else if(_parameterFields.TryGetValue(index, out FieldInfo info)) {
+                        yield return new CodeInstruction(set ? OpCodes.Stfld : OpCodes.Ldfld, info);
+                    } else yield return new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
+                } else {
+                    yield return instruction;
+                }
+            }
+        }
+    }
+
+    private static int GetParameterIndex(CodeInstruction instruction, out bool set) {
+        int index = -1;
+        set = false;
+        if(instruction.opcode == OpCodes.Ldarg) index = (int) instruction.operand;
+        else if(instruction.opcode == OpCodes.Ldarga) index = (int) instruction.operand;
+        else if(instruction.opcode == OpCodes.Ldarg_S) index = (byte) instruction.operand;
+        else if(instruction.opcode == OpCodes.Ldarga_S) index = (byte) instruction.operand;
+        else if(instruction.opcode == OpCodes.Starg) {
+            index = (int) instruction.operand;
+            set = true;
+        } else if(instruction.opcode == OpCodes.Starg_S) {
+            index = (byte) instruction.operand;
+            set = true;
+        } else if(instruction.opcode == OpCodes.Ldarg_0) index = 0;
+        else if(instruction.opcode == OpCodes.Ldarg_1) index = 1;
+        else if(instruction.opcode == OpCodes.Ldarg_2) index = 2;
+        else if(instruction.opcode == OpCodes.Ldarg_3) index = 3;
+        return index;
+    }
+
+    private static CodeInstruction GetParameterInstruction(int index, bool set) {
+        if(set) return index < 256 ? new CodeInstruction(OpCodes.Starg_S, (byte) index) : new CodeInstruction(OpCodes.Starg, index);
+        return index switch {
+            0 => new Code.Ldarg_0_(),
+            1 => new Code.Ldarg_1_(),
+            2 => new Code.Ldarg_2_(),
+            3 => new Code.Ldarg_3_(),
+            _ => index < 256 ? new CodeInstruction(OpCodes.Ldarg_S, (byte) index) : new CodeInstruction(OpCodes.Ldarg, index)
+        };
     }
 }
