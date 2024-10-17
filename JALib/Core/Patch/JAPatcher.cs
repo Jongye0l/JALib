@@ -165,7 +165,7 @@ public class JAPatcher : IDisposable {
             string id = attribute.PatchId;
             switch(attribute.PatchType) {
                 case PatchType.Prefix:
-                    if(CheckRemove(patchMethod)) jaPatchInfo.AddRemoves(id, patchMethod);
+                    if(CheckRemove(patchMethod.method)) jaPatchInfo.AddRemoves(id, patchMethod);
                     else if(mod != null) jaPatchInfo.AddTryPrefixes(id, patchMethod, mod);
                     else patchInfo.Invoke("AddPrefixes", id, new[] { patchMethod });
                     break;
@@ -204,16 +204,18 @@ public class JAPatcher : IDisposable {
             throw typeof(HarmonyException).Invoke<Exception>("Create", ex, finalInstructions1);
         }
         typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools").Invoke("RememberObject", patchMethod.method, replacement);
-        jaPatchInfo.reversePatches.Add(attribute.Data = new ReversePatchData {
+        attribute.Data = new ReversePatchData {
             original = original,
             patchMethod = patchMethod,
+            attribute = attribute,
             mod = mod
-        });
+        };
+        if(!attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
     }
 
-    private static bool CheckRemove(HarmonyMethod method) {
-        if(method.method.ReturnType != typeof(bool)) return false;
-        List<CodeInstruction> code = PatchProcessor.GetCurrentInstructions(method.method);
+    private static bool CheckRemove(MethodInfo method) {
+        if(method.ReturnType != typeof(bool)) return false;
+        List<CodeInstruction> code = PatchProcessor.GetCurrentInstructions(method);
         IEnumerator<CodeInstruction> enumerator = code.Where(c => c.opcode != OpCodes.Nop).GetEnumerator();
         return enumerator.MoveNext() && enumerator.Current.opcode == OpCodes.Ldc_I4_0 &&
                enumerator.MoveNext() && enumerator.Current.opcode == OpCodes.Ret;
@@ -226,8 +228,49 @@ public class JAPatcher : IDisposable {
     public void Unpatch() {
         if(!patched) return;
         patched = false;
-        foreach(JAPatchAttribute patchData in patchData) JALib.Harmony.Unpatch(patchData.MethodBase, harmonyMethods[patchData.Method].method);
+        foreach(JAPatchBaseAttribute baseAttribute in patchData) {
+            if(baseAttribute is JAPatchAttribute patchAttribute) {
+                MethodInfo patch = harmonyMethods[patchAttribute.Method].method;
+                string id = patchAttribute.PatchId;
+                lock(typeof(PatchProcessor).GetValue("locker")) {
+                    PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [patchAttribute.MethodBase]) ?? new PatchInfo();
+                    JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(patchAttribute.MethodBase) ?? new JAPatchInfo();
+                    switch(patchAttribute.PatchType) {
+                        case PatchType.Prefix:
+                            if(CheckRemove(patch)) RemovePatch(patch, id, ref jaPatchInfo.removes);
+                            else if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaPatchInfo.tryPrefixes);
+                            else RemovePatch(patch, id, ref patchInfo.prefixes);
+                            break;
+                        case PatchType.Postfix:
+                            if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaPatchInfo.tryPostfixes);
+                            else RemovePatch(patch, id, ref patchInfo.postfixes);
+                            break;
+                        case PatchType.Transpiler:
+                            RemovePatch(patch, id, ref patchInfo.transpilers);
+                            break;
+                        case PatchType.Finalizer:
+                            RemovePatch(patch, id, ref patchInfo.finalizers);
+                            break;
+                        case PatchType.Replace:
+                            RemovePatch(patch, id, ref jaPatchInfo.replaces);
+                            break;
+                    }
+                    MethodInfo replacement = PatchUpdateWrapper(patchAttribute.MethodBase, patchInfo, jaPatchInfo);
+                    typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", patchAttribute.MethodBase, replacement, patchInfo);
+                    jaPatches[patchAttribute.MethodBase] = jaPatchInfo;
+                }
+            } else if(baseAttribute is JAReversePatchAttribute reversePatchAttribute) {
+                if(reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
+                JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(reversePatchAttribute.Data.original);
+                if(jaPatchInfo == null) continue;
+                jaPatchInfo.reversePatches.Remove(reversePatchAttribute.Data);
+            }
+        }
     }
+
+    private static void RemovePatch<T>(MethodInfo methodInfo, string id, ref T[] patches) where T : HarmonyLib.Patch =>
+        patches = patches.Where(patch => patch.owner != id && patch.PatchMethod != methodInfo).ToArray();
+
 
     public JAPatcher AddPatch(Type type) {
         foreach(MethodInfo method in type.Methods()) AddPatch(method);
