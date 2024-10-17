@@ -143,10 +143,9 @@ public class JAPatcher : IDisposable {
                     attribute.MethodBase = ((MethodInfo) attribute.MethodBase).MakeGenericMethod(attribute.GenericType);
                 }
             }
-            MethodInfo originalMethod = attribute.Method;
-            if(!harmonyMethods.TryGetValue(originalMethod, out HarmonyMethod value)) harmonyMethods[originalMethod] = value = new HarmonyMethod(originalMethod);
-            if(attribute is JAPatchAttribute patchAttribute) CustomPatch(attribute.MethodBase, value, patchAttribute, attribute.TryingCatch ? mod : null);
-            else if(attribute is JAReversePatchAttribute reversePatchAttribute) CustomReversePatch(attribute.MethodBase, value, reversePatchAttribute, mod);
+            if(attribute is JAPatchAttribute patchAttribute) CustomPatch(attribute.MethodBase,
+                new HarmonyMethod(attribute.Method, patchAttribute.Priority, patchAttribute.Before, patchAttribute.After, attribute.Debug), patchAttribute, attribute.TryingCatch ? mod : null);
+            else if(attribute is JAReversePatchAttribute reversePatchAttribute) CustomReversePatch(attribute.MethodBase, attribute.Method, reversePatchAttribute, mod);
             else throw new NotSupportedException("Unsupported Patch Type");
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
@@ -190,29 +189,30 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static void CustomReversePatch(MethodBase original, HarmonyMethod patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
+    private static void CustomReversePatch(MethodBase original, MethodInfo patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
         PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]) ?? new PatchInfo();
         JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
         MethodInfo replacement = UpdateReversePatch(attribute.Data ??= new ReversePatchData {
             original = original,
             patchMethod = patchMethod,
+            debug = attribute.Debug,
             attribute = attribute,
             mod = mod
         }, patchInfo, jaPatchInfo);
-        typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools").Invoke("RememberObject", patchMethod.method, replacement);
+        typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools").Invoke("RememberObject", patchMethod, replacement);
         if(!attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
     }
 
     private static MethodInfo UpdateReversePatch(ReversePatchData data, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        bool debug = data.patchMethod.debug.GetValueOrDefault() || Harmony.DEBUG;
-        HarmonyMethod patchMethod = data.patchMethod;
-        MethodInfo replacement = new JAMethodPatcher(patchMethod.method, data.original, patchInfo, jaPatchInfo, debug, data.attribute, data.mod).CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions1);
+        bool debug = data.debug || Harmony.DEBUG;
+        MethodInfo patchMethod = data.patchMethod;
+        MethodInfo replacement = new JAMethodPatcher(patchMethod, data.original, patchInfo, jaPatchInfo, debug, data.attribute, data.mod).CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions1);
         if (replacement == null)
-            throw new MissingMethodException("Cannot create replacement for " + patchMethod.method.FullDescription());
+            throw new MissingMethodException("Cannot create replacement for " + patchMethod.FullDescription());
         try {
-            string str = Memory.DetourMethod(patchMethod.method, replacement);
+            string str = Memory.DetourMethod(patchMethod, replacement);
             if (str != null)
-                throw new FormatException("Method " + patchMethod.method.FullDescription() + " cannot be patched. Reason: " + str);
+                throw new FormatException("Method " + patchMethod.FullDescription() + " cannot be patched. Reason: " + str);
         } catch (Exception ex) {
             throw typeof(HarmonyException).Invoke<Exception>("Create", ex, finalInstructions1);
         }
@@ -236,7 +236,7 @@ public class JAPatcher : IDisposable {
         patched = false;
         foreach(JAPatchBaseAttribute baseAttribute in patchData) {
             if(baseAttribute is JAPatchAttribute patchAttribute) {
-                MethodInfo patch = harmonyMethods[patchAttribute.Method].method;
+                MethodInfo patch = patchAttribute.Method;
                 string id = patchAttribute.PatchId;
                 lock(typeof(PatchProcessor).GetValue("locker")) {
                     PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [patchAttribute.MethodBase]) ?? new PatchInfo();
