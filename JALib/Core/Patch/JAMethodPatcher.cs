@@ -225,37 +225,13 @@ class JAMethodPatcher {
             copier.SetArgumentShift(useStructReturnBuffer);
             copier.SetDebugging(debug);
             copier.AddTranspiler(transpilers);
-            if(replace != null || customReverse) {
-                ParameterInfo[] replaceParameter = replace != null ? replace.PatchMethod.GetParameters() : source.GetParameters();
-                ParameterInfo[] originalParameter = original.GetParameters();
-                lock(_parameterMap) {
-                    _parameterMap.Clear();
-                    _parameterFields.Clear();
-                    foreach(ParameterInfo parameterInfo in replaceParameter) {
-                        if(parameterInfo.Name.ToLower() == "__instance" && !original.IsStatic) {
-                            _parameterMap[parameterInfo.Position] = 0;
-                            continue;
-                        }
-                        if(parameterInfo.Name.StartsWith("___")) {
-                            FieldInfo field = original.DeclaringType.Field(parameterInfo.Name[3..]);
-                            if(field != null) {
-                                _parameterFields[parameterInfo.Position] = field;
-                                continue;
-                            }
-                        }
-                        ParameterInfo parameter = originalParameter.FirstOrDefault(info => info.Name == parameterInfo.Name);
-                        if(parameter != null) {
-                            if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
-                            _parameterMap[parameterInfo.Position] = parameter.Position;
-                            continue;
-                        }
-                        if(!customReverse) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
-                    }
-                }
-
-            }
             List<Label> endLabels = [];
-            copier.Finalize(emitter, endLabels, out hasReturnCode);
+            if(replace != null || customReverse) {
+                lock(_parameterMap) {
+                    SetupParameter(replace?.PatchMethod ?? source, original, customReverse);
+                    copier.Finalize(emitter, endLabels, out hasReturnCode);
+                }
+            } else copier.Finalize(emitter, endLabels, out hasReturnCode);
             foreach(Label label in endLabels) emitter.MarkLabel(label);
             if(resultVariable != null & hasReturnCode) emitter.Emit(OpCodes.Stloc, resultVariable);
             if(skipOriginalLabel.HasValue) emitter.MarkLabel(skipOriginalLabel.Value);
@@ -443,19 +419,44 @@ class JAMethodPatcher {
         return result;
     }
 
-    private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions) {
-        lock(_parameterMap) {
-            foreach(CodeInstruction instruction in instructions) {
-                int index = GetParameterIndex(instruction, out bool set);
-                if(index > -1) {
-                    if(_parameterMap.TryGetValue(index, out int newIndex)) {
-                        yield return GetParameterInstruction(newIndex, set);
-                    } else if(_parameterFields.TryGetValue(index, out FieldInfo info)) {
-                        yield return new CodeInstruction(set ? OpCodes.Stfld : OpCodes.Ldfld, info);
-                    } else yield return new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
-                } else {
-                    yield return instruction;
+    private static void SetupParameter(MethodBase replace, MethodBase original, bool customReverse) {
+        ParameterInfo[] replaceParameter = replace.GetParameters();
+        ParameterInfo[] originalParameter = original.GetParameters();
+        _parameterMap.Clear();
+        _parameterFields.Clear();
+        foreach(ParameterInfo parameterInfo in replaceParameter) {
+            if(parameterInfo.Name.ToLower() == "__instance" && !original.IsStatic) {
+                _parameterMap[parameterInfo.Position] = 0;
+                continue;
+            }
+            if(parameterInfo.Name.StartsWith("___")) {
+                FieldInfo field = original.DeclaringType.Field(parameterInfo.Name[3..]);
+                if(field != null) {
+                    _parameterFields[parameterInfo.Position] = field;
+                    continue;
                 }
+            }
+            ParameterInfo parameter = originalParameter.FirstOrDefault(info => info.Name == parameterInfo.Name);
+            if(parameter != null) {
+                if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
+                _parameterMap[parameterInfo.Position] = parameter.Position;
+                continue;
+            }
+            if(!customReverse) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
+        }
+    }
+
+    private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions) {
+        foreach(CodeInstruction instruction in instructions) {
+            int index = GetParameterIndex(instruction, out bool set);
+            if(index > -1) {
+                if(_parameterMap.TryGetValue(index, out int newIndex)) {
+                    yield return GetParameterInstruction(newIndex, set);
+                } else if(_parameterFields.TryGetValue(index, out FieldInfo info)) {
+                    yield return new CodeInstruction(set ? OpCodes.Stfld : OpCodes.Ldfld, info);
+                } else yield return new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
+            } else {
+                yield return instruction;
             }
         }
     }
@@ -489,5 +490,26 @@ class JAMethodPatcher {
             3 => new Code.Ldarg_3_(),
             _ => index < 256 ? new CodeInstruction(OpCodes.Ldarg_S, (byte) index) : new CodeInstruction(OpCodes.Ldarg, index)
         };
+    }
+
+    internal static List<CodeInstruction> GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, JAPatchInfo jaPatchInfo) {
+        Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
+        MethodInfo replace = SortPatchMethods(method, jaPatchInfo.replaces, false, out _).Last();
+        LocalBuilder[] existingVariables = method != null ? methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", generator, replace) : throw new ArgumentNullException(nameof (method));
+        bool useShift = typeof(Harmony).Assembly.GetType("HarmonyLib.StructReturnBuffer").Invoke<bool>("NeedsFix", [method]);
+        JAMethodCopier methodCopier = new(replace, generator, existingVariables);
+        methodCopier.SetArgumentShift(useShift);
+        Patches patchInfo = Harmony.GetPatchInfo(method);
+        methodCopier.AddTranspiler(((Delegate) ChangeParameter).Method);
+        maxTranspilers--;
+        if(patchInfo != null) {
+            List<MethodInfo> sortedPatchMethods = SortPatchMethods(method, patchInfo.Transpilers.ToArray(), false, out _);
+            for(int index = 0; index < maxTranspilers && index < sortedPatchMethods.Count; ++index)
+                methodCopier.AddTranspiler(sortedPatchMethods[index]);
+        }
+        lock(_parameterMap) {
+            SetupParameter(replace, method, false);
+            return methodCopier.Finalize(null, null, out _);
+        }
     }
 }
