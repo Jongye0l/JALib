@@ -17,5 +17,6 @@ public abstract class JAPatchBaseAttribute : Attribute {
     public Type[] GenericType;
     public bool TryingCatch = true;
     internal MethodInfo Method;
-    
+    public bool Debug;
+
 }
