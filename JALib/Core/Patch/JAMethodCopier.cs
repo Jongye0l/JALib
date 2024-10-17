@@ -22,9 +22,12 @@ class JAMethodCopier {
         foreach(HarmonyLib.Patch patch in transpiler) transpilers.Add(patch.PatchMethod);
     }
 
-    public void Finalize(JAEmitter emitter, List<Label> endLabels, out bool hasReturnCode) {
-        object[] args = [emitter.GetOriginal(), endLabels, false];
-        original.Invoke("Finalize", [typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter"), typeof(List<Label>), typeof(bool).MakeByRefType()], args);
+    public void AddTranspiler(MethodInfo transpiler) => transpilers.Add(transpiler);
+
+    public List<CodeInstruction> Finalize(JAEmitter emitter, List<Label> endLabels, out bool hasReturnCode) {
+        object[] args = [emitter?.GetOriginal(), endLabels, false];
+        List<CodeInstruction> value = original.Invoke<List<CodeInstruction>>("Finalize", [typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter"), typeof(List<Label>), typeof(bool).MakeByRefType()], args);
         hasReturnCode = (bool) args[2];
+        return value;
     }
 }

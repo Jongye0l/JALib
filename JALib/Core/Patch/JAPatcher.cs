@@ -19,8 +19,11 @@ public class JAPatcher : IDisposable {
     private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
 
     static JAPatcher() {
-        JALib.Harmony.Patch(typeof(Harmony).Assembly.GetType("HarmonyLib.PatchFunctions").Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
-        JALib.Harmony.Patch(typeof(Harmony).Assembly.GetType("HarmonyLib.PatchFunctions").Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
+        Harmony harmony = JALib.Harmony;
+        Assembly assembly = typeof(Harmony).Assembly;
+        harmony.Patch(assembly.GetType("HarmonyLib.PatchFunctions").Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
+        harmony.Patch(assembly.GetType("HarmonyLib.PatchFunctions").Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
+        harmony.Patch(assembly.GetType("HarmonyLib.MethodCopier").Method("GetInstructions"), new HarmonyMethod(((Delegate) GetInstructions).Method));
     }
 
     private static bool PatchUpdateWrapperPatch(MethodBase original, PatchInfo patchInfo, ref MethodInfo __result) {
@@ -72,6 +75,12 @@ public class JAPatcher : IDisposable {
             JALib.Instance.LogException(e);
             return true;
         }
+    }
+
+    internal static bool GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, ref List<CodeInstruction> __result) {
+        if(method == null || generator == null || maxTranspilers < 1 || !jaPatches.TryGetValue(method, out JAPatchInfo jaPatchInfo) || jaPatchInfo.replaces.Length == 0) return true;
+        __result = JAMethodPatcher.GetInstructions(generator, method, maxTranspilers, jaPatchInfo);
+        return false;
     }
 
     #endregion
