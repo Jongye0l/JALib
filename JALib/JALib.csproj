@@ -502,6 +502,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="API\ApplicatorAPI.cs" />
         <Compile Include="API\AsyncRequestPacket.cs" />
         <Compile Include="API\JApi.cs" />
         <Compile Include="API\Packets\DownloadMod.cs" />

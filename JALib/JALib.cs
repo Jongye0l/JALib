@@ -11,7 +11,9 @@ using JALib.Core;
 using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
+using Microsoft.Win32;
 using TinyJson;
+using UnityEngine;
 using UnityModManagerNet;
 
 namespace JALib;
@@ -32,7 +34,27 @@ class JALib : JAMod {
         Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
         Patcher = new JAPatcher(this);
         Patcher.Patch();
+        SetupModApplicator();
         OnEnable();
+    }
+
+    private static void SetupModApplicator() {
+        if(ADOBase.platform != Platform.Windows) return;
+        Task<int> portTask = Task.Run(ApplicatorAPI.Connect);
+        string applicationPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator", "JALib.ModApplicator.exe");
+        using(RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib")) {
+            if(key.GetValue("URL Protocol") == null) {
+                key.SetValue("", "URL Protocol");
+                key.SetValue("URL Protocol", "");
+                key.SetValue("AdofaiPath", Environment.CurrentDirectory);
+                key.SetValue("Port", portTask.Result);
+                using RegistryKey key2 = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib\shell\open\command");
+                key2.SetValue("", $"\"{applicationPath}\" \"%1\"");
+            }
+        }
+        if(File.Exists(applicationPath)) return;
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(applicationPath));
+        File.Copy(System.IO.Path.Combine(Instance.Path, "JALib.ModApplicator.exe"), applicationPath);
     }
 
     private static async void LoadModInfo(JAModInfo modInfo) {
@@ -167,13 +189,13 @@ class JALib : JAMod {
     }
 
     private async Task<Type> LoadInfo() {
-        bool success = await JApi.CompleteLoadTask();
-        if(!success) return null;
+        Task<bool> successTask = JApi.CompleteLoadTask();
+        SetupModApplicator();
+        if(!await successTask) return null;
         if(JaModInfo == null) await Task.Yield();
         GetModInfo getModInfo = new(JaModInfo);
         await JApi.Send(getModInfo);
         ModInfo(getModInfo);
-        OnEnable();
         if(!getModInfo.Success || !getModInfo.ForceUpdate || getModInfo.LatestVersion <= Version) return null;
         Log("Update is required. Updating the mod.");
         ModEntry.Info.DisplayName = Name + " <color=blue>[Updating...]</color>";
@@ -221,6 +243,7 @@ class JALib : JAMod {
         updateQueue.Clear();
         loadTasks = null;
         updateQueue = null;
+        ApplicatorAPI.Dispose();
         Dispose();
     }
 
