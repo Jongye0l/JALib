@@ -43,6 +43,7 @@ public class JAPatcher : IDisposable {
         } catch (Exception ex) {
             throw typeof(HarmonyException).Invoke<Exception>("Create", ex, finalInstructions1);
         }
+        foreach(ReversePatchData reversePatch in jaPatchInfo.reversePatches) UpdateReversePatch(reversePatch, patchInfo, jaPatchInfo);
         return replacement;
     }
 
@@ -190,10 +191,22 @@ public class JAPatcher : IDisposable {
     }
 
     private static void CustomReversePatch(MethodBase original, HarmonyMethod patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
-        Patches patchInfo = Harmony.GetPatchInfo(original);
+        PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]) ?? new PatchInfo();
         JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
-        bool debug = patchMethod.debug.GetValueOrDefault() || Harmony.DEBUG;
-        MethodInfo replacement = new JAMethodPatcher(patchMethod.method, original, patchInfo, jaPatchInfo, debug, attribute, mod).CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions1);
+        MethodInfo replacement = UpdateReversePatch(attribute.Data ??= new ReversePatchData {
+            original = original,
+            patchMethod = patchMethod,
+            attribute = attribute,
+            mod = mod
+        }, patchInfo, jaPatchInfo);
+        typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools").Invoke("RememberObject", patchMethod.method, replacement);
+        if(!attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
+    }
+
+    private static MethodInfo UpdateReversePatch(ReversePatchData data, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+        bool debug = data.patchMethod.debug.GetValueOrDefault() || Harmony.DEBUG;
+        HarmonyMethod patchMethod = data.patchMethod;
+        MethodInfo replacement = new JAMethodPatcher(patchMethod.method, data.original, patchInfo, jaPatchInfo, debug, data.attribute, data.mod).CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions1);
         if (replacement == null)
             throw new MissingMethodException("Cannot create replacement for " + patchMethod.method.FullDescription());
         try {
@@ -203,14 +216,7 @@ public class JAPatcher : IDisposable {
         } catch (Exception ex) {
             throw typeof(HarmonyException).Invoke<Exception>("Create", ex, finalInstructions1);
         }
-        typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools").Invoke("RememberObject", patchMethod.method, replacement);
-        attribute.Data = new ReversePatchData {
-            original = original,
-            patchMethod = patchMethod,
-            attribute = attribute,
-            mod = mod
-        };
-        if(!attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
+        return replacement;
     }
 
     private static bool CheckRemove(MethodInfo method) {
