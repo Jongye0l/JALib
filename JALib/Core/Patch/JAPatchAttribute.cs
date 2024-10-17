@@ -6,6 +6,9 @@ namespace JALib.Core.Patch;
 public class JAPatchAttribute : JAPatchBaseAttribute {
     internal bool Disable;
     internal PatchType PatchType;
+    public int Priority = -1;
+    public string[] Before;
+    public string[] After;
 
     public JAPatchAttribute(string @class, string methodName, PatchType patchType, bool disable) {
         Class = @class;
