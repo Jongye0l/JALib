@@ -19,7 +19,7 @@ public class ModApplicatorController extends CustomController {
         info(request, "ModApplicator: " + name + " " + version);
         boolean isKorean = locale == Locale.KOREAN || locale == Locale.KOREA;
         String lang = (isKorean ? "ko" : "en");
-        if(!userAgent.contains("windows")) {
+        if(!userAgent.toLowerCase().contains("windows")) {
             info(request, "ModApplicator Result: Failed (Not Windows), " + lang);
             return "ModApplicator/Announce/OnlyWindows-" + lang;
         }
