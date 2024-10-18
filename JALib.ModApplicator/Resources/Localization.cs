@@ -15,7 +15,9 @@ public class Localization {
         AdofaiStart = "얼불춤을 시작하시겠습니까?",
         ModAnnounceTitle = "모드 적용 안내",
         StartModApply = "{0} 모드 적용을 시작합니다.",
-        FinishModApply = "모드 적용이 완료되었습니다."
+        FinishModApply = "모드 적용이 완료되었습니다.",
+        ModAlreadyTitle = "모드 적용이 취소되었습니다.",
+        ModAlreadyInstalled = "해당 버전의 {0} 모드가 이미 적용되어 있습니다."
     };
 
     public static Localization English = new() {
@@ -30,7 +32,9 @@ public class Localization {
         AdofaiStart = "Do you want to start A Dance of Fire and Ice?",
         ModAnnounceTitle = "Mod Application Announcement",
         StartModApply = "Start applying the {0} mod.",
-        FinishModApply = "mod application is complete."
+        FinishModApply = "mod application is complete.",
+        ModAlreadyTitle = "Mod application canceled.",
+        ModAlreadyInstalled = "The {0} mod of that version is already installed."
     };
 
     public static Localization Current => CultureInfo.CurrentCulture.Name == "ko-KR" ? Korean : English;
@@ -47,4 +51,6 @@ public class Localization {
     public string ModAnnounceTitle { get; private set; }
     public string StartModApply{ get; private set; }
     public string FinishModApply { get; private set; }
+    public string ModAlreadyTitle { get; private set; }
+    public string ModAlreadyInstalled { get; private set; }
 }

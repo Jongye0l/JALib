@@ -43,6 +43,29 @@ class Program {
             Environment.Exit(-1);
             return;
         }
+        LoadSettings();
+        string path = Path.Combine(adofaiPath, "Mods");
+        string curModPath = Path.Combine(path, args[0]);
+        if(Directory.Exists(curModPath)) {
+            string infoPath = Path.Combine(curModPath, "Info.json");
+            if(!File.Exists(infoPath)) infoPath = Path.Combine(curModPath, "info.json");
+            if(File.Exists(infoPath)) {
+                JObject modInfo = JObject.Parse(File.ReadAllText(infoPath));
+                string versionString = modInfo["Version"].ToString();
+                versionString = versionString.Split(' ')[0];
+                versionString = versionString.Split('-')[0];
+                Version version1 = new(versionString);
+                if(version1 == new Version(args[1])) {
+                    new NotifyIcon {
+                        Icon = SystemIcons.Application,
+                        Visible = true,
+                        BalloonTipTitle = localization.ModAlreadyTitle,
+                        BalloonTipText = string.Format(localization.ModAlreadyInstalled, args[0])
+                    }.ShowBalloonTip(3000);
+                    return;
+                }
+            }
+        }
         NotifyIcon notifyIcon = new() {
             Icon = SystemIcons.Application,
             Visible = true,
@@ -50,11 +73,9 @@ class Program {
             BalloonTipText = string.Format(localization.StartModApply, args[0])
         };
         notifyIcon.ShowBalloonTip(3000);
-        Task settingLoadTask = Task.Run(LoadSettings);
         Task modTask = ApplyMod(args[0], args[1], true);
         if(args[0] == "JALib") jalibInstall = true;
-        await Task.WhenAll(settingLoadTask, modTask);
-        string path = Path.Combine(adofaiPath, "Mods");
+        await modTask;
         List<Task> modInstallTasks = [];
         while(dependencies.Count > 0) {
             string modName = dependencies.Keys.First();
