@@ -23,4 +23,8 @@ public class ForceUpdateHandle {
         output.writeUTF(version2.toString());
         output.writeBoolean(forceUpdate);
     }
+
+    public boolean checkVersion(Version version) {
+        return !version.isUpper(version1) && !version2.isUpper(version);
+    }
 }

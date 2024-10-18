@@ -10,6 +10,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 public class ConnectOtherLib {
     private static final RestTemplate restTemplate = new RestTemplate();
     private static final Logger logger = Logger.createLogger("ConnectOtherLib");
@@ -35,6 +37,12 @@ public class ConnectOtherLib {
         output.writeUTF(modData.getBetaVersion() == null ? null : modData.getBetaVersion().toString());
         output.writeBoolean(modData.isForceUpdate());
         output.writeBoolean(modData.isForceUpdateBeta());
+        Map<Version, Boolean> betaMap = modData.getBetaMap();
+        output.writeInt(betaMap.size());
+        for(Map.Entry<Version, Boolean> entry : betaMap.entrySet()) {
+            output.writeUTF(entry.getKey().toString());
+            output.writeBoolean(entry.getValue());
+        }
         ForceUpdateHandle[] handles = modData.getForceUpdateHandles();
         output.writeInt(handles.length);
         for(ForceUpdateHandle handle : handles) handle.write(output);

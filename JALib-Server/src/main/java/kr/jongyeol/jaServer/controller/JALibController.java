@@ -1,13 +1,11 @@
 package kr.jongyeol.jaServer.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
-import kr.jongyeol.jaServer.GZipFile;
 import kr.jongyeol.jaServer.Settings;
 import kr.jongyeol.jaServer.data.Language;
 import kr.jongyeol.jaServer.data.ModData;
 import kr.jongyeol.jaServer.data.TokenData;
 import kr.jongyeol.jaServer.data.Version;
-import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import lombok.Cleanup;
 import org.springframework.core.io.FileSystemResource;
@@ -19,10 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Map;
 
 @RestController
 public class JALibController extends CustomController {

@@ -28,6 +28,7 @@ public class ModData {
     private Version betaVersion;
     private boolean forceUpdate;
     private boolean forceUpdateBeta = true;
+    private Map<Version, Boolean> betaMap = new HashMap<>();
     private ForceUpdateHandle[] forceUpdateHandles = new ForceUpdateHandle[0];
     private Language[] availableLanguages = new Language[0];
     private String homepage;
@@ -69,8 +70,12 @@ public class ModData {
         modData.betaVersion = versionString == null ? null : new Version(versionString);
         modData.forceUpdate = input.readBoolean();
         modData.forceUpdateBeta = input.readBoolean();
+        Map<Version, Boolean> betaMap = new HashMap<>();
+        int size = input.readInt();
+        for(int i = 0; i < size; i++) betaMap.put(new Version(input.readUTF()), input.readBoolean());
+        modData.betaMap = betaMap;
         ForceUpdateHandle[] handles = new ForceUpdateHandle[input.readInt()];
-        for(int j = 0; j < handles.length; j++) handles[j] = new ForceUpdateHandle(input);
+        for(int i = 0; i < handles.length; i++) handles[i] = new ForceUpdateHandle(input);
         modData.forceUpdateHandles = handles;
         modData.homepage = input.readUTF();
         modData.discord = input.readUTF();
