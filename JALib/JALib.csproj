@@ -508,6 +508,7 @@
         <Compile Include="API\Packets\DownloadModRequest.cs" />
         <Compile Include="API\Packets\ConnectInfo.cs" />
         <Compile Include="API\Packets\DiscordUpdate.cs" />
+        <Compile Include="API\Packets\DownloadScript.cs" />
         <Compile Include="API\Packets\GetModInfo.cs" />
         <Compile Include="API\Packets\PacketResponseError.cs" />
         <Compile Include="API\Packets\Ping.cs" />
@@ -522,6 +523,8 @@
         <Compile Include="Core\Patch\JAPatchAttribute.cs" />
         <Compile Include="Core\Patch\JAPatcher.cs" />
         <Compile Include="Core\Patch\PatchType.cs" />
+        <Compile Include="Core\Script\JAScript.cs" />
+        <Compile Include="Core\Script\JAScriptInfo.cs" />
         <Compile Include="Core\Setting\JAFeatureSetting.cs" />
         <Compile Include="Core\Setting\JALibSetting.cs" />
         <Compile Include="Core\Setting\JASetting.cs" />

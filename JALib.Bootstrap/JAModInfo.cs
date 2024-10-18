@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityModManagerNet;
 
 namespace JALib.Bootstrap;
@@ -14,4 +13,5 @@ public class JAModInfo {
     public UnityModManager.ModEntry ModEntry;
     public bool IsBetaBranch;
     public Dictionary<string, string> Dependencies;
+    public Dictionary<string, string> Scripts;
 }
