@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>JALib Mode Application Guide</title>
+    <link rel="stylesheet" href="/modApplicator/style.css">
+</head>
+<body>
+<div class="content">
+    <h1>Mode Automatic Application Guide</h1>
+    <h3 th:text="@{Applying mode:} + ${fullName}"></h3>
+    <h4 th:if="${redirect}" th:text="@{The selected mod} + ${oldFullName} + @{is forced update} + ${updateType} + @{, so you have been redirected to the latest version.}"></h4>
+    <p>To automatically apply the mode, you must install version <strong>'JALib 1.0.0 beta 10'</strong> or higher and run it once.</p>
+    <p>If you want to install the mode manually, you can click the manual installation button.</p>
+    <p>If the automatic installer does not open, you can try again by clicking the rerun button.</p>
+    <p>If automatic installation continues to fail, please run version <strong>'JALib 1.0.0 beta 10'</strong> or higher again and try.</p>
+    <a th:href="@{/downloadMod/} + ${name} + @{/} + ${version}" class="link-button">Manual Installation</a> <a th:href="@{jalib://autoApplicator/} + ${name} + @{/} + ${version}" class="link-button">Rerun</a>
+</div>
+<script th:inline="javascript">
+    window.onload = function() {
+        const name = /*[[${name}]]*/ '';
+        const version = /*[[${version}]]*/ '';
+        window.location.href = `jalib://autoApplicator/${name}/${version}`;
+    };
+</script>
+</body>
+</html>
