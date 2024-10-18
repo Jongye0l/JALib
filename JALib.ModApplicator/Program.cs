@@ -135,10 +135,7 @@ End:
             foreach(ZipArchiveEntry entry in archive.Entries) {
                 string entryPath = Path.Combine(path, entry.FullName);
                 if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
-                else {
-                    using FileStream fileStream = new(entryPath, FileMode.Create);
-                    tasks.Add(entry.Open().CopyToAsync(fileStream));
-                }
+                else tasks.Add(CopyFile(entryPath, entry));
             }
             await Task.WhenAll(tasks);
             try {
@@ -161,6 +158,11 @@ End:
             MessageBox.Show(e.ToString(), Localization.Current.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             Environment.Exit(-1);
         }
+    }
+
+    public static async Task CopyFile(string entryPath, ZipArchiveEntry entry) {
+        using FileStream fileStream = new(entryPath, FileMode.Create);
+        await entry.Open().CopyToAsync(fileStream);
     }
 
     public static void LoadSettings() {
