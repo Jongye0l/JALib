@@ -140,14 +140,16 @@ End:
             await Task.WhenAll(tasks);
             try {
                 JObject modInfo = JObject.Parse(File.ReadAllText(Path.Combine(path, "JAModInfo.json")));
-                if(core) dependencies = modInfo["Dependencies"].ToObject<Dictionary<string, string>>();
-                else {
-                    foreach(KeyValuePair<string, string> value in modInfo["Dependencies"].ToObject<Dictionary<string, string>>()) {
-                        if(dependencies.ContainsKey(value.Key)) {
-                            Version version1 = new(dependencies[value.Key]);
-                            Version version2 = new(value.Value);
-                            if(version1 < version2) dependencies[value.Key] = value.Value;
-                        } else dependencies.Add(value.Key, value.Value);
+                if(modInfo.ContainsKey("Dependencies")) {
+                    if(core) dependencies = modInfo["Dependencies"].ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+                    else {
+                        foreach(KeyValuePair<string, string> value in modInfo["Dependencies"].ToObject<Dictionary<string, string>>()) {
+                            if(dependencies.ContainsKey(value.Key)) {
+                                Version version1 = new(dependencies[value.Key]);
+                                Version version2 = new(value.Value);
+                                if(version1 < version2) dependencies[value.Key] = value.Value;
+                            } else dependencies.Add(value.Key, value.Value);
+                        }
                     }
                 }
             } catch (Exception) {
