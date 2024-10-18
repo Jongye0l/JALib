@@ -62,7 +62,7 @@ class JALib : JAMod {
                 if(!process.HasExited) process.Kill();
             }
         }
-        File.Copy(System.IO.Path.Combine(Instance.Path, "JALib.ModApplicator.exe"), applicationPath);
+        Zipper.Unzip(System.IO.Path.Combine(Instance.Path, "ModApplicator.zip"), applicationPath);
     }
 
     private static async void LoadModInfo(JAModInfo modInfo) {
