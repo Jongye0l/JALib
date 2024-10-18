@@ -196,7 +196,7 @@ End:
     }
 
     public static async Task CopyFile(string entryPath, ZipArchiveEntry entry) {
-        using FileStream fileStream = new(entryPath, FileMode.Create);
+        using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
         await entry.Open().CopyToAsync(fileStream);
     }
 
