@@ -118,7 +118,7 @@ End:
             string domain = Domain1;
             using HttpClient client = new();
             for(int i = 0; i < 2; i++) {
-                response = await client.GetAsync($"https://{domain}/autoInstaller/{version}");
+                response = await client.GetAsync($"https://{domain}/downloadMod/{modName}/{version}");
                 if(response.IsSuccessStatusCode) break;
                 domain = Domain2;
             }
