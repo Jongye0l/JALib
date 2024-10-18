@@ -70,6 +70,11 @@ public static class Zipper {
         }
     }
 
+    public static void Unzip(string zipPath, string path) {
+        using FileStream fileStream = new(zipPath, FileMode.Open);
+        Unzip(fileStream, path);
+    }
+
     public static byte[] Zip(IEnumerable<RawFile> files) {
         using MemoryStream zipStream = new();
         Zip(files, zipStream);
