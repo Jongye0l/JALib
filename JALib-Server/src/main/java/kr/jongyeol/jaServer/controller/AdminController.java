@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -101,6 +102,14 @@ public class AdminController extends CustomController {
                 boolean forceUpdate = input.readBoolean();
                 modData.setForceUpdateBeta(forceUpdate);
                 info(request, modData.getName() + " forceUpdateBeta changed to " + forceUpdate);
+            }
+            case 13 -> {
+                Version version = new Version(input.readUTF());
+                byte isBeta = input.readByte();
+                Map<Version, Boolean> betaMap = modData.getBetaMap();
+                if(isBeta == -1) betaMap.remove(version);
+                else betaMap.put(version, isBeta == 1);
+                info(request, modData.getName() + " betaMap changed");
             }
         }
         return "Complete Change ModData";

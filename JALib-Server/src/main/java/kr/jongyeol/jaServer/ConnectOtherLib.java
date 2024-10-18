@@ -209,6 +209,19 @@ public class ConnectOtherLib {
         }
     }
 
+    public static void setBetaMap(ModData modData, Version version, Boolean isBeta) {
+        try {
+            @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+            output.writeUTF(modData.getName());
+            output.writeByte((byte) 13);
+            output.writeUTF(version.toString());
+            output.writeByte(isBeta == null ? -1 : isBeta ? 1 : (byte) 0);
+            changeModData(output.toByteArray());
+        } catch (Exception e) {
+            logger.error(e);
+        }
+    }
+
     private static void changeModData(byte[] data) {
         try {
             HttpHeaders headers = new HttpHeaders();
