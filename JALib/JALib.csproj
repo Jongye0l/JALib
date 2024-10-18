@@ -503,19 +503,11 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="API\ApplicatorAPI.cs" />
-        <Compile Include="API\AsyncRequestPacket.cs" />
         <Compile Include="API\JApi.cs" />
         <Compile Include="API\Packets\DownloadMod.cs" />
-        <Compile Include="API\Packets\DownloadModRequest.cs" />
-        <Compile Include="API\Packets\ConnectInfo.cs" />
-        <Compile Include="API\Packets\DiscordUpdate.cs" />
         <Compile Include="API\Packets\GetModInfo.cs" />
-        <Compile Include="API\Packets\PacketResponseError.cs" />
         <Compile Include="API\Packets\Ping.cs" />
-        <Compile Include="API\Request.cs" />
-        <Compile Include="API\RequestAPI.cs" />
-        <Compile Include="API\RequestPacket.cs" />
-        <Compile Include="API\ResponsePacket.cs" />
+        <Compile Include="API\GetRequest.cs" />
         <Compile Include="Core\Feature.cs" />
         <Compile Include="Core\JALocalization.cs" />
         <Compile Include="Core\JAMod.cs" />

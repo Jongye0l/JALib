@@ -8,7 +8,7 @@ using UnityModManagerNet;
 
 namespace JALib.API.Packets;
 
-class DownloadMod : RequestAPI {
+class DownloadMod : GetRequest {
 
     private string ModName;
     private Version ModVersion;
@@ -20,19 +20,12 @@ class DownloadMod : RequestAPI {
         ModPath = modPath ?? Path.Combine(UnityModManager.modsPath, modName);
     }
 
-    public override void ReceiveData(Stream input) {
-        throw new NotSupportedException();
-    }
+    public override string UrlBehind => $"downloadMod/{ModName}/{ModVersion}";
 
-    public override async Task Run(HttpClient client, string url) {
-        try {
-            Stream stream = await client.GetStreamAsync(url + $"downloadMod/{ModName}/{ModVersion}");
-            Zipper.Unzip(stream, ModPath);
-            JAMod mod = JAMod.GetMods(ModName);
-            mod?.ForceReloadMod();
-        } catch (Exception e) {
-            JALib.Instance.Log("Failed to connect to the server: " + url);
-            JALib.Instance.LogException(e);
-        }
+    public override async Task Run(HttpResponseMessage message) {
+        await using Stream stream = await message.Content.ReadAsStreamAsync();
+        Zipper.Unzip(stream, ModPath);
+        JAMod mod = JAMod.GetMods(ModName);
+        mod?.ForceReloadMod();
     }
 }

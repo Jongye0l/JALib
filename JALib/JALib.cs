@@ -40,7 +40,10 @@ class JALib : JAMod {
     }
 
     private static void SetupModApplicator() {
-        if(ADOBase.platform != Platform.Windows) return;
+        if(ADOBase.platform != Platform.Windows) {
+            Instance.Log("ModApplicator is only available on Windows. Current: " + ADOBase.platform);
+            return;
+        }
         Task<int> portTask = Task.Run(ApplicatorAPI.Connect);
         string applicationPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator", "JALib.ModApplicator.exe");
         using(RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib")) {
@@ -85,22 +88,13 @@ class JALib : JAMod {
     private static async Task SetupMod(JAModInfo modInfo) {
         string modName = modInfo.ModEntry.Info.Id;
         GetModInfo getModInfo = null;
-        if(JApi.Connected) {
+        if(JApi.Instance != null) {
             getModInfo = new GetModInfo(modInfo);
             modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Loading Info...]</color>";
             await JApi.Send(getModInfo);
             if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload( modName, getModInfo.LatestVersion);
         }
         await LoadDependencies(modInfo);
-        if(JApi.Connected) {
-            modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Waiting ConnectInfo...]</color>";
-            try {
-                await JApi.ConnectInfoTask;
-            } catch (Exception e) {
-                modInfo.ModEntry.Logger.Log("Failed to ConnectInfo");
-                modInfo.ModEntry.Logger.LogException(e);
-            }
-        }
         if(updateQueue.TryGetValue(modName, out Version version) && version > modInfo.ModEntry.Version) {
             Instance.Log("Update JAMod " + modName);
             modInfo.ModEntry.Info.DisplayName = modName + " <color=aqua>[Updating...]</color>";

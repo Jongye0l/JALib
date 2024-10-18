@@ -5,18 +5,19 @@ using System.Threading.Tasks;
 
 namespace JALib.API.Packets;
 
-class Ping : RequestAPI {
+class Ping : GetRequest {
 
     private long time;
     public int ping;
 
-    public override void ReceiveData(Stream input) {
-        ping = (int) (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time);
+    public override string UrlBehind => "ping";
+
+    public Ping() {
+        time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     }
 
-    public override async Task Run(HttpClient client, string url) {
-        time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        await client.GetAsync(url + "ping");
-        ReceiveData(null);
+    public override Task Run(HttpResponseMessage message) {
+        ping = (int) (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time);
+        return Task.CompletedTask;
     }
 }

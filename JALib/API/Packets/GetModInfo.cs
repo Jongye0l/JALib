@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace JALib.API.Packets;
 
-class GetModInfo : RequestAPI {
+class GetModInfo : GetRequest {
 
     private JAMod mod;
     private JAModInfo modInfo;
@@ -30,7 +30,10 @@ class GetModInfo : RequestAPI {
         this.modInfo = modInfo;
     }
 
-    public override void ReceiveData(Stream input) {
+    public override string UrlBehind => $"modInfo/{modInfo.ModEntry.Info.Id}/{modInfo.ModEntry.Version}/{(modInfo.IsBetaBranch ? 1 : 0)}";
+
+    public override async Task Run(HttpResponseMessage message) {
+        await using Stream input = await message.Content.ReadAsStreamAsync();
         if(!(Success = input.ReadBoolean())) return;
         LatestVersion = Version.Parse(input.ReadUTF());
         ForceUpdate = input.ReadBoolean();
@@ -40,15 +43,5 @@ class GetModInfo : RequestAPI {
         Homepage = input.ReadUTF();
         Discord = input.ReadUTF();
         Gid = input.ReadInt();
-    }
-
-    public override async Task Run(HttpClient client, string url) {
-        try {
-            await using Stream stream = await client.GetStreamAsync(url + $"modInfo/{modInfo.ModEntry.Info.Id}/{modInfo.ModEntry.Version}/{(modInfo.IsBetaBranch ? 1 : 0)}");
-            ReceiveData(stream);
-        } catch (Exception e) {
-            JALib.Instance.Log("Failed to connect to the server: " + url);
-            JALib.Instance.LogException(e);
-        }
     }
 }
