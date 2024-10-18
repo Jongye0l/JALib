@@ -12,7 +12,10 @@ public class Localization {
         Error_LoadModInfo = "모드 정보를 불러오는 중 오류가 발생했습니다.",
         AdofaiRestart = "모드를 적용하기 위해서는 얼불춤을 재시작 해야합니다. 재시작 하시겠습니까?",
         AdofaiRestartTitle = "JALib 모드 적용기",
-        AdofaiStart = "얼불춤을 시작하시겠습니까?"
+        AdofaiStart = "얼불춤을 시작하시겠습니까?",
+        ModAnnounceTitle = "모드 적용 안내",
+        StartModApply = "{0} 모드 적용을 시작합니다.",
+        FinishModApply = "모드 적용이 완료되었습니다."
     };
 
     public static Localization English = new() {
@@ -24,7 +27,10 @@ public class Localization {
         Error_LoadModInfo = "An error occurred while loading mod information.",
         AdofaiRestart = "To apply the mod, you need to restart A Dance of Fire and Ice. Do you want to restart?",
         AdofaiRestartTitle = "JALib Mod Applicator",
-        AdofaiStart = "Do you want to start A Dance of Fire and Ice?"
+        AdofaiStart = "Do you want to start A Dance of Fire and Ice?",
+        ModAnnounceTitle = "Mod Application Announcement",
+        StartModApply = "Start applying the {0} mod.",
+        FinishModApply = "mod application is complete."
     };
 
     public static Localization Current => CultureInfo.CurrentCulture.Name == "ko-KR" ? Korean : English;
@@ -38,4 +44,7 @@ public class Localization {
     public string AdofaiRestart { get; private set; }
     public string AdofaiRestartTitle { get; private set; }
     public string AdofaiStart { get; private set; }
+    public string ModAnnounceTitle { get; private set; }
+    public string StartModApply{ get; private set; }
+    public string FinishModApply { get; private set; }
 }

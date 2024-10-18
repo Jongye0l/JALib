@@ -43,8 +43,8 @@ class Program {
         new NotifyIcon {
             Icon = SystemIcons.Application,
             Visible = true,
-            BalloonTipTitle = "모드 적용 안내",
-            BalloonTipText = args[0] + "모드 적용을 시작합니다."
+            BalloonTipTitle = localization.ModAnnounceTitle,
+            BalloonTipText = string.Format(localization.StartModApply, args[0])
         }.ShowBalloonTip(5000);
         Task settingLoadTask = Task.Run(LoadSettings);
         Task modTask = ApplyMod(args[0], args[1], true);
@@ -107,8 +107,8 @@ End:
         new NotifyIcon {
             Icon = SystemIcons.Application,
             Visible = true,
-            BalloonTipTitle = "모드 적용 안내",
-            BalloonTipText = args[0] + "모드 적용이 완료되었습니다."
+            BalloonTipTitle = localization.ModAnnounceTitle,
+            BalloonTipText = args[0] + localization.FinishModApply
         }.ShowBalloonTip(5000);
     }
 
