@@ -17,7 +17,10 @@ public class Localization {
         StartModApply = "{0} 모드 적용을 시작합니다.",
         FinishModApply = "모드 적용이 완료되었습니다.",
         ModAlreadyTitle = "모드 적용이 취소되었습니다.",
-        ModAlreadyInstalled = "해당 버전의 {0} 모드가 이미 적용되어 있습니다."
+        ModAlreadyInstalled = "해당 버전의 {0} 모드가 이미 적용되어 있습니다.",
+        ModInstalling = "{0} 모드 적용중...",
+        DependenciesInstalling = "의존성 모드 적용중...",
+        ModApplyFinish = "{0} 모드 적용 완료"
     };
 
     public static Localization English = new() {
@@ -34,7 +37,10 @@ public class Localization {
         StartModApply = "Start applying the {0} mod.",
         FinishModApply = "mod application is complete.",
         ModAlreadyTitle = "Mod application canceled.",
-        ModAlreadyInstalled = "The {0} mod of that version is already installed."
+        ModAlreadyInstalled = "The {0} mod of that version is already installed.",
+        ModInstalling = "Applying the {0} mod...",
+        DependenciesInstalling = "Applying dependency mods...",
+        ModApplyFinish = "{0} mod application complete"
     };
 
     public static Localization Current => CultureInfo.CurrentCulture.Name == "ko-KR" ? Korean : English;
@@ -53,4 +59,7 @@ public class Localization {
     public string FinishModApply { get; private set; }
     public string ModAlreadyTitle { get; private set; }
     public string ModAlreadyInstalled { get; private set; }
+    public string ModInstalling { get; private set; }
+    public string DependenciesInstalling { get; private set; }
+    public string ModApplyFinish { get; private set; }
 }

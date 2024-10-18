@@ -69,18 +69,22 @@ class Program {
         NotifyIcon notifyIcon = new() {
             Icon = SystemIcons.Application,
             Visible = true,
-            BalloonTipTitle = localization.ModAnnounceTitle,
-            BalloonTipText = string.Format(localization.StartModApply, args[0])
+            Text = string.Format(localization.ModInstalling, args[0])
         };
-        notifyIcon.ShowBalloonTip(3000);
         Task modTask = ApplyMod(args[0], args[1], true);
         if(args[0] == "JALib") jalibInstall = true;
         await modTask;
+        notifyIcon.Text = string.Format(localization.DependenciesInstalling, args[0]);
         List<Task> modInstallTasks = [];
+        Dictionary<string, Version> requestDependencies = new();
         while(dependencies.Count > 0) {
             string modName = dependencies.Keys.First();
             Version version = new(dependencies[modName]);
             dependencies.Remove(modName);
+            if(requestDependencies.ContainsKey(modName)) {
+                if(requestDependencies[modName] < version) requestDependencies[modName] = version;
+                else continue;
+            } else requestDependencies.Add(modName, version);
             string infoPath = Path.Combine(path, modName, "Info.json");
             if(!File.Exists(infoPath)) infoPath = Path.Combine(path, modName, "info.json");
             if(File.Exists(infoPath)) {
@@ -98,6 +102,7 @@ class Program {
             if(modName == "JALib") jalibInstall = true;
             modInstallTasks.Add(ApplyMod(modName, version.ToString(), false));
         }
+        await Task.WhenAll(modInstallTasks);
         bool adofaiRestart = false;
         if(adofaiStatus == AdofaiStatus.Enabled) {
             using NetworkStream stream = client.GetStream();
@@ -122,12 +127,10 @@ DownloadJALib:
 AdofaiRestart:
         adofaiRestart = true;
 End:
-        new NotifyIcon {
-            Icon = SystemIcons.Application,
-            Visible = true,
-            BalloonTipTitle = localization.ModAnnounceTitle,
-            BalloonTipText = args[0] + localization.FinishModApply
-        }.ShowBalloonTip(3000);
+        notifyIcon.Text = string.Format(localization.ModApplyFinish, args[0]);
+        notifyIcon.BalloonTipTitle = localization.ModAnnounceTitle;
+        notifyIcon.BalloonTipText = args[0] + localization.FinishModApply;
+        notifyIcon.ShowBalloonTip(3000);
         if(adofaiRestart) {
             DialogResult result = MessageBox.Show(adofaiStatus == AdofaiStatus.Enabled ? localization.AdofaiRestart : localization.AdofaiStart, localization.AdofaiRestartTitle,
                 MessageBoxButtons.YesNo, MessageBoxIcon.Information);
