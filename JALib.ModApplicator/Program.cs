@@ -38,7 +38,8 @@ class Program {
         }
         if(args.Length < 1) {
             MessageBox.Show(localization.Error_VersionNotSet, localization.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            Environment.Exit(1);
+            Environment.Exit(-1);
+            return;
         }
         new NotifyIcon {
             Icon = SystemIcons.Application,
@@ -125,6 +126,7 @@ End:
             if(!response.IsSuccessStatusCode) {
                 MessageBox.Show(Localization.Current.Error_FailConnectServer, Localization.Current.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(-1);
+                return;
             }
             using Stream stream = await response.Content.ReadAsStreamAsync();
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
@@ -202,7 +204,7 @@ End:
                 else jaLibStatus = JALibStatus.Error;
             } catch (Exception e) {
                 MessageBox.Show(Localization.Current.Error_LoadAdofaiPath + e, Localization.Current.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Environment.Exit(1);
+                Environment.Exit(-1);
             }
         }
     }
