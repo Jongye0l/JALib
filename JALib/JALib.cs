@@ -45,7 +45,8 @@ class JALib : JAMod {
             return;
         }
         Task<int> portTask = Task.Run(ApplicatorAPI.Connect);
-        string applicationPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator", "JALib.ModApplicator.exe");
+        string applicationFolderPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator");
+        string applicationPath = System.IO.Path.Combine(applicationFolderPath, "JALib.ModApplicator.exe");
         using(RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib")) {
             if(key.GetValue("URL Protocol") == null) {
                 key.SetValue("", "URL Protocol");
@@ -57,7 +58,7 @@ class JALib : JAMod {
             }
         }
         if(File.Exists(applicationPath)) return;
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(applicationPath));
+        Directory.CreateDirectory(applicationFolderPath);
         Process[] processes = Process.GetProcessesByName("JALib.ModApplicator.exe");
         if(processes.Length > 0) {
             foreach(Process process in processes) {
@@ -65,7 +66,7 @@ class JALib : JAMod {
                 if(!process.HasExited) process.Kill();
             }
         }
-        Zipper.Unzip(System.IO.Path.Combine(Instance.Path, "ModApplicator.zip"), applicationPath);
+        Zipper.Unzip(System.IO.Path.Combine(Instance.Path, "ModApplicator.zip"), applicationFolderPath);
     }
 
     private static async void LoadModInfo(JAModInfo modInfo) {
