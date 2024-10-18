@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using HarmonyLib;
@@ -54,6 +55,13 @@ class JALib : JAMod {
         }
         if(File.Exists(applicationPath)) return;
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(applicationPath));
+        Process[] processes = Process.GetProcessesByName("JALib.ModApplicator.exe");
+        if(processes.Length > 0) {
+            foreach(Process process in processes) {
+                process.WaitForExit(3000);
+                if(!process.HasExited) process.Kill();
+            }
+        }
         File.Copy(System.IO.Path.Combine(Instance.Path, "JALib.ModApplicator.exe"), applicationPath);
     }
 
