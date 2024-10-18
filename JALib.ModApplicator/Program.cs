@@ -30,7 +30,7 @@ class Program {
         Localization localization = Localization.Current;
         if(args.Length == 0) {
 #if DEBUG
-            args = [ "JALib", "1.0.0.0" ];
+            args = [ "JALib", "1.0.0.9" ];
 #else
             MessageBox.Show(localization.Error_ArgumentNotSet, localization.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             Environment.Exit(1);
