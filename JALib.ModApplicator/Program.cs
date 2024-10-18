@@ -43,12 +43,13 @@ class Program {
             Environment.Exit(-1);
             return;
         }
-        new NotifyIcon {
+        NotifyIcon notifyIcon = new() {
             Icon = SystemIcons.Application,
             Visible = true,
             BalloonTipTitle = localization.ModAnnounceTitle,
             BalloonTipText = string.Format(localization.StartModApply, args[0])
-        }.ShowBalloonTip(5000);
+        };
+        notifyIcon.ShowBalloonTip(3000);
         Task settingLoadTask = Task.Run(LoadSettings);
         Task modTask = ApplyMod(args[0], args[1], true);
         if(args[0] == "JALib") jalibInstall = true;
@@ -76,6 +77,7 @@ class Program {
             if(modName == "JALib") jalibInstall = true;
             modInstallTasks.Add(ApplyMod(modName, version.ToString(), false));
         }
+        bool adofaiRestart = false;
         if(adofaiStatus == AdofaiStatus.Enabled) {
             using NetworkStream stream = client.GetStream();
             using BinaryWriter writer = new(stream);
@@ -97,22 +99,25 @@ class Program {
 DownloadJALib:
         if(!jalibInstall) await ApplyMod("JALib", "latest", false);
 AdofaiRestart:
-        DialogResult result = MessageBox.Show(adofaiStatus == AdofaiStatus.Enabled ? localization.AdofaiRestart : localization.AdofaiStart, localization.AdofaiRestartTitle,
-            MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-        if(result == DialogResult.Yes) {
-            if(adofaiStatus == AdofaiStatus.Enabled) {
-                Process[] processes = Process.GetProcessesByName("A Dance of Fire and Ice");
-                foreach(Process process in processes) process.Kill();
-            }
-            Process.Start(Path.Combine(adofaiPath, "A Dance of Fire and Ice.exe"));
-        }
+        adofaiRestart = true;
 End:
         new NotifyIcon {
             Icon = SystemIcons.Application,
             Visible = true,
             BalloonTipTitle = localization.ModAnnounceTitle,
             BalloonTipText = args[0] + localization.FinishModApply
-        }.ShowBalloonTip(5000);
+        }.ShowBalloonTip(3000);
+        if(adofaiRestart) {
+            DialogResult result = MessageBox.Show(adofaiStatus == AdofaiStatus.Enabled ? localization.AdofaiRestart : localization.AdofaiStart, localization.AdofaiRestartTitle,
+                MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+            if(result == DialogResult.Yes) {
+                if(adofaiStatus == AdofaiStatus.Enabled) {
+                    Process[] processes = Process.GetProcessesByName("A Dance of Fire and Ice");
+                    foreach(Process process in processes) process.Kill();
+                }
+                Process.Start(Path.Combine(adofaiPath, "A Dance of Fire and Ice.exe"));
+            }
+        }
     }
 
     public static async Task ApplyMod(string modName, string version, bool core) {
