@@ -30,13 +30,15 @@ class Program {
         Localization localization = Localization.Current;
         if(args.Length == 0) {
 #if DEBUG
-            args = [ "JALib", "1.0.0.9" ];
+            args = [ "jalib://JALib/1.0.0.9" ];
 #else
             MessageBox.Show(localization.Error_ArgumentNotSet, localization.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            Environment.Exit(1);
+            Environment.Exit(-1);
+            return;
 #endif
         }
-        if(args.Length < 1) {
+        args = args[0].Replace("jalib://", "").Split('/');
+        if(args.Length < 2) {
             MessageBox.Show(localization.Error_VersionNotSet, localization.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             Environment.Exit(-1);
             return;
