@@ -8,17 +8,23 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.Locale;
 
 @Controller
 public class ModApplicatorController extends CustomController {
     @GetMapping("/modApplicator/{name}/{version}")
-    public String modApplicator(HttpServletRequest request, @PathVariable String name, @PathVariable String version, Model model, Locale locale) {
+    public String modApplicator(HttpServletRequest request, @PathVariable String name, @PathVariable String version, Model model, Locale locale, @RequestHeader("User-Agent") String userAgent) {
         info(request, "ModApplicator: " + name + " " + version);
+        boolean isKorean = locale == Locale.KOREAN || locale == Locale.KOREA;
+        String lang = (isKorean ? "ko" : "en");
+        if(!userAgent.contains("windows")) {
+            info(request, "ModApplicator Result: Failed (Not Windows), " + lang);
+            return "ModApplicator/Announce/OnlyWindows-" + lang;
+        }
         ModData modData = ModData.getModData(name);
         boolean forceUpdate = false;
-        boolean isKorean = locale == Locale.KOREAN || locale == Locale.KOREA;
         Version ver = new Version(version);
         if(!ver.equals(modData.getVersion()) && !ver.equals(modData.getBetaVersion())) {
             boolean isBeta = modData.getBetaMap().get(ver);
@@ -38,6 +44,7 @@ public class ModApplicatorController extends CustomController {
         model.addAttribute("version", version);
         model.addAttribute("fullName", " " + name + " " + version);
         model.addAttribute("redirect", forceUpdate);
-        return "ModApplicator-" + (isKorean ? "ko" : "en");
+        info(request, "ModApplicator Result: " + name + " " + version + ", " + lang);
+        return "ModApplicator/ModApplicator-" + (isKorean ? "ko" : "en");
     }
 }
