@@ -106,15 +106,17 @@ class Program {
         bool adofaiRestart = false;
         if(adofaiStatus == AdofaiStatus.EnabledWithMod) {
             try {
-                TcpClient client = new();
-                await client.ConnectAsync("localhost", port);
-                using NetworkStream stream = client.GetStream();
-                using BinaryWriter writer = new(stream);
-                writer.Write(0);
-                byte[] data = Encoding.UTF8.GetBytes(args[0]);
-                writer.Write(data.Length);
-                writer.Write(data);
-                client.Close();
+                using(TcpClient client = new()) {
+                    await client.ConnectAsync("localhost", port);
+                    using NetworkStream stream = client.GetStream();
+                    stream.WriteByte(0);
+                    byte[] data = Encoding.UTF8.GetBytes(args[0]);
+                    stream.WriteByte((byte) (data.Length >> 24));
+                    stream.WriteByte((byte) (data.Length >> 16));
+                    stream.WriteByte((byte) (data.Length >> 8));
+                    stream.WriteByte((byte) data.Length);
+                    stream.Write(data, 0, data.Length);
+                }
                 goto End;
             } catch (Exception) {
                 goto AdofaiRestart;
