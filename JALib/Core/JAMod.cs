@@ -74,7 +74,7 @@ public abstract class JAMod {
             if(IsExistMethod(nameof(OnLateUpdate))) modEntry.OnLateUpdate = OnLateUpdate0;
             if(IsExistMethod(nameof(OnSessionStart))) modEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
             if(IsExistMethod(nameof(OnSessionStop))) modEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
-            mods.Add(Name, this);
+            mods[Name] = this;
             SaveSetting();
             Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {

@@ -16,11 +16,16 @@ class ApplicatorAPI {
     private static Task listenerTask;
 
     public static int Connect() {
+Setup:
         int port = JARandom.Instance.Next(49152, 65535);
-        listener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
-        listener.Start();
-        listenerTask = Task.Run(Listen);
-        JALib.Instance.Log($"Listening on port: {port}");
+        try {
+            listener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
+            listener.Start();
+            listenerTask = Task.Run(Listen);
+            JALib.Instance.Log($"Listening on port: {port}");
+        } catch (SocketException) {
+            goto Setup;
+        }
         return port;
     }
 
