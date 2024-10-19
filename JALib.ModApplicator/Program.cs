@@ -163,14 +163,12 @@ End:
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
             while(adofaiPath == null) await Task.Delay(10);
             string path = Path.Combine(adofaiPath, "Mods", modName);
-            List<Task> tasks = [];
             if(!Directory.Exists(path)) Directory.CreateDirectory(path);
             foreach(ZipArchiveEntry entry in archive.Entries) {
                 string entryPath = Path.Combine(path, entry.FullName);
                 if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
-                else tasks.Add(CopyFile(entryPath, entry));
+                else CopyFile(entryPath, entry);
             }
-            await Task.WhenAll(tasks);
             try {
                 JObject modInfo = JObject.Parse(File.ReadAllText(Path.Combine(path, "JAModInfo.json")));
                 if(core) dependencies = modInfo["Dependencies"]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
@@ -195,9 +193,9 @@ End:
         }
     }
 
-    public static async Task CopyFile(string entryPath, ZipArchiveEntry entry) {
+    public static void CopyFile(string entryPath, ZipArchiveEntry entry) {
         using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
-        await entry.Open().CopyToAsync(fileStream);
+        entry.Open().CopyTo(fileStream);
     }
 
     public static void LoadSettings() {
