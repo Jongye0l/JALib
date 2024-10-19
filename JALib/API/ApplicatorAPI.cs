@@ -40,7 +40,8 @@ class ApplicatorAPI {
                         byte action = stream.ReadByteSafe();
                         if(action == 0) {
                             string modName = stream.ReadUTF();
-                            _ = JATask.Run(JALib.Instance, () => LoadMod(modName));
+                            JALib.Instance.Log($"Applying mod: {modName}");
+                            LoadMod(modName);
                         } else throw new Exception("Invalid action");
                     }
                 });
