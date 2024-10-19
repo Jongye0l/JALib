@@ -156,6 +156,8 @@ public abstract class JAMod {
     }
 
     private bool OnUnload0(UnityModManager.ModEntry modEntry) {
+        ModSetting.Dispose();
+        ModSetting = null;
         foreach(Feature feature in Features) feature.Unload();
         if(mods[Name] == this) mods.Remove(Name);
         OnDisable();
@@ -166,8 +168,6 @@ public abstract class JAMod {
         Discord = null;
         Localization.Dispose();
         Localization = null;
-        ModSetting.Dispose();
-        ModSetting = null;
         return true;
     }
 
@@ -282,7 +282,7 @@ public abstract class JAMod {
 
     public void LogException(Exception e) => Logger.LogException(e);
 
-    public void SaveSetting() => ModSetting.Save();
+    public void SaveSetting() => ModSetting?.Save();
 
     internal async Task ForceReloadMod() {
         string modName = ModEntry.Info.Id;
