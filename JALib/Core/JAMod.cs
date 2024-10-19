@@ -156,6 +156,13 @@ public abstract class JAMod {
     }
 
     private bool OnUnload0(UnityModManager.ModEntry modEntry) {
+        modEntry.OnToggle = null;
+        modEntry.OnUnload = null;
+        modEntry.OnUpdate = null;
+        modEntry.OnFixedUpdate = null;
+        modEntry.OnLateUpdate = null;
+        modEntry.SetValue("OnSessionStart", null);
+        modEntry.SetValue("OnSessionStop", null);
         ModSetting.Dispose();
         ModSetting = null;
         foreach(Feature feature in Features) feature.Unload();
@@ -285,68 +292,93 @@ public abstract class JAMod {
     public void SaveSetting() => ModSetting?.Save();
 
     internal async Task ForceReloadMod() {
-        string modName = ModEntry.Info.Id;
-        ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reload...]</color>";
-        string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
-        if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
-        UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
-        ModEntry.SetValue("Info", info);
-        bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [ModEntry]);
-        JAModInfo modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", ModEntry, beta);
-        SetupModInfo(modInfo);
-        GetModInfo getModInfo = null;
         try {
-            if(JApi.Instance != null) {
-                getModInfo = new GetModInfo(modInfo);
-                modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
-                await JApi.Send(getModInfo);
-                if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
-                    _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion));
-                    return;
+            string modName = ModEntry.Info.Id;
+            ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reload...]</color>";
+            string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
+            if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
+            UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
+            ModEntry.SetValue("Info", info);
+            bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [ModEntry]);
+            JAModInfo modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", ModEntry, beta);
+            SetupModInfo(modInfo);
+            GetModInfo getModInfo = null;
+            try {
+                if(JApi.Instance != null) {
+                    getModInfo = new GetModInfo(modInfo);
+                    modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
+                    Log("Force Reload: Loading Info...");
+                    await JApi.Send(getModInfo);
+                    if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
+                        _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion));
+                        return;
+                    }
                 }
+            } catch (Exception e) {
+                modInfo.ModEntry.Logger.Log("Failed to Load ModInfo " + modName);
+                modInfo.ModEntry.Logger.LogException(e);
             }
-        } catch (Exception e) {
-            modInfo.ModEntry.Logger.Log("Failed to Load ModInfo " + modName);
-            modInfo.ModEntry.Logger.LogException(e);
-        }
-        if(modInfo.Dependencies != null) {
-            List<Task> tasks = [];
-            ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Dependencies...]</color>";
-            foreach(KeyValuePair<string, string> dependency in modInfo.Dependencies) {
+            if(modInfo.Dependencies != null) {
+                List<Task> tasks = [];
+                ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Dependencies...]</color>";
+                Log("Force Reload: Loading Dependencies...");
+                foreach(KeyValuePair<string, string> dependency in modInfo.Dependencies) {
+                    try {
+                        Version version = new(dependency.Value);
+                        UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
+                        if(modEntry != null && modEntry.Version >= version) continue;
+                        tasks.Add(JApi.Send(new DownloadMod(dependency.Key, version)));
+                    } catch (Exception e) {
+                        ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
+                        ModEntry.Logger.LogException(e);
+                    }
+                }
+                ModEntry.Info.DisplayName = modName + " <color=aqua>[Waiting Dependencies...]</color>";
+                Log("Force Reload: Waiting Dependencies...");
+                await Task.WhenAll(tasks);
+            }
+            modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Unloading...]</color>";
+            Log("Force Reload: Unloading...");
+            MainThread.Run(new JAction(JALib.Instance, () => {
                 try {
-                    Version version = new(dependency.Value);
-                    UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
-                    if(modEntry != null && modEntry.Version >= version) continue;
-                    tasks.Add(JApi.Send(new DownloadMod(dependency.Key, version)));
+                    OnUnload0(ModEntry);
+                    modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[loading...]</color>";
+                    modInfo.ModEntry.Logger.Log("Force Reload: loading...");
+                    Type type;
+                    try {
+                        type = typeof(JABootstrap).Invoke<Type>("LoadMod", [modInfo]);
+                    } catch (Exception e) {
+                        modInfo.ModEntry.Logger.Log("Failed to Load JAMod " + modName);
+                        modInfo.ModEntry.Logger.LogException(e);
+                        modInfo.ModEntry.SetValue("mErrorOnLoading", true);
+                        modInfo.ModEntry.SetValue("mActive", false);
+                        modInfo.ModEntry.Info.DisplayName = modName + " <color=red>[Error: Need Restart]</color>";
+                        return;
+                    }
+                    modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Activing...]</color>";
+                    modInfo.ModEntry.Logger.Log("Force Reload: Activing...");
+                    JAMod mod = GetMods(modName);
+                    try {
+                        mod.OnToggle(null, true);
+                    } catch (Exception e) {
+                        mod.LogException(e);
+                        mod.ModEntry.SetValue("mActive", false);
+                    }
+                    if(getModInfo != null) mod.ModInfo(getModInfo);
+                    modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reloading...]</color>";
+                    modInfo.ModEntry.Logger.Log("Force Reload: ForceReloading...");
+                    ForceReloadMod(type.Assembly);
+                    modInfo.ModEntry.Info.DisplayName = modName;
+                    modInfo.ModEntry.Logger.Log("Force Reload: Complete");
                 } catch (Exception e) {
-                    ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
-                    ModEntry.Logger.LogException(e);
+                    JALib.Instance.Error("Failed to Force Reload Mod " + Name);
+                    JALib.Instance.LogException(e);
                 }
-            }
-            ModEntry.Info.DisplayName = modName + " <color=aqua>[Waiting Dependencies...]</color>";
-            await Task.WhenAll(tasks);
-        }
-        OnUnload0(null);
-        modInfo.ModEntry.Info.DisplayName = modName;
-        Type type;
-        try {
-            type = typeof(JABootstrap).Invoke<Type>("LoadMod", [modInfo]);
+            }));
         } catch (Exception e) {
-            modInfo.ModEntry.Logger.Log("Failed to Load JAMod " + modName);
-            modInfo.ModEntry.Logger.LogException(e);
-            modInfo.ModEntry.SetValue("mErrorOnLoading", true);
-            modInfo.ModEntry.SetValue("mActive", false);
-            return;
+            JALib.Instance.Error("Failed to Force Reload Mod " + Name);
+            JALib.Instance.LogException(e);
         }
-        JAMod mod = GetMods(modName);
-        try {
-            mod.OnToggle(null, true);
-        } catch (Exception e) {
-            mod.LogException(e);
-            mod.ModEntry.SetValue("mActive", false);
-        }
-        if(getModInfo != null) mod.ModInfo(getModInfo);
-        ForceReloadMod(type.Assembly);
     }
 
     internal static void SetupModInfo(JAModInfo modInfo) {
@@ -363,10 +395,11 @@ public abstract class JAMod {
     internal void ForceReloadMod(Assembly newAssembly) {
         Assembly oldAssembly = GetType().Assembly;
         ModReloadCache cache = new(oldAssembly, newAssembly);
-        TypeBuilder typeBuilder = ModuleBuilder.DefineType($"JALib.ForceReload.{Name}.{JARandom.Instance.NextInt()}", TypeAttributes.Public);
+        TypeBuilder typeBuilder = ModuleBuilder.DefineType($"JALib.ForceReload.{Name}.{oldAssembly.GetHashCode()}", TypeAttributes.Public);
         FieldBuilder fieldBuilder = typeBuilder.DefineField("cache", typeof(ModReloadCache), FieldAttributes.Private | FieldAttributes.Static);
         fieldBuilder.SetConstant(cache);
         MethodInfo dataChangeMethod = typeof(ModReloadCache).Method("GetCachedObject", typeof(object));
+        Dictionary<string, JAPatchAttribute> patchAttributes = new();
         foreach(Type type in oldAssembly.GetTypes()) {
             try {
                 Type newType = newAssembly.GetType(type.FullName);
@@ -380,7 +413,6 @@ public abstract class JAMod {
                         JALib.Instance.LogException(e);
                     }
                 }
-                Dictionary<string, int> methodCount = new();
                 foreach(MethodInfo method in type.Methods()) {
                     try {
                         Type[] parameters = method.GetGenericArguments();
@@ -388,8 +420,6 @@ public abstract class JAMod {
                             if(parameters[i].Assembly == newAssembly) parameters[i] = newAssembly.GetType(parameters[i].FullName);
                         MethodInfo newMethod = newType.Method(method.Name, method.GetGenericArguments());
                         if(newMethod == null) return;
-                        int count = methodCount.GetValueOrDefault(method.Name);
-                        methodCount[method.Name] = count += 1;
                         int c = method.GetGenericArguments().Length;
                         int staticCount = -1;
                         int returnCount = -1;
@@ -399,7 +429,7 @@ public abstract class JAMod {
                         for(int i = 0; i < method.GetGenericArguments().Length; i++) types[i] = method.GetGenericArguments()[i];
                         if(!method.IsStatic) types[staticCount] = type;
                         if(returnCount != -1) types[returnCount] = method.ReturnType.MakeByRefType();
-                        MethodBuilder methodBuilder = typeBuilder.DefineMethod($"{type.FullName}_{method.Name}_{count}_Patch",
+                        MethodBuilder methodBuilder = typeBuilder.DefineMethod($"{type.FullName}_{method.Name}_{method.GetHashCode()}_Patch",
                             MethodAttributes.Public | MethodAttributes.Static, typeof(bool), types);
                         foreach(ParameterInfo parameter in method.GetParameters()) methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.Name);
                         if(!method.IsStatic) methodBuilder.DefineParameter(staticCount, ParameterAttributes.None, "__instance");
@@ -420,9 +450,7 @@ public abstract class JAMod {
                         ilGenerator.Emit(OpCodes.Stind_Ref);
                         ilGenerator.Emit(OpCodes.Ldc_I4_0);
                         ilGenerator.Emit(OpCodes.Ret);
-                        CustomAttributeBuilder attributeBuilder = new(typeof(JAPatchAttribute).Constructor(typeof(MethodInfo), typeof(PatchType), typeof(bool)),
-                            [ method, PatchType.Prefix, false ]);
-                        methodBuilder.SetCustomAttribute(attributeBuilder);
+                        patchAttributes[methodBuilder.Name] = new JAPatchAttribute(method, PatchType.Prefix, false);
                     } catch (Exception e) {
                         JALib.Instance.Log("Failed to reload method " + method.Name + " of type " + type.FullName);
                         JALib.Instance.LogException(e);
@@ -434,6 +462,7 @@ public abstract class JAMod {
             }
         }
         Type patchType = typeBuilder.CreateType();
-        JALib.Patcher.AddPatch(patchType);
+        JAPatcher patcher = JALib.Patcher;
+        foreach(KeyValuePair<string, JAPatchAttribute> patchAttribute in patchAttributes) patcher.AddPatch(patchType.GetMethod(patchAttribute.Key), patchAttribute.Value);
     }
 }
