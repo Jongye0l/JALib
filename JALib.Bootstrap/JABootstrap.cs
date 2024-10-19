@@ -14,6 +14,7 @@ public class JABootstrap {
     private static MethodInfo LoadJAMod;
     private static Task<bool> _task;
     internal static Harmony harmony;
+    private static JAModInfo jalibModInfo;
     private static async void Setup(UnityModManager.ModEntry modEntry) {
         domain ??= AppDomain.CurrentDomain;
         _task = Installer.CheckMod(modEntry);
@@ -27,6 +28,7 @@ public class JABootstrap {
     }
 
     private static Type SetupJALib(JAModInfo modInfo) {
+        jalibModInfo = modInfo;
         Type modType = LoadMod(modInfo);
         LoadJAMod = modType.GetMethod("LoadModInfo", (BindingFlags) 15420);
         return modType;
@@ -70,17 +72,16 @@ public class JABootstrap {
             string dependencyPath = modInfo.DependencyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.DependencyPath) : modInfo.DependencyPath;
             foreach(string file in Directory.GetFiles(dependencyPath)) {
                 try {
-                    domain.Load(AssemblyName.GetAssemblyName(file));
+                    domain.Load(File.ReadAllBytes(file));
                 } catch (Exception e) {
                     modInfo.ModEntry.Logger.LogException(e);
                 }
             }
         }
-        Assembly modAssembly = domain.Load(AssemblyName.GetAssemblyName(modInfo.AssemblyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.AssemblyPath) : modInfo.AssemblyPath));
+        Assembly modAssembly = domain.Load(File.ReadAllBytes(modInfo.AssemblyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.AssemblyPath) : modInfo.AssemblyPath));
         Type modType = modAssembly.GetType(modInfo.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
-        object obj = Activator.CreateInstance(modType, (BindingFlags) 15420, null, [modInfo.ModEntry], null, null);
-        modType.GetField("JaModInfo", (BindingFlags) 15420).SetValue(obj, modInfo);
+        Activator.CreateInstance(modType, (BindingFlags) 15420, null, [modInfo.ModEntry], null, null);
         return modType;
     }
 

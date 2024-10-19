@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
+using JALib.API;
 using JALib.API.Packets;
 using JALib.Bootstrap;
 using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
+using TinyJson;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -41,7 +44,6 @@ public abstract class JAMod {
     protected JASetting Setting => ModSetting.Setting;
     protected string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
-    internal JAModInfo JaModInfo;
     internal int Gid;
 
     protected internal SystemLanguage? CustomLanguage {
@@ -282,9 +284,80 @@ public abstract class JAMod {
 
     public void SaveSetting() => ModSetting.Save();
 
-    internal void ForceReloadMod() {
-        Type type = typeof(JABootstrap).Invoke<Type>("LoadMod", JaModInfo);
+    internal async Task ForceReloadMod() {
+        string modName = ModEntry.Info.Id;
+        ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reload...]</color>";
+        string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
+        if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
+        UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
+        ModEntry.SetValue("Info", info);
+        bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [ModEntry]);
+        JAModInfo modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", ModEntry, beta);
+        SetupModInfo(modInfo);
+        GetModInfo getModInfo = null;
+        try {
+            if(JApi.Instance != null) {
+                getModInfo = new GetModInfo(modInfo);
+                modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
+                await JApi.Send(getModInfo);
+                if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
+                    _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion));
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            modInfo.ModEntry.Logger.Log("Failed to Load ModInfo " + modName);
+            modInfo.ModEntry.Logger.LogException(e);
+        }
+        if(modInfo.Dependencies != null) {
+            List<Task> tasks = [];
+            ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Dependencies...]</color>";
+            foreach(KeyValuePair<string, string> dependency in modInfo.Dependencies) {
+                try {
+                    Version version = new(dependency.Value);
+                    UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
+                    if(modEntry != null && modEntry.Version >= version) continue;
+                    tasks.Add(JApi.Send(new DownloadMod(dependency.Key, version)));
+                } catch (Exception e) {
+                    ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
+                    ModEntry.Logger.LogException(e);
+                }
+            }
+            ModEntry.Info.DisplayName = modName + " <color=aqua>[Waiting Dependencies...]</color>";
+            await Task.WhenAll(tasks);
+        }
+        OnUnload0(null);
+        modInfo.ModEntry.Info.DisplayName = modName;
+        Type type;
+        try {
+            type = typeof(JABootstrap).Invoke<Type>("LoadMod", [modInfo]);
+        } catch (Exception e) {
+            modInfo.ModEntry.Logger.Log("Failed to Load JAMod " + modName);
+            modInfo.ModEntry.Logger.LogException(e);
+            modInfo.ModEntry.SetValue("mErrorOnLoading", true);
+            modInfo.ModEntry.SetValue("mActive", false);
+            return;
+        }
+        JAMod mod = GetMods(modName);
+        try {
+            mod.OnToggle(null, true);
+        } catch (Exception e) {
+            mod.LogException(e);
+            mod.ModEntry.SetValue("mActive", false);
+        }
+        if(getModInfo != null) mod.ModInfo(getModInfo);
         ForceReloadMod(type.Assembly);
+    }
+
+    internal static void SetupModInfo(JAModInfo modInfo) {
+        string modName = modInfo.ModEntry.Info.Id;
+        JALib lib = JALib.Instance;
+        bool beta = lib.Setting.Beta[modName]?.ToObject<bool>() ?? false;
+        if(beta != modInfo.IsBetaBranch) {
+            lib.Setting.Beta[modName] = modInfo.IsBetaBranch;
+            lib.SaveSetting();
+        }
+        modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Waiting...]</color>";
     }
 
     internal void ForceReloadMod(Assembly newAssembly) {

@@ -20,6 +20,7 @@ class ApplicatorAPI {
         listener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
         listener.Start();
         listenerTask = Task.Run(Listen);
+        JALib.Instance.Log($"Listening on port: {port}");
         return port;
     }
 
@@ -56,6 +57,6 @@ class ApplicatorAPI {
     public static void LoadMod(string modName) {
         JAMod mod = JAMod.GetMods(modName);
         if(mod == null) ForceApplyMod.ApplyMod(Path.Combine(UnityModManager.modsPath, modName));
-        else mod.ForceReloadMod();
+        else _ = mod.ForceReloadMod();
     }
 }

@@ -27,6 +27,7 @@ class JALib : JAMod {
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
     internal static JAPatcher Patcher;
+    internal JAModInfo JaModInfo;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
         Instance = this;
@@ -35,7 +36,7 @@ class JALib : JAMod {
         Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
         Patcher = new JAPatcher(this);
         Patcher.Patch();
-        SetupModApplicator();
+        JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
         OnEnable();
     }
 
@@ -52,10 +53,10 @@ class JALib : JAMod {
                 key.SetValue("", "URL Protocol");
                 key.SetValue("URL Protocol", "");
                 key.SetValue("AdofaiPath", Environment.CurrentDirectory);
-                key.SetValue("Port", portTask.Result);
                 using RegistryKey key2 = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib\shell\open\command");
                 key2.SetValue("", $"\"{applicationPath}\" \"%1\"");
             }
+            key.SetValue("Port", portTask.Result);
         }
         if(File.Exists(applicationPath)) return;
         Directory.CreateDirectory(applicationFolderPath);
@@ -76,24 +77,19 @@ class JALib : JAMod {
         else type.Invoke("SetupMod", null, modInfo);
     }
 
-    private static void SetupModInfo(JAModInfo modInfo) {
-        string modName = modInfo.ModEntry.Info.Id;
-        bool beta = Instance.Setting.Beta[modName]?.ToObject<bool>() ?? false;
-        if(beta != modInfo.IsBetaBranch) {
-            Instance.Setting.Beta[modName] = modInfo.IsBetaBranch;
-            Instance.SaveSetting();
-        }
-        modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Waiting...]</color>";
-    }
-
     private static async Task SetupMod(JAModInfo modInfo) {
         string modName = modInfo.ModEntry.Info.Id;
         GetModInfo getModInfo = null;
-        if(JApi.Instance != null) {
-            getModInfo = new GetModInfo(modInfo);
-            modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Loading Info...]</color>";
-            await JApi.Send(getModInfo);
-            if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload( modName, getModInfo.LatestVersion);
+        try {
+            if(JApi.Instance != null) {
+                getModInfo = new GetModInfo(modInfo);
+                modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Loading Info...]</color>";
+                await JApi.Send(getModInfo);
+                if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload(modName, getModInfo.LatestVersion);
+            }
+        } catch (Exception e) {
+            modInfo.ModEntry.Logger.Log("Failed to Load ModInfo " + modName);
+            modInfo.ModEntry.Logger.LogException(e);
         }
         await LoadDependencies(modInfo);
         if(updateQueue.TryGetValue(modName, out Version version) && version > modInfo.ModEntry.Version) {
