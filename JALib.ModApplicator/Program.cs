@@ -21,7 +21,7 @@ class Program {
     private const string Domain2 = "jalib2.jongyeol.kr";
     private static string adofaiPath;
     private static AdofaiStatus adofaiStatus = AdofaiStatus.NotSet;
-    private static TcpClient client;
+    private static int port;
     private static JALibStatus jaLibStatus = JALibStatus.NotSet;
     private static Dictionary<string, string> dependencies;
 
@@ -104,15 +104,21 @@ class Program {
         }
         await Task.WhenAll(modInstallTasks);
         bool adofaiRestart = false;
-        if(adofaiStatus == AdofaiStatus.Enabled) {
-            using NetworkStream stream = client.GetStream();
-            using BinaryWriter writer = new(stream);
-            writer.Write(0);
-            byte[] data = Encoding.UTF8.GetBytes(args[0]);
-            writer.Write(data.Length);
-            writer.Write(data);
-            client.Close();
-            goto End;
+        if(adofaiStatus == AdofaiStatus.EnabledWithMod) {
+            try {
+                TcpClient client = new();
+                await client.ConnectAsync("localhost", port);
+                using NetworkStream stream = client.GetStream();
+                using BinaryWriter writer = new(stream);
+                writer.Write(0);
+                byte[] data = Encoding.UTF8.GetBytes(args[0]);
+                writer.Write(data.Length);
+                writer.Write(data);
+                client.Close();
+                goto End;
+            } catch (Exception) {
+                goto AdofaiRestart;
+            }
         }
         switch(jaLibStatus) {
             case JALibStatus.NotInstalled: goto DownloadJALib;
@@ -202,9 +208,7 @@ End:
         try {
             using RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Classes\JALib");
             adofaiPath = (string) key.GetValue("AdofaiPath");
-            client = new TcpClient();
-            int port = (int) key.GetValue("port");
-            client.Connect("localhost", port);
+            port = (int) key.GetValue("port");
             adofaiStatus = AdofaiStatus.EnabledWithMod;
         } catch {
             try {
