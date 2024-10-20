@@ -415,6 +415,7 @@ public abstract class JAMod {
         fieldBuilder.SetConstant(cache);
         MethodInfo dataChangeMethod = typeof(ModReloadCache).Method("GetCachedObject", typeof(object));
         Dictionary<string, JAPatchAttribute> patchAttributes = new();
+        JAPatcher patcher = JALib.Patcher;
         foreach(Type type in oldAssembly.GetTypes()) {
             try {
                 Type newType = newAssembly.GetType(type.FullName);
@@ -430,12 +431,15 @@ public abstract class JAMod {
                 }
                 foreach(MethodInfo method in type.Methods()) {
                     try {
-                        Type[] parameters = method.GetGenericArguments();
-                        for(int i = 0; i < parameters.Length; i++)
-                            if(parameters[i].Assembly == newAssembly) parameters[i] = newAssembly.GetType(parameters[i].FullName);
-                        MethodInfo newMethod = newType.Method(method.Name, method.GetGenericArguments());
-                        if(newMethod == null) return;
-                        int c = method.GetGenericArguments().Length;
+                        Type[] oldParameters = method.GetParameters().Select(parameter => parameter.ParameterType).ToArray();
+                        Type[] parameters = oldParameters.Select(parameterType => parameterType.Assembly == oldAssembly ? newAssembly.GetType(parameterType.FullName) : parameterType).ToArray();
+                        MethodInfo newMethod = newType.Method(method.Name, parameters);
+                        if(newMethod == null) continue;
+                        if(oldParameters.All(parameterType => parameterType.Assembly != oldAssembly)) {
+                            patcher.AddPatch(newMethod, new JAPatchAttribute(method, PatchType.Replace, false));
+                            continue;
+                        }
+                        int c = parameters.Length;
                         int staticCount = -1;
                         int returnCount = -1;
                         if(!method.IsStatic) staticCount = c++;
@@ -453,12 +457,12 @@ public abstract class JAMod {
                         if(returnCount != -1) ilGenerator.Emit(OpCodes.Ldarg, returnCount);
                         if(!method.IsStatic) ilGenerator.Emit(OpCodes.Ldarg, staticCount);
                         for(int i = 0; i < method.GetParameters().Length; i++) {
-                            if(method.GetGenericArguments()[i].Assembly == newAssembly) {
+                            if(parameters[i].Assembly == newAssembly) {
                                 ilGenerator.Emit(OpCodes.Ldsfld, fieldBuilder);
                                 ilGenerator.Emit(OpCodes.Ldarg, i);
-                                if(method.GetGenericArguments()[i].IsValueType) ilGenerator.Emit(OpCodes.Box, method.GetGenericArguments()[i]);
+                                if(parameters[i].IsValueType) ilGenerator.Emit(OpCodes.Box, parameters[i]);
                                 ilGenerator.Emit(OpCodes.Callvirt, dataChangeMethod);
-                                ilGenerator.Emit(method.GetGenericArguments()[i].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, newMethod.GetGenericArguments()[i]);
+                                ilGenerator.Emit(parameters[i].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, parameters[i]);
                             } else ilGenerator.Emit(OpCodes.Ldarg, i);
                         }
                         ilGenerator.Emit(OpCodes.Callvirt, newMethod);
@@ -476,8 +480,11 @@ public abstract class JAMod {
                 LogException(e);
             }
         }
+        if(patchAttributes.Count == 0) return;
         Type patchType = typeBuilder.CreateType();
-        JAPatcher patcher = JALib.Patcher;
-        foreach(KeyValuePair<string, JAPatchAttribute> patchAttribute in patchAttributes) patcher.AddPatch(patchType.GetMethod(patchAttribute.Key), patchAttribute.Value);
+        foreach(KeyValuePair<string, JAPatchAttribute> patchAttribute in patchAttributes) {
+            Log("Force Reload: Patching " + patchAttribute.Key);
+            patcher.AddPatch(patchType.Method(patchAttribute.Key), patchAttribute.Value);
+        }
     }
 }
