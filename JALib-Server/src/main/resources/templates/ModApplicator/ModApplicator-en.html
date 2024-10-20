@@ -14,7 +14,7 @@
     <p>If you want to install the mode manually, you can click the manual installation button.</p>
     <p>If the automatic installer does not open, you can try again by clicking the rerun button.</p>
     <p>If automatic installation continues to fail, please run version <strong>'JALib 1.0.0 beta 10'</strong> or higher again and try.</p>
-    <a th:href="@{/downloadMod/} + ${name} + @{/} + ${version}" class="link-button">Self Download</a> <a th:href="@{jalib://autoApplicator/} + ${name} + @{/} + ${version}" class="link-button">Retry</a> <a href="/downloadMod/JALib/latest">Download JALib</a>
+    <a th:href="@{/downloadMod/} + ${name} + @{/} + ${version}" class="link-button">Self Download</a> <a th:href="@{jalib://autoApplicator/} + ${name} + @{/} + ${version}" class="link-button">Retry</a> <a href="/downloadMod/JALib/latest" class="link-button">Download JALib</a>
 </div>
 <script th:inline="javascript">
     window.onload = function() {

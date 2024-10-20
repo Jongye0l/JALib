@@ -11,7 +11,7 @@
         <h3 th:text="@{적용되는 모드:} + ${fullName}"></h3>
         <h4 th:if="${redirect}" th:text="@{선택하신 모드인} + ${oldFullName} + @{는 강제 업데이트가 되는} + ${updateType} + @{이므로 최신버전으로 이동되었습니다.}"></h4>
         <h4>현재 모드 자동 적용은 윈도우 환경에서만 지원되고 있습니다.</h4>
-        <a th:href="@{/downloadMod/} + ${name} + @{/} + ${version}" class="link-button">수동 설치</a>
+        <a th:href="@{/downloadMod/} + ${name} + @{/} + ${version}" class="link-button">수동 설치</a> <a href="/downloadMod/JALib/latest" class="link-button">JALib 설치</a>
     </div>
 </body>
 </html>
