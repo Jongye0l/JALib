@@ -19,10 +19,6 @@ public class ModApplicatorController extends CustomController {
         info(request, "ModApplicator: " + name + " " + version);
         boolean isKorean = locale == Locale.KOREAN || locale == Locale.KOREA;
         String lang = (isKorean ? "ko" : "en");
-        if(!userAgent.toLowerCase().contains("windows")) {
-            info(request, "ModApplicator Result: Failed (Not Windows), " + lang);
-            return "ModApplicator/Announce/OnlyWindows-" + lang;
-        }
         ModData modData = ModData.getModData(name);
         boolean forceUpdate = false;
         Version ver = new Version(version);
@@ -42,6 +38,10 @@ public class ModApplicatorController extends CustomController {
         }
         model.addAttribute("name", name);
         model.addAttribute("version", version);
+        if(!userAgent.toLowerCase().contains("windows")) {
+            info(request, "ModApplicator Result: Failed (Not Windows), " + lang);
+            return "ModApplicator/Announce/OnlyWindows-" + lang;
+        }
         model.addAttribute("fullName", " " + name + " " + version);
         model.addAttribute("redirect", forceUpdate);
         info(request, "ModApplicator Result: " + name + " " + version + ", " + lang);
