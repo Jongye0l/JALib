@@ -14,7 +14,7 @@
         <p>모드를 수동으로 설치하고 싶다면 수동 설치 버튼을 눌러 설치할 수 있습니다.</p>
         <p>모드 자동 설치기가 열리지 않는다면 재실행 버튼을 눌러 다시 시도할 수 있습니다.</p>
         <p>모드 자동 설치가 계속 진행되지 않는다면 <strong>'JALib 1.0.0 beta 10'</strong> 이상의 버전을 실행해보신 후 다시 진행해주세요.</p>
-        <a th:href="@{/downloadMod/} + ${name} + @{/} + ${version}" class="link-button">수동 설치</a> <a th:href="@{jalib://autoApplicator/} + ${name} + @{/} + ${version}" class="link-button">재실행</a>
+        <a th:href="@{/downloadMod/} + ${name} + @{/} + ${version}" class="link-button">수동 설치</a> <a th:href="@{jalib://autoApplicator/} + ${name} + @{/} + ${version}" class="link-button">재실행</a> <a href="/downloadMod/JALib/latest">JALib 설치</a>
     </div>
     <script th:inline="javascript">
         window.onload = function() {
