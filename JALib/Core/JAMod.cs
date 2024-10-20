@@ -21,6 +21,7 @@ public abstract class JAMod {
     private static Dictionary<string, JAMod> mods = new();
     private static ModuleBuilder _moduleBuilder;
     internal static AssemblyBuilder assemblyBuilder;
+    private static string loadScene;
 
     internal static ModuleBuilder ModuleBuilder {
         get {
@@ -341,7 +342,12 @@ public abstract class JAMod {
             Log("Force Reload: Unloading...");
             MainThread.Run(new JAction(JALib.Instance, () => {
                 try {
+                    JAPatchAttribute patchAttribute = new(ADOBase.LoadScene, PatchType.Replace, false);
+                    JAPatcher patcher = new(JALib.Instance);
+                    patcher.AddPatch(LoadScenePatch, patchAttribute);
+                    patcher.Patch();
                     OnUnload0(ModEntry);
+                    GC.Collect();
                     modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[loading...]</color>";
                     modInfo.ModEntry.Logger.Log("Force Reload: loading...");
                     Type type;
@@ -364,9 +370,14 @@ public abstract class JAMod {
                         mod.LogException(e);
                         mod.ModEntry.SetValue("mActive", false);
                     }
+                    patcher.Dispose();
+                    if(loadScene != null) {
+                        ADOBase.LoadScene(loadScene);
+                        loadScene = null;
+                    }
                     if(getModInfo != null) mod.ModInfo(getModInfo);
                     modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reloading...]</color>";
-                    modInfo.ModEntry.Logger.Log("Force Reload: ForceReloading...");
+                    modInfo.ModEntry.Logger.Log("Force Reload: Force Reloading...");
                     ForceReloadMod(type.Assembly);
                     modInfo.ModEntry.Info.DisplayName = modName;
                     modInfo.ModEntry.Logger.Log("Force Reload: Complete");
@@ -379,6 +390,10 @@ public abstract class JAMod {
             JALib.Instance.Error("Failed to Force Reload Mod " + Name);
             JALib.Instance.LogException(e);
         }
+    }
+
+    private static void LoadScenePatch(string sceneName) {
+        loadScene = sceneName;
     }
 
     internal static void SetupModInfo(JAModInfo modInfo) {
