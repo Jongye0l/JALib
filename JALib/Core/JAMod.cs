@@ -294,6 +294,8 @@ public abstract class JAMod {
 
     internal async Task ForceReloadMod() {
         try {
+            // TODO : Remove This
+            if(GetType().Assembly.GetTypes().Any(type => typeof(MonoBehaviour).IsAssignableFrom(type))) return;
             string modName = ModEntry.Info.Id;
             ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reload...]</color>";
             string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
@@ -376,9 +378,10 @@ public abstract class JAMod {
                         loadScene = null;
                     }
                     if(getModInfo != null) mod.ModInfo(getModInfo);
-                    modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reloading...]</color>";
-                    modInfo.ModEntry.Logger.Log("Force Reload: Force Reloading...");
-                    ForceReloadMod(type.Assembly);
+                    // TODO : Fix this
+                    // modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reloading...]</color>";
+                    // modInfo.ModEntry.Logger.Log("Force Reload: Force Reloading...");
+                    // ForceReloadMod(type.Assembly);
                     modInfo.ModEntry.Info.DisplayName = modName;
                     modInfo.ModEntry.Logger.Log("Force Reload: Complete");
                 } catch (Exception e) {
