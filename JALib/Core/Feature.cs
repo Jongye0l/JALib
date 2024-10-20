@@ -70,7 +70,7 @@ public abstract class Feature {
     }
 
     internal void Unload() {
-        if(Enabled) OnDisable();
+        Disable();
         Patcher.Dispose();
         FeatureSetting.Dispose();
         try {
