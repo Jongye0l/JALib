@@ -14,8 +14,6 @@ public class Settings {
     private static Settings instance;
     public static Class<? extends Settings> clazz = Settings.class;
     private String logPath;
-    private String userDataPath;
-    private String discordUserDataPath;
     private String modDataPath;
     private String adminManagerPath;
     private String tokenPath;

@@ -12,6 +12,5 @@ public class ApplicationStartupListener implements ApplicationListener<Applicati
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         Server.bootstrapRun(new String[0]);
-        ConnectOtherLib.loadModRequest();
     }
 }

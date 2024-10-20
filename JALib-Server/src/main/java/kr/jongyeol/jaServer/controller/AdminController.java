@@ -3,8 +3,6 @@ package kr.jongyeol.jaServer.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.jongyeol.jaServer.ConnectOtherLib;
-import kr.jongyeol.jaServer.ConnectHandler;
-import kr.jongyeol.jaServer.Connection;
 import kr.jongyeol.jaServer.GZipFile;
 import kr.jongyeol.jaServer.data.*;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
@@ -13,7 +11,6 @@ import lombok.Cleanup;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 
 @RestController
@@ -124,71 +121,6 @@ public class AdminController extends CustomController {
         ModData[] filtered = Arrays.stream(modDatas).toArray(ModData[]::new);
         output.writeInt(filtered.length);
         for(ModData modData : filtered) ConnectOtherLib.modToBytes(output, modData);
-        return GZipFile.gzipData(output.toByteArray());
-    }
-
-    @PostMapping("/requestMods")
-    public String addRequestMods(HttpServletResponse response, HttpServletRequest request,
-                                 @RequestBody byte[] data) throws Exception {
-        if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
-        long discordID = input.readLong();
-        DiscordUserData userData = DiscordUserData.getUserData(discordID);
-        RawMod mod = new RawMod(ModData.getModData(input.readUTF()), new Version(input.readUTF()));
-        userData.addRequestMod(mod);
-        ConnectHandler.connections.values().stream().filter(c -> c.connectInfo.steamID == userData.steamID).forEach(Connection::loadModRequest);
-        info(request, "RequestMods Added: " + discordID + "(steam:" + userData.steamID + ") " + mod.mod.getName() + " " + mod.version);
-        return "Complete Add RequestMods";
-    }
-
-    @DeleteMapping("/requestMods")
-    public String removeRequestMods(HttpServletResponse response, HttpServletRequest request,
-                                    @RequestBody byte[] data) throws Exception {
-        if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
-        long discordID = input.readLong();
-        DiscordUserData userData = DiscordUserData.getUserData(discordID);
-        if(input.readBoolean()) {
-            userData.resetRequestMods();
-            info(request, "RequestMods Reset: " + discordID + "(steam:" + userData.steamID + ") ");
-        } else {
-            int i = input.readInt();
-            userData.removeRequestMod(i);
-            info(request, "RequestMods Removed: " + discordID + "(steam:" + userData.steamID + ") " + i);
-        }
-        return "Complete Remove RequestMods";
-    }
-
-    @PutMapping("/requestMods")
-    public String changeRequestMods(HttpServletResponse response, HttpServletRequest request,
-                                 @RequestBody byte[] data) throws Exception {
-        if(checkPermission(response, request)) return null;
-        @Cleanup ByteArrayDataInput input = new ByteArrayDataInput(GZipFile.gunzipData(data));
-        long discordID = input.readLong();
-        DiscordUserData userData = DiscordUserData.getUserData(discordID);
-        int i = input.readInt();
-        RawMod mod = new RawMod(ModData.getModData(input.readUTF()), new Version(input.readUTF()));
-        userData.changeRequestMod(i, mod);
-        info(request, "RequestMods Changed: " + discordID + "(steam:" + userData.steamID + ") " + i + " " + mod.mod.getName() + " " + mod.version);
-        return "Complete Change RequestMods";
-    }
-
-    @GetMapping("/requestMods")
-    public byte[] getRequestMods(HttpServletResponse response, HttpServletRequest request) {
-        if(checkPermission(response, request)) return null;
-        info(request, "Get RequestMods");
-        Collection<DiscordUserData> userDatas = DiscordUserData.getUserData();
-        @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-        output.writeInt(userDatas.size());
-        for(DiscordUserData userData : userDatas) {
-            output.writeLong(userData.steamID);
-            RawMod[] requestMods = userData.getRequestMods();
-            output.writeInt(requestMods.length);
-            for(RawMod mod : requestMods) {
-                output.writeUTF(mod.mod.getName());
-                output.writeUTF(mod.version.toString());
-            }
-        }
         return GZipFile.gzipData(output.toByteArray());
     }
 }

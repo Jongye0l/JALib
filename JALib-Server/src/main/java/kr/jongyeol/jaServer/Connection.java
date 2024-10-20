@@ -1,16 +1,10 @@
 package kr.jongyeol.jaServer;
 
-import kr.jongyeol.jaServer.data.DiscordUserData;
-import kr.jongyeol.jaServer.data.RawMod;
-import kr.jongyeol.jaServer.data.UserData;
 import kr.jongyeol.jaServer.exception.GetBinaryException;
 import kr.jongyeol.jaServer.packet.ByteArrayDataInput;
 import kr.jongyeol.jaServer.packet.ByteArrayDataOutput;
 import kr.jongyeol.jaServer.packet.RequestPacket;
 import kr.jongyeol.jaServer.packet.ResponsePacket;
-import kr.jongyeol.jaServer.packet.request.ConnectInfo;
-import kr.jongyeol.jaServer.packet.response.DownloadModRequest;
-import kr.jongyeol.jaServer.packet.response.PacketResponseError;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.springframework.web.socket.BinaryMessage;
@@ -21,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 public class Connection {
     public Logger logger;
     private WebSocketSession session;
-    public ConnectInfo connectInfo;
 
     @SneakyThrows
     public Connection(WebSocketSession session) {
@@ -58,11 +51,6 @@ public class Connection {
                 if(logger == null) return;
                 logger.error("Error in " + method + " packet");
                 logger.error(e);
-                try {
-                    sendData(new PacketResponseError(id, e));
-                } catch (Exception ex) {
-                    if(logger != null) logger.error(ex);
-                }
             }
         });
     }
@@ -99,24 +87,10 @@ public class Connection {
                 logger.close();
             }
             logger = null;
-            connectInfo = null;
             ConnectHandler.connections.remove(session, this);
         } catch (Exception e) {
             if(logger != null) logger.error(e);
             throw e;
         }
-    }
-
-    public void loadModRequest() {
-        UserData.getUserData(connectInfo.steamID).forEach(l -> {
-            try {
-                for(RawMod rawMod : DiscordUserData.getUserData(l).getAndRemoveRequestMods()) {
-                    DownloadModRequest downloadModRequest = new DownloadModRequest(rawMod);
-                    sendData(downloadModRequest);
-                }
-            } catch (Exception e) {
-                if(logger != null) logger.error(e);
-            }
-        });
     }
 }
