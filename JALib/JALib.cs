@@ -14,7 +14,6 @@ using JALib.Core.Setting;
 using JALib.Tools;
 using Microsoft.Win32;
 using TinyJson;
-using UnityEngine;
 using UnityModManagerNet;
 
 namespace JALib;
@@ -47,7 +46,7 @@ class JALib : JAMod {
         }
         Task<int> portTask = Task.Run(ApplicatorAPI.Connect);
         string applicationFolderPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator");
-        string applicationPath = System.IO.Path.Combine(applicationFolderPath, "JALib.ModApplicator.exe");
+        string applicationPath = System.IO.Path.Combine(applicationFolderPath, "JALib ModApplicator.exe");
         using(RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib")) {
             if(key.GetValue("URL Protocol") == null) {
                 key.SetValue("", "URL Protocol");
@@ -60,7 +59,7 @@ class JALib : JAMod {
         }
         if(File.Exists(applicationPath)) return;
         Directory.CreateDirectory(applicationFolderPath);
-        Process[] processes = Process.GetProcessesByName("JALib.ModApplicator.exe");
+        Process[] processes = Process.GetProcessesByName("JALib ModApplicator.exe");
         if(processes.Length > 0) {
             foreach(Process process in processes) {
                 process.WaitForExit(3000);

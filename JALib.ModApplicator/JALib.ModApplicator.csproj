@@ -9,7 +9,7 @@
         <OutputType>WinExe</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
         <RootNamespace>JALib.ModApplicator</RootNamespace>
-        <AssemblyName>JALib.ModApplicator</AssemblyName>
+        <AssemblyName>JALib ModApplicator</AssemblyName>
         <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
