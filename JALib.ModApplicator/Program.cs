@@ -197,6 +197,8 @@ End:
     }
 
     public static void CopyFile(string entryPath, ZipArchiveEntry entry) {
+        string directory = Path.GetDirectoryName(entryPath);
+        if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
         using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
         entry.Open().CopyTo(fileStream);
     }
