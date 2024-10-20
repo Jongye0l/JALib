@@ -46,6 +46,7 @@ public abstract class JAMod {
     protected string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
     internal int Gid;
+    internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;

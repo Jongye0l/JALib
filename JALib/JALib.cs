@@ -26,7 +26,6 @@ class JALib : JAMod {
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
     internal static JAPatcher Patcher;
-    internal JAModInfo JaModInfo;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
         Instance = this;
@@ -35,7 +34,11 @@ class JALib : JAMod {
         Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
         Patcher = new JAPatcher(this);
         Patcher.Patch();
-        JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
+        try {
+            JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
+        } catch (Exception) {
+            // ignored
+        }
         OnEnable();
     }
 
