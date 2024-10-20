@@ -121,7 +121,7 @@ public class ModData {
 
     public void setBetaVersion(Version betaVersion) throws IOException {
         this.betaVersion = betaVersion;
-        this.betaMap.put(version, true);
+        this.betaMap.put(betaVersion, true);
         save();
     }
 
