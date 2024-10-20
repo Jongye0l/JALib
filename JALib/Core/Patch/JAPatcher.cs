@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
-using JALib.JAException;
 using JALib.Tools;
 
 namespace JALib.Core.Patch;
@@ -15,134 +13,6 @@ public class JAPatcher : IDisposable {
     private JAMod mod;
     public event FailPatch OnFailPatch;
     public bool patched { get; private set; }
-
-
-    #region CustomPatchPatching
-    private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
-
-    static JAPatcher() {
-        Harmony harmony = JALib.Harmony;
-        Assembly assembly = typeof(Harmony).Assembly;
-        Type patchFunctions = assembly.GetType("HarmonyLib.PatchFunctions");
-        harmony.CreateReversePatcher(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperReverse).Method)).Patch();
-        harmony.CreateReversePatcher(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchReverse).Method)).Patch();
-        harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
-        harmony.Patch(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
-        harmony.Patch(assembly.GetType("HarmonyLib.MethodCopier").Method("GetInstructions"), new HarmonyMethod(((Delegate) GetInstructions).Method));
-    }
-
-    private static bool PatchUpdateWrapperPatch(MethodBase original, PatchInfo patchInfo, ref MethodInfo __result) {
-        try {
-            if(!jaPatches.TryGetValue(original, out JAPatchInfo jaPatchInfo)) return true;
-            __result = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
-            return false;
-        } catch (Exception e) {
-            JALib.Instance.LogException(e);
-            return true;
-        }
-    }
-
-    private static MethodInfo PatchUpdateWrapper(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        MethodInfo replacement = PatchUpdateWrapperReverse(original, patchInfo, jaPatchInfo);
-        foreach(ReversePatchData reversePatch in jaPatchInfo.reversePatches) UpdateReversePatch(reversePatch, patchInfo, jaPatchInfo);
-        return replacement;
-    }
-
-    private static MethodInfo PatchUpdateWrapperReverse(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        _ = Transpiler(null);
-        throw new NotImplementedException();
-
-        IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            yield return new Code.Ldarg_0_();
-            yield return new Code.Ldarg_1_();
-            yield return new Code.Ldarg_2_();
-            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(PatchInfo), typeof(JAPatchInfo)));
-            using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            while(enumerator.MoveNext()) {
-                CodeInstruction code = enumerator.Current;
-                if(code.opcode != OpCodes.Ldloca_S && code.opcode != OpCodes.Ldloca) continue;
-                enumerator.MoveNext();
-                if(enumerator.Current.opcode != OpCodes.Call && enumerator.Current.opcode != OpCodes.Callvirt ||
-                   enumerator.Current.operand is not MethodInfo { Name: "CreateReplacement" }) continue;
-                yield return code;
-                break;
-            }
-            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement"));
-            while(enumerator.MoveNext()) yield return enumerator.Current;
-        }
-    }
-
-    private static bool PatchReversePatchPatch(HarmonyMethod standin, MethodBase original, MethodInfo postTranspiler, ref MethodInfo __result) {
-        try {
-            if(standin == null || standin.method == null ||
-               standin.reversePatchType == HarmonyReversePatchType.Snapshot ||
-               !jaPatches.TryGetValue(original, out JAPatchInfo jaPatchInfo) ||
-               jaPatchInfo.replaces.Length == 0) return true;
-            __result = PatchReversePatchReverse(standin, original, postTranspiler, jaPatchInfo);
-            return false;
-        } catch (Exception e) {
-            JALib.Instance.LogException(e);
-            return true;
-        }
-    }
-
-    private static MethodInfo PatchReversePatchReverse(HarmonyMethod standin, MethodBase original, MethodInfo postTranspiler, JAPatchInfo jaPatchInfo) {
-        _ = Transpiler(null);
-        throw new NotImplementedException();
-
-        IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            yield return new Code.Ldarg_0_();
-            yield return new Code.Ldarg_1_();
-            yield return new Code.Ldarg_3_();
-            yield return new Code.Ldarg_2_();
-            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(MethodBase), typeof(Patches), typeof(JAPatchInfo), typeof(MethodInfo), typeof(bool)));
-            while(enumerator.MoveNext()) {
-                CodeInstruction code = enumerator.Current;
-                if(code.opcode != OpCodes.Ldloca_S && code.opcode != OpCodes.Ldloca) continue;
-                enumerator.MoveNext();
-                if(enumerator.Current.opcode != OpCodes.Call && enumerator.Current.opcode != OpCodes.Callvirt ||
-                   enumerator.Current.operand is not MethodInfo { Name: "CreateReplacement" }) continue;
-                yield return code;
-                break;
-            }
-            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement"));
-            while(enumerator.MoveNext()) yield return enumerator.Current;
-        }
-    }
-
-    private static MethodInfo UpdateReversePatch(ReversePatchData data, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        _ = Transpiler(null);
-        throw new NotImplementedException();
-
-        IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            yield return new Code.Ldarg_0_();
-            yield return new Code.Ldarg_1_();
-            yield return new Code.Ldarg_2_();
-            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(ReversePatchData), typeof(PatchInfo), typeof(JAPatchInfo)));
-            while(enumerator.MoveNext()) {
-                CodeInstruction code = enumerator.Current;
-                if(code.opcode != OpCodes.Ldloca_S && code.opcode != OpCodes.Ldloca) continue;
-                enumerator.MoveNext();
-                if(enumerator.Current.opcode != OpCodes.Call && enumerator.Current.opcode != OpCodes.Callvirt ||
-                   enumerator.Current.operand is not MethodInfo { Name: "CreateReplacement" }) continue;
-                yield return code;
-                break;
-            }
-            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement"));
-            while(enumerator.MoveNext()) yield return enumerator.Current;
-        }
-    }
-
-    internal static bool GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, ref List<CodeInstruction> __result) {
-        if(method == null || generator == null || maxTranspilers < 1 || !jaPatches.TryGetValue(method, out JAPatchInfo jaPatchInfo) || jaPatchInfo.replaces.Length == 0) return true;
-        __result = JAMethodPatcher.GetInstructions(generator, method, maxTranspilers, jaPatchInfo);
-        return false;
-    }
-
-    #endregion
-
 
     #region CustomPatchPatching
     private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
