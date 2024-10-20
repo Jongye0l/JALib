@@ -59,7 +59,11 @@ public class JALibController extends CustomController {
                     .body(resource);
             }
             ModData modData = ModData.getModData(name);
-            Version ver = new Version(version);
+            Version ver = version.toLowerCase().equals("latest") ? null : new Version(version);
+            if(ver == null) {
+                ver = modData.getVersion();
+                if(ver == null) ver = modData.getBetaVersion();
+            }
             return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(modData.getDownloadLink().getLink(ver)))
                 .build();
