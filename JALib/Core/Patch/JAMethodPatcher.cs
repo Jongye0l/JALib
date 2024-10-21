@@ -410,14 +410,14 @@ class JAMethodPatcher {
                         if(field == AddPrefixesSubArguments[0]) {
                             CodeInstruction next2 = enumerator.MoveNext() ? enumerator.Current : null;
                             if(next2 != null && next2.opcode == OpCodes.Ldfld && next2.operand is FieldInfo { Name: "emitter" })
-                                code = new CodeInstruction(OpCodes.Ldloc, emitter);
+                                code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels).WithBlocks(code.blocks);
                             else {
                                 yield return code;
                                 yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
                                 code = next2;
                             }
-                        } else if(field == AddPrefixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2);
-                        else if(field == AddPrefixesSubArguments[2]) code = new CodeInstruction(OpCodes.Ldarg_3);
+                        } else if(field == AddPrefixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
+                        else if(field == AddPrefixesSubArguments[2]) code = new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
                         else {
                             MethodInfo method = null;
                             while(enumerator.MoveNext()) {
@@ -555,16 +555,16 @@ class JAMethodPatcher {
                         if(field == AddPostfixesSubArguments[0]) {
                             CodeInstruction next2 = enumerator.MoveNext() ? enumerator.Current : null;
                             if(next2 != null && next2.opcode == OpCodes.Ldfld && next2.operand is FieldInfo { Name: "emitter" })
-                                code = new CodeInstruction(OpCodes.Ldloc, emitter);
+                                code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels).WithBlocks(code.blocks);
                             else {
                                 yield return code;
                                 yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
                                 code = next2;
                             }
-                        } else if(field == AddPostfixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2);
-                        else if(field == AddPostfixesSubArguments[2]) code =new CodeInstruction(OpCodes.Ldarg_3);
-                        else if(field == AddPostfixesSubArguments[3]) code = new CodeInstruction(OpCodes.Ldarg_S, 4);
-                        else if(field == AddPostfixesSubArguments[4]) code = new CodeInstruction(next.opcode == OpCodes.Stfld ? OpCodes.Starg_S : OpCodes.Ldarg_S, 5);
+                        } else if(field == AddPostfixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
+                        else if(field == AddPostfixesSubArguments[2]) code =new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
+                        else if(field == AddPostfixesSubArguments[3]) code = new CodeInstruction(OpCodes.Ldarg_S, 4).WithLabels(code.labels).WithBlocks(code.blocks);
+                        else if(field == AddPostfixesSubArguments[4]) code = new CodeInstruction(next.opcode == OpCodes.Stfld ? OpCodes.Starg_S : OpCodes.Ldarg_S, 5).WithLabels(code.labels).WithBlocks(code.blocks);
                         else {
                             MethodInfo method = null;
                             while(enumerator.MoveNext()) {
