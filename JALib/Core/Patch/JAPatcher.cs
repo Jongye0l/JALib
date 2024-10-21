@@ -264,7 +264,7 @@ public class JAPatcher : IDisposable {
             mod = mod
         }, patchInfo, jaPatchInfo);
         typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools").Invoke("RememberObject", patchMethod, replacement);
-        if(!attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
+        if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
     }
 
     private static bool CheckRemove(MethodInfo method) {
@@ -314,7 +314,7 @@ public class JAPatcher : IDisposable {
                     jaPatches[patchAttribute.MethodBase] = jaPatchInfo;
                 }
             } else if(baseAttribute is JAReversePatchAttribute reversePatchAttribute) {
-                if(reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
+                if(reversePatchAttribute.PatchType == ReversePatchType.Original || reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
                 JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(reversePatchAttribute.Data.original);
                 if(jaPatchInfo == null) continue;
                 jaPatchInfo.reversePatches.Remove(reversePatchAttribute.Data);
