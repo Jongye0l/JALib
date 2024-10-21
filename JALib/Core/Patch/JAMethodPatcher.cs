@@ -195,7 +195,7 @@ class JAMethodPatcher {
                 if(code.opcode == OpCodes.Ldarg_0) code = originalArg0;
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPrefixes" }) {
                     yield return new Code.Ldarg_0_();
-                    yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("AddPrefixes"));
+                    code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("AddPrefixes"));
                 }
                 switch(state) {
                     case 0:
