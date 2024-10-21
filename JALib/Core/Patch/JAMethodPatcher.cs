@@ -12,8 +12,6 @@ namespace JALib.Core.Patch;
 class JAMethodPatcher {
     private static Dictionary<int, int> _parameterMap = new();
     private static Dictionary<int, FieldInfo> _parameterFields = new();
-    private readonly MethodBase original;
-    private readonly MethodBase source;
     private readonly bool debug;
     private HarmonyLib.Patch[] prefixes;
     private HarmonyLib.Patch[] postfixes;
@@ -24,15 +22,9 @@ class JAMethodPatcher {
     private TriedPatchData[] tryPrefixes;
     private TriedPatchData[] tryPostfixes;
     private readonly object originalPatcher;
-    private readonly ILGenerator il;
-    private readonly int idx;
-    private readonly JAEmitter emitter;
-    private readonly Type returnType;
-    private readonly bool useStructReturnBuffer;
     private readonly bool customReverse;
 
     public JAMethodPatcher(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        this.original = original;
         debug = patchInfo.Debugging || Harmony.DEBUG;
         SortPatchMethods(original, patchInfo.prefixes.Concat(jaPatchInfo.tryPrefixes).Concat(jaPatchInfo.removes).ToArray(), debug, out prefixes);
         removes = jaPatchInfo.removes;
@@ -55,17 +47,11 @@ class JAMethodPatcher {
             transpiler.Insert(0, method);
         }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, null, prefix, postfix, transpiler, finalizer, debug);
-        il = originalPatcher.GetValue<ILGenerator>("il");
-        idx = prefixes.Length + postfixes.Length + finalizers.Length;
-        emitter = new JAEmitter(originalPatcher.GetValue("emitter"));
-        useStructReturnBuffer = originalPatcher.GetValue<bool>("useStructReturnBuffer");
-        returnType = original is MethodInfo info ? info.ReturnType : typeof(void);
     }
 
     public JAMethodPatcher(HarmonyMethod standin, MethodBase source, JAPatchInfo jaPatchInfo, MethodInfo postTranspiler) {
-        original = standin.method;
-        this.source = source;
-        Patches patchInfo = Harmony.GetPatchInfo(this.source);
+        MethodBase original = standin.method;
+        Patches patchInfo = Harmony.GetPatchInfo(source);
         debug = standin.debug.GetValueOrDefault() || Harmony.DEBUG;
         prefixes = postfixes = finalizers = removes = tryPrefixes = tryPostfixes = [];
         List<MethodInfo> none = [];
@@ -82,16 +68,10 @@ class JAMethodPatcher {
             transpiler.Insert(0, method);
         }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source, none, none, transpiler, none, debug);
-        il = originalPatcher.GetValue<ILGenerator>("il");
-        idx = prefixes.Length + postfixes.Length + finalizers.Length;
-        emitter = new JAEmitter(originalPatcher.GetValue("emitter"));
-        useStructReturnBuffer = originalPatcher.GetValue<bool>("useStructReturnBuffer");
-        returnType = original is MethodInfo info ? info.ReturnType : typeof(void);
     }
 
     public JAMethodPatcher(ReversePatchData data, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        original = data.patchMethod;
-        source = data.original;
+        MethodBase original = data.patchMethod;
         debug = data.debug || Harmony.DEBUG;
         JAReversePatchAttribute attribute = data.attribute;
         JAMod mod = data.mod;
@@ -142,16 +122,11 @@ class JAMethodPatcher {
                 }
             }
         }
-        originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source,
+        originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, data.original,
             prefixes.Select(patch => patch.PatchMethod).ToList(),
             postfixes.Select(patch => patch.PatchMethod).ToList(),
             transpilers.Select(patch => patch.PatchMethod).ToList(),
             finalizers.Select(patch => patch.PatchMethod).ToList(), debug);
-        il = originalPatcher.GetValue<ILGenerator>("il");
-        idx = prefixes.Length + postfixes.Length + finalizers.Length;
-        emitter = new JAEmitter(originalPatcher.GetValue("emitter"));
-        useStructReturnBuffer = originalPatcher.GetValue<bool>("useStructReturnBuffer");
-        returnType = original is MethodInfo info ? info.ReturnType : typeof(void);
         customReverse = true;
     }
 
@@ -283,10 +258,10 @@ class JAMethodPatcher {
                             Label replaceIsSet = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brtrue, replaceIsSet);
                             yield return new Code.Pop_();
-                            yield return new Code.Ldarg_0_();
-                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "source"));
-                            yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(replaceIsSet);
-                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "original"));
+                            yield return originalArg0;
+                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "source"));
+                            yield return originalArg0.Clone().WithLabels(replaceIsSet);
+                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "original"));
                             yield return new Code.Ldarg_0_();
                             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "customReverse"));
                             yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("SetupParameter"));
@@ -483,7 +458,7 @@ class JAMethodPatcher {
                             Label falseLabel = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
                             yield return new Code.Ldarg_0_();
-                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "il"));
+                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
                             yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
                             yield return getType;
                             yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
@@ -508,7 +483,10 @@ class JAMethodPatcher {
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && instruction.operand == (object) 4)
                                     yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Prefix Patch ");
-                                else if(instruction.opcode != OpCodes.Ret) yield return instruction;
+                                else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
+                                    instruction.operand = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+                                    yield return instruction;
+                                } else if(instruction.opcode != OpCodes.Ret) yield return instruction;
                             }
                             state++;
                             continue;
@@ -556,7 +534,7 @@ class JAMethodPatcher {
                 Label falseLabel = generator.DefineLabel();
                 yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
                 yield return new Code.Ldarg_0_();
-                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "il"));
+                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
                 yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
                 yield return getType;
                 yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
@@ -616,7 +594,10 @@ class JAMethodPatcher {
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && instruction.operand == (object) 4)
                                     yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Postfix Patch ");
-                                else if(instruction.opcode != OpCodes.Ret) yield return instruction;
+                                else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
+                                    instruction.operand = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+                                    yield return instruction;
+                                } else if(instruction.opcode != OpCodes.Ret) yield return instruction;
                             }
                             continue;
                         }
@@ -724,19 +705,20 @@ class JAMethodPatcher {
         MethodInfo replace = SortPatchMethods(method, jaPatchInfo.replaces, false, out _).Last();
         LocalBuilder[] existingVariables = method != null ? methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", generator, replace) : throw new ArgumentNullException(nameof (method));
         bool useShift = typeof(Harmony).Assembly.GetType("HarmonyLib.StructReturnBuffer").Invoke<bool>("NeedsFix", [method]);
-        JAMethodCopier methodCopier = new(replace, generator, existingVariables);
-        methodCopier.SetArgumentShift(useShift);
+        object methodCopier = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodCopier").New(replace, generator, existingVariables);
+        methodCopier.Invoke("SetArgumentShift", useShift);
         Patches patchInfo = Harmony.GetPatchInfo(method);
-        methodCopier.AddTranspiler(((Delegate) ChangeParameter).Method);
+        List<MethodInfo> transpilers = methodCopier.GetValue<List<MethodInfo>>("transpilers");
+        transpilers.Add(((Delegate) ChangeParameter).Method);
         maxTranspilers--;
         if(patchInfo != null) {
             List<MethodInfo> sortedPatchMethods = SortPatchMethods(method, patchInfo.Transpilers.ToArray(), false, out _);
             for(int index = 0; index < maxTranspilers && index < sortedPatchMethods.Count; ++index)
-                methodCopier.AddTranspiler(sortedPatchMethods[index]);
+                transpilers.Add(sortedPatchMethods[index]);
         }
         lock(_parameterMap) {
             SetupParameter(replace, method, false);
-            return methodCopier.Finalize(null, null, out _);
+            return methodCopier.Invoke<List<CodeInstruction>>("Finalize", [typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter"), typeof(List<Label>), typeof(bool).MakeByRefType()], null, null, false);
         }
     }
 }
