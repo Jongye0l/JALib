@@ -23,6 +23,7 @@ public class JAPatcher : IDisposable {
         Type patchFunctions = assembly.GetType("HarmonyLib.PatchFunctions");
         harmony.CreateReversePatcher(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperReverse).Method)).Patch();
         harmony.CreateReversePatcher(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchReverse).Method)).Patch();
+        harmony.CreateReversePatcher(assembly.GetType("HarmonyLib.MethodPatcher").Method("CreateReplacement"), new HarmonyMethod(((Delegate) JAMethodPatcher.CreateReplacement).Method)).Patch();
         JAMethodPatcher.LoadAddPrePostMethod(harmony);
         harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
         harmony.Patch(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
@@ -51,9 +52,9 @@ public class JAPatcher : IDisposable {
         throw new NotImplementedException();
 
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            yield return new Code.Ldarg_0_();
-            yield return new Code.Ldarg_1_();
-            yield return new Code.Ldarg_2_();
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldarg_1);
+            yield return new CodeInstruction(OpCodes.Ldarg_2);
             yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(PatchInfo), typeof(JAPatchInfo)));
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             while(enumerator.MoveNext()) {
@@ -90,11 +91,11 @@ public class JAPatcher : IDisposable {
 
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            yield return new Code.Ldarg_0_();
-            yield return new Code.Ldarg_1_();
-            yield return new Code.Ldarg_3_();
-            yield return new Code.Ldarg_2_();
-            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(MethodBase), typeof(Patches), typeof(JAPatchInfo), typeof(MethodInfo), typeof(bool)));
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldarg_1);
+            yield return new CodeInstruction(OpCodes.Ldarg_3);
+            yield return new CodeInstruction(OpCodes.Ldarg_2);
+            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(HarmonyMethod), typeof(MethodBase), typeof(JAPatchInfo), typeof(MethodInfo)));
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
                 if(code.opcode != OpCodes.Ldloca_S && code.opcode != OpCodes.Ldloca) continue;
@@ -115,9 +116,9 @@ public class JAPatcher : IDisposable {
 
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            yield return new Code.Ldarg_0_();
-            yield return new Code.Ldarg_1_();
-            yield return new Code.Ldarg_2_();
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldarg_1);
+            yield return new CodeInstruction(OpCodes.Ldarg_2);
             yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(ReversePatchData), typeof(PatchInfo), typeof(JAPatchInfo)));
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
