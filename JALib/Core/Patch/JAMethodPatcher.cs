@@ -478,14 +478,15 @@ class JAMethodPatcher {
                         if((code.opcode == OpCodes.Call || code.opcode == OpCodes.Callvirt) && code.operand is MethodInfo { Name: "Emit" }) {
                             yield return code;
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
-                                if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter);
+                                if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
                                     yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Prefix Patch ");
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     yield return instruction;
-                                } else if(instruction.opcode != OpCodes.Ret) yield return instruction;
+                                } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(instruction.labels);
+                                else yield return instruction;
                             }
                             state++;
                             continue;
@@ -589,14 +590,15 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Br_S, loop);
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(end);
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
-                                if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter);
+                                if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && instruction.operand == (object) 4)
                                     yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Postfix Patch ");
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     yield return instruction;
-                                } else if(instruction.opcode != OpCodes.Ret) yield return instruction;
+                                } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(instruction.labels);
+                                else yield return instruction;
                             }
                             continue;
                         }
