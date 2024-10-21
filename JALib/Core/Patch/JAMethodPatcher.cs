@@ -534,9 +534,9 @@ class JAMethodPatcher {
                 yield return new CodeInstruction(OpCodes.Ldnull);
                 yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
                 yield return new CodeInstruction(OpCodes.Ldarg_0);
-                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(HarmonyLib.Patch), "tryPostfixes"));
+                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
                 yield return new CodeInstruction(OpCodes.Ldarg_1);
-                yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Method("Contains").MakeGenericMethod(typeof(IEnumerable<HarmonyLib.Patch>)));
+                yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(IEnumerable<HarmonyLib.Patch>)));
                 Label falseLabel = generator.DefineLabel();
                 yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
                 yield return new CodeInstruction(OpCodes.Ldarg_0);
@@ -553,12 +553,14 @@ class JAMethodPatcher {
                 yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
                 yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
             }
-            int state = 0;
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
                 if(code.opcode == OpCodes.Ldarg_0 && enumerator.MoveNext()) {
                     CodeInstruction next = enumerator.Current;
+                    List<CodeInstruction> queue = [];
+                    Recheck:
                     if(next.opcode == OpCodes.Ldfld || next.opcode == OpCodes.Ldflda || next.opcode == OpCodes.Stfld) {
+                        foreach(CodeInstruction instruction in queue) yield return instruction;
                         FieldInfo field = (FieldInfo) next.operand;
                         if(field == AddPostfixesSubArguments[0]) {
                             CodeInstruction next2 = enumerator.MoveNext() ? enumerator.Current : null;
@@ -588,13 +590,13 @@ class JAMethodPatcher {
                             Label end = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(loop);
                             yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("MoveNext"));
-                            yield return new CodeInstruction(OpCodes.Brfalse_S, end);
+                            yield return new CodeInstruction(OpCodes.Brfalse, end);
                             yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar);
                             yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("get_Current"));
                             yield return new CodeInstruction(OpCodes.Stloc, tmpBoxVar);
                             foreach(CodeInstruction repeat in PatchProcessor.GetCurrentInstructions(method, generator: generator))
                                 if(repeat.opcode != OpCodes.Ret) yield return repeat;
-                            yield return new CodeInstruction(OpCodes.Br_S, loop);
+                            yield return new CodeInstruction(OpCodes.Br, loop);
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(end);
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
                                 if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
@@ -602,17 +604,22 @@ class JAMethodPatcher {
                                 if(instruction.operand is LocalBuilder) instruction.operand = notUsingLocal;
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
-                                else if(instruction.opcode == OpCodes.Ldarg_S && instruction.operand == (object) 4)
+                                else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
                                     yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Postfix Patch ");
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
-                                    instruction.operand = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+                                    instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     yield return instruction;
                                 } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(instruction.labels);
                                 else yield return instruction;
                             }
                             continue;
                         }
-                    } else throw new Exception("This Code Is Not field: " + next.opcode);
+                    } else {
+                        if(!enumerator.MoveNext()) throw new Exception("This Code Is Not field: " + next.opcode);
+                        queue.Add(next);
+                        next = enumerator.Current;
+                        goto Recheck;
+                    }
                 } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix);
                 yield return code;
             }
