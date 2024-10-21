@@ -400,6 +400,7 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Stloc, emitter);
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
+            LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
             int state = 0;
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
@@ -466,6 +467,7 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Ldc_I4_0);
                             yield return new CodeInstruction(OpCodes.Ldnull);
                             yield return new CodeInstruction(OpCodes.Newobj, typeof(ExceptionBlock).Constructor(typeof(ExceptionBlockType), typeof(Type)));
+                            yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
                             yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
                             state++;
@@ -478,6 +480,9 @@ class JAMethodPatcher {
                         if((code.opcode == OpCodes.Call || code.opcode == OpCodes.Callvirt) && code.operand is MethodInfo { Name: "Emit" }) {
                             yield return code;
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
+                                if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
+                                   instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
+                                if(instruction.operand is LocalBuilder) instruction.operand = notUsingLocal;
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
@@ -524,6 +529,7 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Stloc, emitter);
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
+            LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
             {
                 yield return new CodeInstruction(OpCodes.Ldnull);
                 yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
@@ -543,6 +549,7 @@ class JAMethodPatcher {
                 yield return new CodeInstruction(OpCodes.Ldc_I4_0);
                 yield return new CodeInstruction(OpCodes.Ldnull);
                 yield return new CodeInstruction(OpCodes.Newobj, typeof(ExceptionBlock).Constructor(typeof(ExceptionBlockType), typeof(Type)));
+                yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
                 yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
                 yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
             }
@@ -590,6 +597,9 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Br_S, loop);
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(end);
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
+                                if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
+                                   instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
+                                if(instruction.operand is LocalBuilder) instruction.operand = notUsingLocal;
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && instruction.operand == (object) 4)
