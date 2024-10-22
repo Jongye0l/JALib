@@ -85,7 +85,7 @@ class JALib : JAMod {
         try {
             if(JApi.Instance != null) {
                 getModInfo = new GetModInfo(modInfo);
-                modInfo.ModEntry.Info.DisplayName =  modName + " <color=gray>[Loading Info...]</color>";
+                modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
                 await JApi.Send(getModInfo);
                 if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload(modName, getModInfo.LatestVersion);
             }
