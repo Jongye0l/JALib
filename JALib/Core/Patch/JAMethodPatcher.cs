@@ -164,16 +164,16 @@ class JAMethodPatcher {
             int state = 0;
             FieldInfo replace = SimpleReflect.Field(typeof(JAMethodPatcher), "replace");
             CodeInstruction originalArg0 = new(OpCodes.Ldloc, patcher);
-            Label removeLabel = default;
+            Label removeLabel = generator.DefineLabel();
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
-                if(code.opcode == OpCodes.Ldarg_0) code = originalArg0;
+                if(code.opcode == OpCodes.Ldarg_0) code = originalArg0.Clone().WithLabels(code.labels);
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPrefixes" }) {
-                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                    yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels);
                     code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("AddPrefixes"));
                 }
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPostfixes" }) {
-                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                    yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels);
                     code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("AddPostfixes"));
                 }
                 switch(state) {
@@ -213,14 +213,13 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
                             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes"));
                             yield return new CodeInstruction(OpCodes.Ldlen);
-                            removeLabel = generator.DefineLabel();
+                            enumerator.MoveNext();
+                            enumerator.MoveNext();
+                            CodeInstruction moveLabel = enumerator.Current;
                             yield return new CodeInstruction(OpCodes.Brtrue, removeLabel);
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
                             yield return new CodeInstruction(OpCodes.Ldfld, replace);
-                            enumerator.MoveNext();
-                            yield return enumerator.Current;
-                            enumerator.MoveNext();
-                            CodeInstruction moveLabel = enumerator.Current;
+                            yield return new CodeInstruction(OpCodes.Ldlen);
                             yield return moveLabel;
                             yield return new CodeInstruction(OpCodes.Pop);
                             yield return originalArg0;
@@ -274,10 +273,10 @@ class JAMethodPatcher {
                             foreach(CodeInstruction finalInstruction in finalInstructions) yield return finalInstruction;
                             Label tryLeave = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Leave, tryLeave);
-                            yield return new CodeInstruction(OpCodes.Ldloc, locking).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginFinallyBlock));
+                            yield return new CodeInstruction(OpCodes.Ldloc, locking).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
                             Label lockFail = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brfalse, lockFail);
-                            yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap")).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
+                            yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap")).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginFinallyBlock));
                             yield return new CodeInstruction(OpCodes.Call, typeof(Monitor).Method("Exit"));
                             yield return new CodeInstruction(OpCodes.Endfinally).WithLabels(lockFail).WithBlocks(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
                             Label after = generator.DefineLabel();
@@ -294,17 +293,15 @@ class JAMethodPatcher {
                         if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPostfixes" }) {
                             yield return code;
                             enumerator.MoveNext();
-                            CodeInstruction next = enumerator.Current;
-                            yield return next;
-                            if(next.opcode == OpCodes.Ldloc || next.opcode == OpCodes.Ldloc_S) {
-                                yield return new CodeInstruction(OpCodes.Nop).WithLabels(removeLabel);
-                                continue;
+                            code = enumerator.Current;
+                            if(code.opcode == OpCodes.Stloc || code.opcode == OpCodes.Stloc_S) {
+                                yield return code;
+                                code = new CodeInstruction(OpCodes.Nop).WithLabels(removeLabel);
                             }
                         }
                         break;
                 }
                 yield return code;
-                break;
             }
         }
     }
