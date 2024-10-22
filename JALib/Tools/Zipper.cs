@@ -64,7 +64,9 @@ public static class Zipper {
             string entryPath = Path.Combine(path, entry.FullName);
             if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
             else {
-                using FileStream fileStream = new(entryPath, FileMode.Create);
+                string directory = Path.GetDirectoryName(entryPath);
+                if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+                using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
                 entry.Open().CopyTo(fileStream);
             }
         }

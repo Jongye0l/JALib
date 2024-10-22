@@ -43,10 +43,7 @@ class Installer {
             foreach(ZipArchiveEntry entry in archive.Entries) {
                 string entryPath = Path.Combine(modEntry.Path, entry.FullName);
                 if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
-                else {
-                    await using FileStream fileStream = new(entryPath, FileMode.Create);
-                    await entry.Open().CopyToAsync(fileStream);
-                }
+                else CopyFile(entryPath, entry);
             }
             string path = Path.Combine(modEntry.Path, "Info.json");
             if(!File.Exists(path)) path = Path.Combine(modEntry.Path, "info.json");
@@ -64,6 +61,13 @@ class Installer {
             modEntry.Info.DisplayName = modName;
             return false;
         }
+    }
+
+    private static void CopyFile(string entryPath, ZipArchiveEntry entry) {
+        string directory = Path.GetDirectoryName(entryPath);
+        if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+        using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
+        entry.Open().CopyTo(fileStream);
     }
 
     private static IEnumerable<CodeInstruction> CookieDomainPatch(IEnumerable<CodeInstruction> instructions) {
