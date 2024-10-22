@@ -27,11 +27,9 @@ public class JABootstrap {
         SetupJALib(modInfo);
     }
 
-    private static Type SetupJALib(JAModInfo modInfo) {
+    private static void SetupJALib(JAModInfo modInfo) {
         jalibModInfo = modInfo;
-        Type modType = LoadMod(modInfo);
-        LoadJAMod = modType.GetMethod("LoadModInfo", (BindingFlags) 15420);
-        return modType;
+        LoadJAMod = LoadMod(modInfo).GetMethod("LoadModInfo", (BindingFlags) 15420);
     }
 
     private static JAModInfo LoadModInfo(UnityModManager.ModEntry modEntry, bool beta) {
