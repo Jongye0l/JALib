@@ -15,8 +15,10 @@ public static class MainThread {
     internal static void Initialize() {
         Thread = Thread.CurrentThread;
         queue ??= new ConcurrentQueue<JAction>();
-        staticCoroutine = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
-        Object.DontDestroyOnLoad(staticCoroutine.gameObject);
+        Run(new JAction(JALib.Instance, () => {
+            staticCoroutine = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
+            Object.DontDestroyOnLoad(staticCoroutine.gameObject);
+        }));
     }
 
     internal static void Dispose() {
