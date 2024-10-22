@@ -40,6 +40,7 @@ class JALib : JAMod {
             } catch (Exception) {
                 // ignored
             }
+            MainThread.Run(new JAction(Instance, SetupModApplicator));
         });
         OnEnable();
     }
@@ -192,9 +193,7 @@ class JALib : JAMod {
     }
 
     private async void LoadInfo() {
-        Task<bool> successTask = JApi.CompleteLoadTask();
-        SetupModApplicator();
-        if(!await successTask) return;
+        if(!await JApi.CompleteLoadTask()) return;
         if(JaModInfo == null) await Task.Yield();
         GetModInfo getModInfo = await JApi.Send(new GetModInfo(JaModInfo));
         ModInfo(getModInfo);
