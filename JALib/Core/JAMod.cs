@@ -47,6 +47,7 @@ public abstract class JAMod {
     public bool Enabled => ModEntry.Enabled;
     internal int Gid;
     internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
+    private bool initialized;
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -67,18 +68,12 @@ public abstract class JAMod {
             Localization = localization ? new JALocalization(this) : null;
             Discord = ModSetting.Discord ?? discord ?? Discord;
             Gid = gid;
-            modEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            InitializeGUI();
-            if(IsExistMethod(nameof(OnUpdate))) modEntry.OnUpdate = OnUpdate0;
-            if(IsExistMethod(nameof(OnFixedUpdate))) modEntry.OnFixedUpdate = OnFixedUpdate0;
-            if(IsExistMethod(nameof(OnLateUpdate))) modEntry.OnLateUpdate = OnLateUpdate0;
-            if(IsExistMethod(nameof(OnSessionStart))) modEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
-            if(IsExistMethod(nameof(OnSessionStop))) modEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
+            MainThread.Run(new JAction(this, SetupEvent));
             mods[Name] = this;
             SaveSetting();
-            Log("JAMod " + Name + " is Initialized");
+            FinishInit();
         } catch (Exception e) {
             ModEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
             Error("Failed to Initialize JAMod " + Name);
@@ -87,11 +82,23 @@ public abstract class JAMod {
         }
     }
 
-    private async void InitializeGUI() {
-        await Task.Yield();
+    private async void SetupEvent() {
+        ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
+        if(IsExistMethod(nameof(OnUpdate))) ModEntry.OnUpdate = OnUpdate0;
+        if(IsExistMethod(nameof(OnFixedUpdate))) ModEntry.OnFixedUpdate = OnFixedUpdate0;
+        if(IsExistMethod(nameof(OnLateUpdate))) ModEntry.OnLateUpdate = OnLateUpdate0;
+        if(IsExistMethod(nameof(OnSessionStart))) ModEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
+        if(IsExistMethod(nameof(OnSessionStop))) ModEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
+        if(!initialized) await Task.Yield();
         if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
         if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
         if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
+    }
+
+    private async void FinishInit() {
+        await Task.Yield();
+        initialized = true;
+        Log("JAMod " + Name + " is Initialized");
     }
 
     private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
@@ -309,10 +316,9 @@ public abstract class JAMod {
             GetModInfo getModInfo = null;
             try {
                 if(JApi.Instance != null) {
-                    getModInfo = new GetModInfo(modInfo);
                     modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
                     Log("Force Reload: Loading Info...");
-                    await JApi.Send(getModInfo);
+                    getModInfo = await JApi.Send(new GetModInfo(modInfo));
                     if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
                         _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion));
                         return;
