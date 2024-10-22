@@ -74,6 +74,8 @@ public static class SimpleReflect {
 
     public static ConstructorInfo GetConstructor(this Type type) => type.Constructor();
 
+    public static ConstructorInfo[] Constructors(this Type type) => type.GetConstructors(AccessTools.all);
+
     public static object New(this Type type) => Activator.CreateInstance(type, true);
 
     public static object New(this Type type, params object[] objects) => Activator.CreateInstance(type, AccessTools.all, null, objects, null);
