@@ -71,11 +71,7 @@ public abstract class JAMod {
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
             InitializeGUI();
-            if(IsExistMethod(nameof(OnUpdate))) modEntry.OnUpdate = OnUpdate0;
-            if(IsExistMethod(nameof(OnFixedUpdate))) modEntry.OnFixedUpdate = OnFixedUpdate0;
-            if(IsExistMethod(nameof(OnLateUpdate))) modEntry.OnLateUpdate = OnLateUpdate0;
-            if(IsExistMethod(nameof(OnSessionStart))) modEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
-            if(IsExistMethod(nameof(OnSessionStop))) modEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
+            MainThread.Run(new JAction(this, SetupEvent));
             mods[Name] = this;
             SaveSetting();
             Log("JAMod " + Name + " is Initialized");
@@ -85,6 +81,14 @@ public abstract class JAMod {
             LogException(e);
             throw;
         }
+    }
+
+    private void SetupEvent() {
+        if(IsExistMethod(nameof(OnUpdate))) ModEntry.OnUpdate = OnUpdate0;
+        if(IsExistMethod(nameof(OnFixedUpdate))) ModEntry.OnFixedUpdate = OnFixedUpdate0;
+        if(IsExistMethod(nameof(OnLateUpdate))) ModEntry.OnLateUpdate = OnLateUpdate0;
+        if(IsExistMethod(nameof(OnSessionStart))) ModEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
+        if(IsExistMethod(nameof(OnSessionStop))) ModEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
     }
 
     private async void InitializeGUI() {

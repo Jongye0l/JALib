@@ -9,12 +9,12 @@ namespace JALib.Tools;
 
 public static class MainThread {
     public static Thread Thread { get; private set; }
-    private static ConcurrentQueue<JAction> queue;
+    private static ConcurrentQueue<JAction> queue = new();
     private static StaticCoroutine staticCoroutine;
 
     internal static void Initialize() {
         Thread = Thread.CurrentThread;
-        queue = new ConcurrentQueue<JAction>();
+        queue ??= new ConcurrentQueue<JAction>();
         staticCoroutine = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
         Object.DontDestroyOnLoad(staticCoroutine.gameObject);
     }
@@ -25,8 +25,11 @@ public static class MainThread {
         if(!staticCoroutine) return;
         staticCoroutine.StopAllCoroutines();
         Object.Destroy(staticCoroutine.gameObject);
-        GC.SuppressFinalize(staticCoroutine.gameObject);
+        queue.Clear();
+        GC.SuppressFinalize(queue);
         GC.SuppressFinalize(staticCoroutine);
+        queue = null;
+        staticCoroutine = null;
     }
 
     internal static void OnUpdate() {
@@ -41,22 +44,10 @@ public static class MainThread {
         queue.Enqueue(action);
     }
 
-    public static bool IsMainThread() {
-        return Thread.CurrentThread == Thread;
-    }
+    public static bool IsMainThread() => Thread.CurrentThread == Thread;
+    public static Coroutine StartCoroutine(IEnumerator routine) => staticCoroutine.StartCoroutine(routine);
+    public static void StopCoroutine(Coroutine routine) => staticCoroutine.StopCoroutine(routine);
+    public static void StopCoroutine(IEnumerator routine) => staticCoroutine.StopCoroutine(routine);
 
-    public static Coroutine StartCoroutine(IEnumerator routine) {
-        return staticCoroutine.StartCoroutine(routine);
-    }
-
-    public static void StopCoroutine(Coroutine routine) {
-        staticCoroutine.StopCoroutine(routine);
-    }
-
-    public static void StopCoroutine(IEnumerator routine) {
-        staticCoroutine.StopCoroutine(routine);
-    }
-
-    private class StaticCoroutine : MonoBehaviour {
-    }
+    private class StaticCoroutine : MonoBehaviour;
 }

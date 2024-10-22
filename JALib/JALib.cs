@@ -29,6 +29,7 @@ class JALib : JAMod {
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
+        JApi.Initialize();
         Task.Run(() => {
             LoadInfo();
             Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
@@ -73,9 +74,9 @@ class JALib : JAMod {
         Zipper.Unzip(System.IO.Path.Combine(Instance.Path, "ModApplicator.zip"), applicationFolderPath);
     }
 
-    private static async void LoadModInfo(JAModInfo modInfo) {
+    private static void LoadModInfo(JAModInfo modInfo) {
         SetupModInfo(modInfo);
-        loadTasks[modInfo.ModEntry.Info.Id] = Task.Run(() => SetupMod(modInfo));
+        loadTasks[modInfo.ModEntry.Info.Id] = SetupMod(modInfo);
     }
 
     private static async Task SetupMod(JAModInfo modInfo) {

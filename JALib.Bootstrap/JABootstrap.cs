@@ -12,19 +12,22 @@ public class JABootstrap {
     public const int BootstrapVersion = 0;
     private static AppDomain domain;
     private static MethodInfo LoadJAMod;
-    private static Task<bool> _task;
+    private static Task _task;
     internal static Harmony harmony;
     private static JAModInfo jalibModInfo;
-    private static async void Setup(UnityModManager.ModEntry modEntry) {
-        domain ??= AppDomain.CurrentDomain;
-        _task = Task.Run(() => Installer.CheckMod(modEntry));
-        bool beta = InitializeVersion(modEntry);
-        JAModInfo modInfo = LoadModInfo(modEntry, beta);
-        if(await _task) {
-            beta = InitializeVersion(modEntry);
-            modInfo = LoadModInfo(modEntry, beta);
-        }
-        SetupJALib(modInfo);
+
+    private static void Setup(UnityModManager.ModEntry modEntry) {
+        _task = Task.Run(async () => {
+            domain ??= AppDomain.CurrentDomain;
+            Task<bool> checkMod = Installer.CheckMod(modEntry);
+            bool beta = InitializeVersion(modEntry);
+            JAModInfo modInfo = LoadModInfo(modEntry, beta);
+            if(await checkMod) {
+                beta = InitializeVersion(modEntry);
+                modInfo = LoadModInfo(modEntry, beta);
+            }
+            SetupJALib(modInfo);
+        });
     }
 
     private static void SetupJALib(JAModInfo modInfo) {
@@ -83,10 +86,12 @@ public class JABootstrap {
         return modType;
     }
 
-    public static async void Load(UnityModManager.ModEntry modEntry) {
-        bool beta = InitializeVersion(modEntry);
-        JAModInfo modInfo = LoadModInfo(modEntry, beta);
-        await _task;
-        LoadJAMod.Invoke(null, [modInfo]);
+    public static void Load(UnityModManager.ModEntry modEntry) {
+        Task.Run(async () => {
+            bool beta = InitializeVersion(modEntry);
+            JAModInfo modInfo = LoadModInfo(modEntry, beta);
+            await _task;
+            LoadJAMod.Invoke(null, [modInfo]);
+        });
     }
 }
