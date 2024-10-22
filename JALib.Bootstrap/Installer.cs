@@ -26,7 +26,8 @@ class Installer {
         try {
             modEntry.Info.DisplayName = modName + "<color=gray> [Check Update...]</color>";
             HttpResponseMessage response = null;
-            string version = modEntry.Info.Version.Split(" ")[0];
+            while(modEntry.Version == null) await Task.Yield();
+            string version = modEntry.Version.ToString();
             for(int i = 0; i < 2; i++) {
                 response = await client.GetAsync($"https://{domain}/autoInstaller/{version}");
                 if(response.StatusCode == HttpStatusCode.NotModified) {
