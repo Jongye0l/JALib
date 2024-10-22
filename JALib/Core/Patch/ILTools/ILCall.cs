@@ -48,7 +48,7 @@ public class ILCall : ILCode {
 
     public override string ToString() {
         StringBuilder builder = new();
-        builder.Append(MethodInfo.IsStatic ? MethodInfo.GetType().Name : Variables[0]).Append('.').Append(MethodInfo.Name).Append('(');
+        builder.Append(MethodInfo.IsStatic ? MethodInfo.DeclaringType.Name : Variables[0]).Append('.').Append(MethodInfo.Name).Append('(');
         for(int i = MethodInfo.IsStatic ? 0 : 1; i < Variables.Length; i++) {
             builder.Append(Variables[i]);
             builder.Append(", ");
