@@ -267,16 +267,17 @@ class JAMethodPatcher {
                             List<CodeInstruction> finalInstructions = [];
                             while(enumerator.MoveNext()) {
                                 CodeInstruction cur = enumerator.Current;
+                                if(cur.opcode == OpCodes.Ldarg_0) cur = originalArg0;
                                 finalInstructions.Add(cur);
                                 if(cur.opcode == OpCodes.Pop) break;
                             }
                             foreach(CodeInstruction finalInstruction in finalInstructions) yield return finalInstruction;
                             Label tryLeave = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Leave, tryLeave);
-                            yield return new CodeInstruction(OpCodes.Ldloc, locking).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
+                            yield return new CodeInstruction(OpCodes.Ldloc, locking).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginFinallyBlock));
                             Label lockFail = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brfalse, lockFail);
-                            yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap")).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginFinallyBlock));
+                            yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap"));
                             yield return new CodeInstruction(OpCodes.Call, typeof(Monitor).Method("Exit"));
                             yield return new CodeInstruction(OpCodes.Endfinally).WithLabels(lockFail).WithBlocks(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
                             Label after = generator.DefineLabel();
