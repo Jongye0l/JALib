@@ -30,7 +30,7 @@ class JALib : JAMod {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         JApi.Initialize();
-        Task.Run(() => {
+        JATask.Run(Instance, () => {
             LoadInfo();
             Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
             Patcher = new JAPatcher(this);
