@@ -135,9 +135,14 @@ public class JAPatcher : IDisposable {
     }
 
     internal static bool GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, ref List<CodeInstruction> __result) {
-        if(method == null || generator == null || maxTranspilers < 1 || !jaPatches.TryGetValue(method, out JAPatchInfo jaPatchInfo) || jaPatchInfo.replaces.Length == 0) return true;
-        __result = JAMethodPatcher.GetInstructions(generator, method, maxTranspilers, jaPatchInfo);
-        return false;
+        try {
+            if(method == null || generator == null || maxTranspilers < 1 || !jaPatches.TryGetValue(method, out JAPatchInfo jaPatchInfo) || jaPatchInfo.replaces.Length == 0) return true;
+            __result = JAMethodPatcher.GetInstructions(generator, method, maxTranspilers, jaPatchInfo);
+            return false;
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            return true;
+        }
     }
 
     #endregion
