@@ -57,6 +57,7 @@ class JApi {
     internal static async Task<T> Send<T>(T packet) where T : GetRequest {
         if(_instance != null) {
             try {
+                await CompleteLoadTask();
                 HttpResponseMessage response = await HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}");
                 if(response.IsSuccessStatusCode) {
                     try {
