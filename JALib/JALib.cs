@@ -22,7 +22,6 @@ class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
     internal new JALibSetting Setting;
-    private static Task<Type> loadTask;
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
     internal static JAPatcher Patcher;
@@ -30,15 +29,17 @@ class JALib : JAMod {
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
-        loadTask = LoadInfo();
-        Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
-        Patcher = new JAPatcher(this);
-        Patcher.Patch();
-        try {
-            JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
-        } catch (Exception) {
-            // ignored
-        }
+        Task.Run(() => {
+            LoadInfo();
+            Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
+            Patcher = new JAPatcher(this);
+            Patcher.Patch();
+            try {
+                JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
+            } catch (Exception) {
+                // ignored
+            }
+        });
         OnEnable();
     }
 
@@ -74,9 +75,7 @@ class JALib : JAMod {
 
     private static async void LoadModInfo(JAModInfo modInfo) {
         SetupModInfo(modInfo);
-        Type type = await loadTask;
-        if(type == null) loadTasks[modInfo.ModEntry.Info.Id] = SetupMod(modInfo);
-        else type.Invoke("SetupMod", null, modInfo);
+        loadTasks[modInfo.ModEntry.Info.Id] = Task.Run(() => SetupMod(modInfo));
     }
 
     private static async Task SetupMod(JAModInfo modInfo) {
@@ -118,12 +117,14 @@ class JALib : JAMod {
             return;
         }
         JAMod mod = GetMods(modName);
-        try {
-            mod.OnToggle(null, true);
-        } catch (Exception e) {
-            mod.LogException(e);
-            mod.ModEntry.SetValue("mActive", false);
-        }
+        MainThread.Run(new JAction(mod, () => {
+            try {
+                mod.OnToggle(null, true);
+            } catch (Exception e) {
+                mod.LogException(e);
+                mod.ModEntry.SetValue("mActive", false);
+            }
+        }));
         if(getModInfo != null) mod.ModInfo(getModInfo);
     }
 
@@ -189,40 +190,13 @@ class JALib : JAMod {
         ForceApplyMod.ApplyMod(path);
     }
 
-    private async Task<Type> LoadInfo() {
+    private async void LoadInfo() {
         Task<bool> successTask = JApi.CompleteLoadTask();
         SetupModApplicator();
-        if(!await successTask) return null;
+        if(!await successTask) return;
         if(JaModInfo == null) await Task.Yield();
-        GetModInfo getModInfo = new(JaModInfo);
-        await JApi.Send(getModInfo);
+        GetModInfo getModInfo = await JApi.Send(new GetModInfo(JaModInfo));
         ModInfo(getModInfo);
-        if(!getModInfo.Success || !getModInfo.ForceUpdate || getModInfo.LatestVersion <= Version) return null;
-        Log("Update is required. Updating the mod.");
-        ModEntry.Info.DisplayName = Name + " <color=blue>[Updating...]</color>";
-        await JApi.Send(new DownloadMod(Name, getModInfo.LatestVersion, ModEntry.Path));
-        Type accessCacheType = typeof(Traverse).Assembly.GetType("HarmonyLib.AccessCache");
-        object accessCache = typeof(Traverse).GetValue("Cache");
-        string[] fields = ["declaredFields", "declaredProperties", "declaredMethods", "inheritedFields", "inheritedProperties", "inheritedMethods"];
-        foreach (string field in fields) accessCacheType.GetValue<IDictionary>(field, accessCache).Clear();
-        string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
-        if(!File.Exists(path)) path = System.IO.Path.Combine(ModEntry.Path, "info.json");
-        UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
-        ModEntry.SetValue("Info", info);
-        ModEntry.Info.DisplayName = Name;
-        Type type;
-        try {
-            if(JaModInfo == null) await Task.Yield();
-            type = typeof(JABootstrap).Invoke<Type>("SetupJALib", JaModInfo);
-        } catch (Exception e) {
-            Log("Failed to Load JAMod " + Name);
-            LogException(e);
-            ModEntry.SetValue("mErrorOnLoading", true);
-            ModEntry.SetValue("mActive", false);
-            throw;
-        }
-        ForceReloadMod(type.Assembly);
-        return type;
     }
 
     protected override void OnEnable() {
@@ -239,7 +213,6 @@ class JALib : JAMod {
     }
 
     protected override void OnUnload() {
-        loadTask = null;
         loadTasks.Clear();
         updateQueue.Clear();
         loadTasks = null;

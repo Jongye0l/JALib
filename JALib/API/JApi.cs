@@ -54,7 +54,7 @@ class JApi {
         }
     }
 
-    internal static async Task Send<T>(T packet) where T : GetRequest {
+    internal static async Task<T> Send<T>(T packet) where T : GetRequest {
         if(_instance != null) {
             try {
                 HttpResponseMessage response = await HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}");
@@ -64,11 +64,11 @@ class JApi {
                     } catch (Exception e) {
                         JALib.Instance.LogException("Failed Running Request Job " + packet.GetType().Name, e);
                     }
-                    return;
+                    return packet;
                 }
                 if(response.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout or HttpStatusCode.ServiceUnavailable or (HttpStatusCode) 522)) {
                     JALib.Instance.Log("Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name);
-                    return;
+                    return packet;
                 }
             } catch (HttpRequestException) {
             }
@@ -78,6 +78,7 @@ class JApi {
         TaskCompletionSource<bool> taskCompletionSource = new();
         _queue.Enqueue((packet, taskCompletionSource));
         await taskCompletionSource.Task;
+        return packet;
     }
 
     private void OnConnect() {

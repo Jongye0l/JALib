@@ -309,10 +309,9 @@ public abstract class JAMod {
             GetModInfo getModInfo = null;
             try {
                 if(JApi.Instance != null) {
-                    getModInfo = new GetModInfo(modInfo);
                     modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
                     Log("Force Reload: Loading Info...");
-                    await JApi.Send(getModInfo);
+                    getModInfo = await JApi.Send(new GetModInfo(modInfo));
                     if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
                         _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion));
                         return;

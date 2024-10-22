@@ -17,7 +17,7 @@ public class JABootstrap {
     private static JAModInfo jalibModInfo;
     private static async void Setup(UnityModManager.ModEntry modEntry) {
         domain ??= AppDomain.CurrentDomain;
-        _task = Installer.CheckMod(modEntry);
+        _task = Task.Run(() => Installer.CheckMod(modEntry));
         bool beta = InitializeVersion(modEntry);
         JAModInfo modInfo = LoadModInfo(modEntry, beta);
         if(await _task) {
@@ -87,8 +87,8 @@ public class JABootstrap {
 
     public static async void Load(UnityModManager.ModEntry modEntry) {
         bool beta = InitializeVersion(modEntry);
-        await _task;
         JAModInfo modInfo = LoadModInfo(modEntry, beta);
+        await _task;
         LoadJAMod.Invoke(null, [modInfo]);
     }
 }
