@@ -14,16 +14,15 @@ public static class MainThread {
     private static StaticCoroutine staticCoroutine;
 
     internal static void Initialize() {
-        Thread = Thread.CurrentThread;
         queue ??= new ConcurrentQueue<JAction>();
-        Run(new JAction(JALib.Instance, () => {
+        queue.Enqueue(new JAction(JALib.Instance, () => {
+            Thread = Thread.CurrentThread;
             staticCoroutine = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
             Object.DontDestroyOnLoad(staticCoroutine.gameObject);
         }));
     }
 
     internal static void Dispose() {
-        Thread = null;
         GC.SuppressFinalize(queue);
         if(!staticCoroutine) return;
         staticCoroutine.StopAllCoroutines();
