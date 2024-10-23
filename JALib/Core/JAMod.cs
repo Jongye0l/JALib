@@ -134,6 +134,8 @@ public abstract class JAMod {
 
     protected void AddFeature(params Feature[] feature) {
         Features.Add(feature);
+        if(!initialized || !Enabled || !ModEntry.Active) return;
+        foreach(Feature f in feature) if(f.Enabled) f.Enable();
     }
 
     internal void ModInfo(GetModInfo getModInfo) {
@@ -156,9 +158,9 @@ public abstract class JAMod {
         }
         if(value) {
             OnEnable();
-            foreach(Feature feature in Features.Where(feature => feature.Enabled)) feature.Enable();
+            foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
         } else {
-            foreach(Feature feature in Features.Where(feature => feature.Enabled)) feature.Disable();
+            foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
             OnDisable();
         }
         return true;
