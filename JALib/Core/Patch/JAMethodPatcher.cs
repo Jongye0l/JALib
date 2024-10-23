@@ -284,7 +284,6 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Br, after).WithLabels(tryLeave);
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(notIf);
                             foreach(CodeInstruction finalInstruction in finalInstructions) yield return finalInstruction;
-                            enumerator.MoveNext();
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(after);
                             state++;
                             continue;
