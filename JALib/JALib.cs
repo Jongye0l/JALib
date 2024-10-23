@@ -202,6 +202,7 @@ class JALib : JAMod {
     protected override void OnEnable() {
         MainThread.Initialize();
         JApi.Initialize();
+        MainThread.Run(new JAction(this, JANotification.Initialize));
         EnableInit();
     }
 
