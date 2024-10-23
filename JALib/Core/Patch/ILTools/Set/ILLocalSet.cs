@@ -8,7 +8,7 @@ public class ILLocalSet(ILLocal local, ILCode value) : ILCode {
     public readonly ILLocal Local = local;
     public readonly ILCode Value = value;
 
-    public override Type ReturnType => typeof(void);
+    public override Type ReturnType => Local.LocalBuilder.LocalType;
 
     public override IEnumerable<CodeInstruction> Load(ILGenerator generator) {
         foreach(CodeInstruction instruction in Value.Load(generator)) yield return instruction;
