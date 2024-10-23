@@ -58,7 +58,7 @@ class JApi {
         }
     }
 
-    internal static async Task<T> Send<T>(T packet) where T : GetRequest {
+    internal static async Task<T> Send<T>(T packet, bool wait) where T : GetRequest {
         if(_instance != null) {
             try {
                 if(!await CompleteLoadTask()) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server"));
@@ -71,15 +71,19 @@ class JApi {
                     }
                     return packet;
                 }
+                string errorLog = "Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name;
+                if(!wait) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception(errorLog));
                 if(response.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout or HttpStatusCode.ServiceUnavailable or (HttpStatusCode) 522)) {
-                    JALib.Instance.Log("Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name);
+                    JALib.Instance.Log(errorLog);
                     return packet;
                 }
-            } catch (HttpRequestException) {
+            } catch (HttpRequestException e) {
+                if(!wait) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e);
             }
-            JALib.Instance.Log("Failed to connect server");
+            if(wait) JALib.Instance.Log("Failed to connect server");
             _instance.Dispose();
         }
+        if(!wait) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server"));
         TaskCompletionSource<bool> taskCompletionSource = new();
         _queue.Enqueue((packet, taskCompletionSource));
         await taskCompletionSource.Task;
@@ -92,7 +96,7 @@ class JApi {
         while(_queue.TryDequeue(out (GetRequest, TaskCompletionSource<bool>) result))
             Task.Run(async () => {
                 try {
-                    await Send(result.Item1);
+                    await Send(result.Item1, true);
                     result.Item2.SetResult(true);
                 } catch (Exception e) {
                     JALib.Instance.LogException("Failed Running Request Job " + result.Item1.GetType().Name, e);

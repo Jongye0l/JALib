@@ -88,7 +88,7 @@ class JALib : JAMod {
             if(JApi.Instance != null) {
                 getModInfo = new GetModInfo(modInfo);
                 modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
-                await JApi.Send(getModInfo);
+                await JApi.Send(getModInfo, false);
                 if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload(modName, getModInfo.LatestVersion);
             }
         } catch (Exception e) {
@@ -100,7 +100,7 @@ class JALib : JAMod {
             Instance.Log("Update JAMod " + modName);
             modInfo.ModEntry.Info.DisplayName = modName + " <color=aqua>[Updating...]</color>";
             try {
-                await JApi.Send(new DownloadMod(modName, version, modInfo.ModEntry.Path));
+                await JApi.Send(new DownloadMod(modName, version, modInfo.ModEntry.Path), false);
                 string path = System.IO.Path.Combine(modInfo.ModEntry.Path, "Info.json");
                 if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
                 UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
@@ -195,7 +195,7 @@ class JALib : JAMod {
 
     private static async Task DownloadDependency(string name, UnityModManager.ModEntry modEntry) {
         string path = modEntry?.Path ?? System.IO.Path.Combine(UnityModManager.modsPath, name);
-        await JApi.Send(new DownloadMod(name, updateQueue[name], path));
+        await JApi.Send(new DownloadMod(name, updateQueue[name], path), true);
         if(modEntry != null) {
             modEntry.Enabled = false;
             modEntry.Active = false;
@@ -209,7 +209,7 @@ class JALib : JAMod {
         try {
             if(!await JApi.CompleteLoadTask()) return;
             if(JaModInfo == null) await Task.Yield();
-            GetModInfo getModInfo = await JApi.Send(new GetModInfo(JaModInfo));
+            GetModInfo getModInfo = await JApi.Send(new GetModInfo(JaModInfo), false);
             ModInfo(getModInfo);
         } catch (Exception e) {
             LogException(e);

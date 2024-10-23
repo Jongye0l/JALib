@@ -319,9 +319,9 @@ public abstract class JAMod {
                 if(JApi.Instance != null) {
                     modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
                     Log("Force Reload: Loading Info...");
-                    getModInfo = await JApi.Send(new GetModInfo(modInfo));
+                    getModInfo = await JApi.Send(new GetModInfo(modInfo), false);
                     if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
-                        _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion));
+                        _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion), false);
                         return;
                     }
                 }
@@ -338,7 +338,7 @@ public abstract class JAMod {
                         Version version = new(dependency.Value);
                         UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
                         if(modEntry != null && modEntry.Version >= version) continue;
-                        tasks.Add(JApi.Send(new DownloadMod(dependency.Key, version)));
+                        tasks.Add(JApi.Send(new DownloadMod(dependency.Key, version), false));
                     } catch (Exception e) {
                         ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
                         ModEntry.Logger.LogException(e);
