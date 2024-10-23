@@ -27,6 +27,7 @@ class JApi {
     private TaskCompletionSource<bool> completeLoadTask = new();
 
     public static void Initialize() {
+        HttpClient.DefaultRequestHeaders.ExpectContinue = false;
         _instance ??= new JApi();
     }
 
