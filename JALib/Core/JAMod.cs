@@ -106,11 +106,13 @@ public abstract class JAMod {
     public static ICollection<JAMod> GetMods() => mods.Values;
 
     internal static void EnableInit() {
-        foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
-            if(mod.ModEntry.Active) continue;
-            mod.ModEntry.Active = true;
-            mod.OnEnable();
-        }
+        MainThread.Run(JALib.Instance, () => {
+            foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
+                if(mod.ModEntry.Active) continue;
+                mod.ModEntry.Active = true;
+                mod.OnEnable();
+            }
+        });
     }
 
     internal static void DisableInit() {
