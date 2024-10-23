@@ -545,6 +545,7 @@
         <Compile Include="Core\Patch\ILTools\ILCast.cs"/>
         <Compile Include="Core\Patch\ILTools\ILCheckFinite.cs" />
         <Compile Include="Core\Patch\ILTools\ILConvert.cs"/>
+        <Compile Include="Core\Patch\ILTools\ILIf.cs" />
         <Compile Include="Core\Patch\ILTools\ILLength.cs" />
         <Compile Include="Core\Patch\ILTools\ILLocal.cs"/>
         <Compile Include="Core\Patch\ILTools\ILMethod.cs"/>
