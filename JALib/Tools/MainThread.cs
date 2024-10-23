@@ -39,7 +39,7 @@ public static class MainThread {
     }
 
     public static void Run(JAction action) {
-        if(IsMainThread() || Thread == null) {
+        if(IsMainThread()) {
             action.Invoke();
             return;
         }
