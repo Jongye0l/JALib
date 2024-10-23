@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Threading;
+using JALib.Core;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -46,6 +47,7 @@ public static class MainThread {
         queue.Enqueue(action);
     }
 
+    public static void Run(JAMod mod, Action action) => Run(new JAction(mod, action));
     public static bool IsMainThread() => Thread.CurrentThread == Thread;
     public static Coroutine StartCoroutine(IEnumerator routine) => staticCoroutine.StartCoroutine(routine);
     public static void StopCoroutine(Coroutine routine) => staticCoroutine.StopCoroutine(routine);

@@ -73,7 +73,7 @@ public abstract class JAMod {
             MainThread.Run(new JAction(this, SetupEvent));
             mods[Name] = this;
             SaveSetting();
-            FinishInit();
+            Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {
             ModEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
             Error("Failed to Initialize JAMod " + Name);
@@ -93,12 +93,6 @@ public abstract class JAMod {
         if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
         if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
         if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
-    }
-
-    private async void FinishInit() {
-        await Task.Yield();
-        initialized = true;
-        Log("JAMod " + Name + " is Initialized");
     }
 
     private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
@@ -135,7 +129,9 @@ public abstract class JAMod {
     protected void AddFeature(params Feature[] feature) {
         Features.Add(feature);
         if(!initialized || !Enabled || !ModEntry.Active) return;
-        foreach(Feature f in feature) if(f.Enabled) f.Enable();
+        MainThread.Run(this, () => {
+            foreach(Feature f in feature) if(f.Enabled) f.Enable();
+        });
     }
 
     internal void ModInfo(GetModInfo getModInfo) {
@@ -159,6 +155,7 @@ public abstract class JAMod {
         if(value) {
             OnEnable();
             foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
+            initialized = true;
         } else {
             foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
             OnDisable();
