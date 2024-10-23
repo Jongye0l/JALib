@@ -4,12 +4,8 @@ using HarmonyLib;
 
 namespace JALib.Core.Patch.ILTools.Value;
 
-public class ILInt : ILCode {
-    public readonly int Value;
-
-    public ILInt(int value) {
-        Value = value;
-    }
+public class ILInt(int value) : ILCode {
+    public readonly int Value = value;
 
     public override Type ReturnType => typeof(int);
 
@@ -21,6 +17,7 @@ public class ILInt : ILCode {
 
     public override IEnumerable<CodeInstruction> Load(ILGenerator generator) {
         yield return Value switch {
+            -1 => new CodeInstruction(OpCodes.Ldc_I4_M1),
             0 => new CodeInstruction(OpCodes.Ldc_I4_0),
             1 => new CodeInstruction(OpCodes.Ldc_I4_1),
             2 => new CodeInstruction(OpCodes.Ldc_I4_2),
