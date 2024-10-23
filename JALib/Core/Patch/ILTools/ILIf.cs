@@ -37,5 +37,9 @@ public class ILIf : ILCode {
         yield return new CodeInstruction(OpCodes.Nop).WithLabels(end);
     }
 
-    public override string ToString() => throw new NotImplementedException();
+    public override string ToString() {
+        if(IfTrue == null) return $"if(!{Condition}) {{\n\t{IfFalse}\n}}";
+        if(IfFalse == null) return $"if({Condition}) {{\n\t{IfTrue}\n}}";
+        return IfTrue.ReturnType == typeof(void) ? $"if({Condition}) {{\n\t{IfTrue}\n}} else {{\n\t{IfFalse}\n}}" : $"{Condition} ? {IfTrue} : {IfFalse}";
+    }
 }
