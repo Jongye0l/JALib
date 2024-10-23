@@ -347,7 +347,14 @@ public abstract class JAMod {
                 }
                 ModEntry.Info.DisplayName = modName + " <color=aqua>[Waiting Dependencies...]</color>";
                 Log("Force Reload: Waiting Dependencies...");
-                await Task.WhenAll(tasks);
+                foreach(Task task in tasks) {
+                    try {
+                        await task;
+                    } catch (Exception e) {
+                        ModEntry.Logger.Log("Failed to Download 1 Dependency");
+                        ModEntry.Logger.LogException(e);
+                    }
+                }
             }
             modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Unloading...]</color>";
             Log("Force Reload: Unloading...");

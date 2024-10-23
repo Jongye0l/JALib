@@ -526,7 +526,7 @@
         <Compile Include="Core\Setting\SettingRoundAttribute.cs" />
         <Compile Include="Data\RawFile.cs" />
         <Compile Include="JAException\AlreadyWorkedException.cs" />
-        <Compile Include="JAException\ResponseException.cs" />
+        <Compile Include="JAException\PacketRunningException.cs" />
         <Compile Include="JALib.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="Tools\ByteTool\ByteTools.cs" />

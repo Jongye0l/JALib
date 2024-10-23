@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using JALib.JAException;
 using JALib.Tools;
 
 namespace JALib.API;
@@ -31,7 +32,7 @@ class JApi {
 
     public static Task<bool> CompleteLoadTask() {
         _instance ??= new JApi();
-        return _instance.completeLoadTask.Task;
+        return _instance.completeLoadTask?.Task ?? Task.FromResult(true);
     }
 
     private JApi() {
@@ -51,19 +52,21 @@ class JApi {
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
+            _instance.completeLoadTask.TrySetResult(false);
+            Dispose();
         }
     }
 
     internal static async Task<T> Send<T>(T packet) where T : GetRequest {
         if(_instance != null) {
             try {
-                await CompleteLoadTask();
+                if(!await CompleteLoadTask()) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server"));
                 HttpResponseMessage response = await HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}");
                 if(response.IsSuccessStatusCode) {
                     try {
                         await Task.Run(() => packet.Run(response));
                     } catch (Exception e) {
-                        JALib.Instance.LogException("Failed Running Request Job " + packet.GetType().Name, e);
+                        throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e);
                     }
                     return packet;
                 }
@@ -86,11 +89,20 @@ class JApi {
         completeLoadTask.TrySetResult(true);
         completeLoadTask = null;
         while(_queue.TryDequeue(out (GetRequest, TaskCompletionSource<bool>) result))
-            Send(result.Item1).ContinueWith(_ => result.Item2.SetResult(true));
+            Task.Run(async () => {
+                try {
+                    await Send(result.Item1);
+                    result.Item2.SetResult(true);
+                } catch (Exception e) {
+                    JALib.Instance.LogException("Failed Running Request Job " + result.Item1.GetType().Name, e);
+                    result.Item2.SetException(e);
+                }
+            });
     }
 
     internal void Dispose() {
         _instance = null;
+        completeLoadTask = null;
         GC.SuppressFinalize(this);
     }
 }
