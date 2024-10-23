@@ -34,7 +34,7 @@ public abstract class JAMod {
     }
     protected internal UnityModManager.ModEntry ModEntry { get; private set; }
     public UnityModManager.ModEntry.ModLogger Logger => ModEntry.Logger;
-    public string Name { get; private set; }
+    public string Name { get; }
     public Version Version => ModEntry.Version;
     public string Path => ModEntry.Path;
     protected Version LatestVersion => ModSetting.LatestVersion;
@@ -172,7 +172,6 @@ public abstract class JAMod {
         OnDisable();
         OnUnload();
         ModEntry = null;
-        Name = null;
         Features = null;
         Discord = null;
         Localization.Dispose();

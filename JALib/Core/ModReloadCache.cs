@@ -1,18 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using JALib.Core.Patch;
 using JALib.Tools;
+using UnityEngine;
 
 namespace JALib.Core;
 
 public class ModReloadCache {
+    private static List<ModReloadCache> Caches = [];
     public Dictionary<(Type, int), object> CachedObjects = new();
     public Assembly OldAssembly;
     public Assembly NewAssembly;
 
+    static ModReloadCache() {
+        JALib.Patcher.AddPatch(typeof(ModReloadCache));
+    }
+
     internal ModReloadCache(Assembly oldAssembly, Assembly assembly) {
         OldAssembly = oldAssembly;
         NewAssembly = assembly;
+        Caches.Add(this);
+    }
+
+    [JAPatch(typeof(GameObject), "AddComponent", PatchType.Postfix, false, ArgumentTypesType = [ typeof(Type) ])]
+    private static void AddComponentPatch(Type componentType, ref Component __result) {
+        foreach(ModReloadCache cache in Caches) {
+            if(cache.OldAssembly != componentType.Assembly) continue;
+            __result = cache.GetCachedObject(__result) as Component;
+            break;
+        }
+    }
+
+    [JAPatch(typeof(GameObject), "GetComponentAtIndex", PatchType.Postfix, false, ArgumentTypesType = [ typeof(int) ])]
+    private static void GetComponentAtIndexPatch(ref Component __result) {
+        foreach(ModReloadCache cache in Caches) {
+            if(cache.OldAssembly != __result.GetType().Assembly) continue;
+            __result = cache.GetCachedObject(__result) as Component;
+            break;
+        }
     }
 
     public object GetCachedObject(object oldValue) {
@@ -20,6 +47,7 @@ public class ModReloadCache {
         Type oldType = oldValue.GetType();
         if(oldType.Assembly != OldAssembly) return oldValue;
         if(CachedObjects.TryGetValue((oldType, oldValue.GetHashCode()), out object value)) return value;
+        if(oldValue is JAMod mod) return JAMod.GetMods(mod.Name);
         Type newType = NewAssembly.GetType(oldType.FullName);
         if(newType == null) return null;
         try {
