@@ -40,12 +40,13 @@ class JALib : JAMod {
             } catch (Exception) {
                 // ignored
             }
-            MainThread.Run(new JAction(Instance, SetupModApplicator));
+            SetupModApplicator();
         });
         OnEnable();
     }
 
-    private static void SetupModApplicator() {
+    private static async void SetupModApplicator() {
+        while(ADOBase.platform == Platform.None) await Task.Yield();
         if(ADOBase.platform != Platform.Windows) {
             Instance.Log("ModApplicator is only available on Windows. Current: " + ADOBase.platform);
             return;
