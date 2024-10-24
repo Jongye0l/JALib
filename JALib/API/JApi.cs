@@ -18,7 +18,7 @@ class JApi {
 
     private static JApi _instance;
     private static readonly HttpClient HttpClient = new();
-    private static ConcurrentQueue<(GetRequest, TaskCompletionSource<bool>)> _queue = new();
+    private static ConcurrentQueue<SendQueue> _queue = new();
     //private const string Domain1 = "jalibtest.jongyeol.kr";
     //private const string Domain2 = "jalibtest.jongyeol.kr";
     private const string Domain1 = "jalib.jongyeol.kr";
@@ -85,7 +85,7 @@ class JApi {
         }
         if(!wait) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server"));
         TaskCompletionSource<bool> taskCompletionSource = new();
-        _queue.Enqueue((packet, taskCompletionSource));
+        _queue.Enqueue(new SendQueue(packet, taskCompletionSource));
         await taskCompletionSource.Task;
         return packet;
     }
@@ -93,21 +93,24 @@ class JApi {
     private void OnConnect() {
         completeLoadTask.TrySetResult(true);
         completeLoadTask = null;
-        while(_queue.TryDequeue(out (GetRequest, TaskCompletionSource<bool>) result))
-            Task.Run(async () => {
-                try {
-                    await Send(result.Item1, true);
-                    result.Item2.SetResult(true);
-                } catch (Exception e) {
-                    JALib.Instance.LogException("Failed Running Request Job " + result.Item1.GetType().Name, e);
-                    result.Item2.SetException(e);
-                }
-            });
+        while(_queue.TryDequeue(out SendQueue sendQueue)) Task.Run(sendQueue.run);
     }
 
     internal void Dispose() {
         _instance = null;
         completeLoadTask = null;
         GC.SuppressFinalize(this);
+    }
+
+    private class SendQueue(GetRequest packet, TaskCompletionSource<bool> tcs) {
+        public async void run() {
+            try {
+                await Send(packet, true);
+                tcs.SetResult(true);
+            } catch (Exception e) {
+                JALib.Instance.LogException("Failed Running Request Job " + packet.GetType().Name, e);
+                tcs.SetException(e);
+            }
+        }
     }
 }

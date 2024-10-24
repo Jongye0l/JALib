@@ -11,7 +11,7 @@ using UnityModManagerNet;
 
 namespace JALib.API;
 
-class ApplicatorAPI {
+class ApplicatorAPI(TcpClient client) {
     private static TcpListener listener;
     private static Task listenerTask;
 
@@ -39,23 +39,24 @@ Setup:
     public static async void Listen() {
         while(true) {
             try {
-                TcpClient client = await listener.AcceptTcpClientAsync();
-                _ = JATask.Run(JALib.Instance, () => {
-                    using (client) {
-                        NetworkStream stream = client.GetStream();
-                        byte action = stream.ReadByteSafe();
-                        if(action == 0) {
-                            string modName = stream.ReadUTF();
-                            JALib.Instance.Log($"Applying mod: {modName}");
-                            LoadMod(modName);
-                        } else throw new Exception("Invalid action");
-                    }
-                });
+                _ = JATask.Run(JALib.Instance, new ApplicatorAPI(await listener.AcceptTcpClientAsync()).run);
             } catch (ThreadAbortException) {
                 break;
             } catch (Exception e) {
                 JALib.Instance.LogException(e);
             }
+        }
+    }
+
+    private void run() {
+        using(client) {
+            NetworkStream stream = client.GetStream();
+            byte action = stream.ReadByteSafe();
+            if(action == 0) {
+                string modName = stream.ReadUTF();
+                JALib.Instance.Log($"Applying mod: {modName}");
+                LoadMod(modName);
+            } else throw new Exception("Invalid action");
         }
     }
 
