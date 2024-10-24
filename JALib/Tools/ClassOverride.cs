@@ -16,7 +16,7 @@ public class ClassOverride {
         overrides.AddRange(from method in type.GetMethods()
                            where !method.IsStatic && method.GetBaseDefinition() == null && method.DeclaringType == type
                            let originalMethod = baseType.GetMethod(method.Name, flags, null, method.GetParameters().Select(p => p.ParameterType).ToArray(), null)
-                           where originalMethod != null && originalMethod.IsPublic == method.IsPublic && originalMethod.ReturnType.IsAssignableFrom(method.ReturnType)
+                           where originalMethod != null && originalMethod.IsPublic == method.IsPublic && method.ReturnType.IsContains(originalMethod.ReturnType)
                            select (originalMethod, method));
         if(overrides.Count == 0) return;
         TypeBuilder typeBuilder = JAMod.ModuleBuilder.DefineType($"JALib.ClassOverride.{type.FullName}", TypeAttributes.NotPublic);

@@ -125,7 +125,7 @@ public static class ByteTools {
         if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
         if(declear != null && declear.CheckCondition(version)) declaring = true;
         if(includeClass) type = Type.GetType(input.ReadUTF());
-        if(CheckType(type, typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+        if(type.IsContains(typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             int size = input.ReadInt();
             if(size == -1) return null;
             Type elementType = type.GetGenericArguments()[0];
@@ -137,7 +137,7 @@ public static class ByteTools {
             ConstructorInfo constructorInfo;
             object collection = (constructorInfo = type.Constructor(typeof(int))) != null ? constructorInfo.Invoke([size]) : type.New();
             MethodInfo addMethod = type.Method("Add");
-            if(CheckType(type, typeof(IDictionary)))
+            if(type.IsContains(typeof(IDictionary)))
                 for(int i = 0; i < size; i++)
                     addMethod.Invoke(collection, [ToObject(input, elementType), ToObject(input, type.GetGenericArguments()[1])]);
             else
@@ -146,7 +146,7 @@ public static class ByteTools {
             return collection;
         }
         if(type.GetCustomAttribute<NotNullAttribute>() == null && nullable && !input.ReadBoolean()) return null;
-        if(CheckType(type, typeof(Delegate))) {
+        if(type.IsContains(typeof(Delegate))) {
             if(!includeClass) type = Type.GetType(input.ReadUTF());
             Type declaringType = Type.GetType(input.ReadUTF());
             MethodInfo method = declaringType.Method(input.ReadUTF());
@@ -157,31 +157,31 @@ public static class ByteTools {
             }
             return Delegate.CreateDelegate(type, target, method);
         }
-        if(CheckType(type, typeof(JAMod))) {
+        if(type.IsContains(typeof(JAMod))) {
             return JAMod.GetMods(input.ReadUTF());
         }
-        if(CheckType(type, typeof(Feature))) {
+        if(type.IsContains(typeof(Feature))) {
             string modName = input.ReadUTF();
             string featureName = input.ReadUTF();
             return JAMod.GetMods(modName).Features.Find(feature => feature.Name == featureName);
         }
-        if(CheckType(type, typeof(Type))) {
+        if(type.IsContains(typeof(Type))) {
             string typeName = input.ReadUTF();
             return Type.GetType(typeName);
         }
-        if(CheckType(type, typeof(MethodInfo))) {
+        if(type.IsContains(typeof(MethodInfo))) {
             string typeName = input.ReadUTF();
             string methodName = input.ReadUTF();
             Type[] types = input.ReadObject<Type[]>();
             return Type.GetType(typeName).Method(methodName, types);
         }
-        if(CheckType(type, typeof(ConstructorInfo))) {
+        if(type.IsContains(typeof(ConstructorInfo))) {
             string typeName = input.ReadUTF();
             Type[] types = input.ReadObject<Type[]>();
             Type declaringType = Type.GetType(typeName);
             return types == null ? declaringType.TypeInitializer : declaringType.Constructor(types);
         }
-        if(CheckType(type, typeof(MethodBase))) {
+        if(type.IsContains(typeof(MethodBase))) {
             string typeName = input.ReadUTF();
             bool isConstructor = input.ReadBoolean();
             Type declaringType = Type.GetType(typeName);
@@ -424,7 +424,7 @@ public static class ByteTools {
         if(includeCl != null && includeCl.CheckCondition(version)) includeClass = true;
         if(declear != null && declear.CheckCondition(version)) declaring = true;
         if(includeClass) output.WriteUTF(type.FullName);
-        if(CheckType(type, typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
+        if(type.IsContains(typeof(ICollection)) && type.GetCustomAttribute<IgnoreArrayAttribute>() == null) {
             if(value == null) {
                 output.WriteInt(-1);
                 return;
@@ -437,7 +437,7 @@ public static class ByteTools {
             }
             output.WriteInt(value.GetValue<int>("Count"));
             Type elementType = type.GetGenericArguments()[0];
-            if(CheckType(type, typeof(IDictionary))) {
+            if(type.IsContains(typeof(IDictionary))) {
                 Type valueType = type.GetGenericArguments()[1];
                 IDictionary dictionary = (IDictionary) value;
                 foreach(object key in dictionary.Keys) {
@@ -456,7 +456,7 @@ public static class ByteTools {
             }
             output.WriteBoolean(true);
         }
-        if(CheckType(type, typeof(Delegate))) {
+        if(type.IsContains(typeof(Delegate))) {
             if(!includeClass) output.WriteUTF(type.FullName);
             Delegate del = (Delegate) value;
             output.WriteObject(del.Method, typeof(MethodInfo));
@@ -464,36 +464,36 @@ public static class ByteTools {
             del.Target.ToBytes(output, declaring, nullable: true);
             return;
         }
-        if(CheckType(type, typeof(JAMod))) {
+        if(type.IsContains(typeof(JAMod))) {
             JAMod mod = (JAMod) value;
             output.WriteUTF(mod.Name);
             return;
         }
-        if(CheckType(type, typeof(Feature))) {
+        if(type.IsContains(typeof(Feature))) {
             Feature feature = (Feature) value;
             output.WriteUTF(feature.Mod.Name);
             output.WriteUTF(feature.Name);
             return;
         }
-        if(CheckType(type, typeof(Type))) {
+        if(type.IsContains(typeof(Type))) {
             Type typeValue = (Type) value;
             output.WriteUTF(typeValue.FullName);
             return;
         }
-        if(CheckType(type, typeof(MethodInfo))) {
+        if(type.IsContains(typeof(MethodInfo))) {
             MethodInfo method = (MethodInfo) value;
             output.WriteUTF(method.DeclaringType.FullName);
             output.WriteUTF(method.Name);
             output.WriteObject(method.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
             return;
         }
-        if(CheckType(type, typeof(ConstructorInfo))) {
+        if(type.IsContains(typeof(ConstructorInfo))) {
             ConstructorInfo constructor = (ConstructorInfo) value;
             output.WriteUTF(constructor.DeclaringType.FullName);
             output.WriteObject(constructor.IsStatic ? null : constructor.GetParameters().Select(parameter => parameter.ParameterType).ToArray(), typeof(Type[]));
             return;
         }
-        if(CheckType(type, typeof(MethodBase))) {
+        if(type.IsContains(typeof(MethodBase))) {
             MethodBase method = (MethodBase) value;
             output.WriteUTF(method.DeclaringType.FullName);
             if(method is ConstructorInfo info) {
@@ -565,8 +565,6 @@ public static class ByteTools {
             ToBytes(memberValue, output, castType, memberDeclearing, false, version);
         }
     }
-
-    private static bool CheckType(Type type, Type check) => check.IsAssignableFrom(type);
 
     private static void CheckStart(int start, int length) {
         if(start < 0 || start >= length) throw new ArgumentException("Start must be within the byte array");

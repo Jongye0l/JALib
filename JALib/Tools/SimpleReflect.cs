@@ -174,4 +174,8 @@ public static class SimpleReflect {
                                                     || type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong);
 
     public static bool IsFloat(this Type type) => type == typeof(float) || type == typeof(double) || type == typeof(decimal);
+
+    public static bool IsContains(this Type type, Type target) => target.IsAssignableFrom(type);
+
+    public static bool IsNullable(this Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 }

@@ -303,7 +303,7 @@ public abstract class JAMod {
     internal async Task ForceReloadMod() {
         try {
             // TODO : Remove This
-            if(GetType().Assembly.GetTypes().Any(type => typeof(MonoBehaviour).IsAssignableFrom(type))) return;
+            if(GetType().Assembly.GetTypes().Any(type => type.IsContains(typeof(MonoBehaviour)))) return;
             string modName = ModEntry.Info.Id;
             ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reload...]</color>";
             string path = System.IO.Path.Combine(ModEntry.Path, "Info.json");
