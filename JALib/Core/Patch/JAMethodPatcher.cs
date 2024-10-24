@@ -186,6 +186,8 @@ class JAMethodPatcher {
                             Label falseLabel = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
                             yield return new CodeInstruction(OpCodes.Call, typeof(Array).Method("Empty").MakeGenericMethod(typeof(LocalBuilder)));
+                            Label skipLabel = generator.DefineLabel();
+                            yield return new CodeInstruction(OpCodes.Br, skipLabel);
                             yield return originalArg0.Clone().WithLabels(falseLabel);
                             yield return code;
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
@@ -203,6 +205,13 @@ class JAMethodPatcher {
                             yield return next;
                             yield return new CodeInstruction(OpCodes.Dup);
                             yield return moveLabel;
+                            while(enumerator.MoveNext()) {
+                                CodeInstruction cur = enumerator.Current;
+                                if(cur.opcode == OpCodes.Ldarg_0) cur = originalArg0;
+                                yield return cur;
+                                if(cur.opcode == OpCodes.Call) break;
+                            }
+                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipLabel);
                             state++;
                             continue;
                         }
@@ -219,7 +228,7 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Brtrue, removeLabel);
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
                             yield return new CodeInstruction(OpCodes.Ldfld, replace);
-                            yield return new CodeInstruction(OpCodes.Ldlen);
+                            yield return new CodeInstruction(OpCodes.Dup);
                             yield return moveLabel;
                             yield return new CodeInstruction(OpCodes.Pop);
                             yield return originalArg0;
