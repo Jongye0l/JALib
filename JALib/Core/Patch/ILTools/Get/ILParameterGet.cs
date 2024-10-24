@@ -7,7 +7,7 @@ namespace JALib.Core.Patch.ILTools.Get;
 public class ILParameterGet(ILParameter parameter) : ILCode {
     public readonly ILParameter Parameter = parameter;
 
-    public override Type ReturnType => throw new NotSupportedException(); // TODO: Support This
+    public override Type ReturnType => Parameter.Type;
 
     public override IEnumerable<CodeInstruction> Load(ILGenerator generator) {
         yield return Parameter.Index switch {

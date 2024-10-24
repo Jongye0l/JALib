@@ -1,10 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JALib.Tools;
 
 namespace JALib.Core.Patch.ILTools.Calculate;
 
-public class ILXor(ILCode left, ILCode right) : ILCalculate(left, right) {
+public class ILXor : ILCalculate {
+
+    public ILXor(ILCode left, ILCode right) : base(left, right) {
+        if(!SimpleReflect.IsInteger(left.ReturnType)) throw new InvalidProgramException("left Type is not integer");
+        if(!SimpleReflect.IsInteger(right.ReturnType)) throw new InvalidProgramException("right Type is not integer");
+    }
 
     public override Type ReturnType => typeof(bool);
 

@@ -15,6 +15,7 @@ public class ILLocal : ILTool {
         LocalBuilder = null;
         this.type = type;
     }
+
     public int Index { get; internal set; }
 
     public void Setup(ILGenerator generator) {

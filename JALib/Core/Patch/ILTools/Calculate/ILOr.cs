@@ -1,12 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JALib.Tools;
 
 namespace JALib.Core.Patch.ILTools.Calculate;
 
-public class ILOr(ILCode left, ILCode right) : ILCalculate(left, right) {
+public class ILOr : ILCalculate {
 
-    public override Type ReturnType => typeof(bool);
+    public ILOr(ILCode left, ILCode right) : base(left, right) {
+        if(!SimpleReflect.IsInteger(left.ReturnType)) throw new InvalidProgramException("left Type is not integer");
+        if(!SimpleReflect.IsInteger(right.ReturnType)) throw new InvalidProgramException("right Type is not integer");
+    }
+
+    public override Type ReturnType => typeof(int);
 
     public override IEnumerable<CodeInstruction> Load(ILGenerator generator) {
         foreach(CodeInstruction instruction in Left.Load(generator)) yield return instruction;

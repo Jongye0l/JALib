@@ -170,10 +170,11 @@ public static class SimpleReflect {
 
     public static bool IsNumeric(this Type type) => type.IsInteger() || type.IsFloat();
 
-    public static bool IsInteger(this Type type) => type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort)
-                                                    || type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong);
+    public static bool IsInteger(this Type type) => type == typeof(sbyte) || type == typeof(short) || type == typeof(int) || type == typeof(long) || type.IsUnsigned();
 
     public static bool IsFloat(this Type type) => type == typeof(float) || type == typeof(double) || type == typeof(decimal);
+
+    public static bool IsUnsigned(this Type type) => type == typeof(byte) || type == typeof(ushort) || type == typeof(uint) || type == typeof(ulong);
 
     public static bool IsContains(this Type type, Type target) => target.IsAssignableFrom(type);
 

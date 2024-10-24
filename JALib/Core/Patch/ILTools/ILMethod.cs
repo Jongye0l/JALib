@@ -137,15 +137,15 @@ public class ILMethod : IEnumerator<ILCode>, ILTool {
             if(instruction.opcode == OpCodes.Sub) stack.Push(new ILSub(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Mul) stack.Push(new ILMul(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Div) stack.Push(new ILDiv(Pop(stack), Pop(stack)));
-            if(instruction.opcode == OpCodes.Div_Un) stack.Push(new ILDivU(Pop(stack), Pop(stack)));
+            if(instruction.opcode == OpCodes.Div_Un) stack.Push(new ILDiv(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Rem) stack.Push(new ILRem(Pop(stack), Pop(stack)));
-            if(instruction.opcode == OpCodes.Rem_Un) stack.Push(new ILRemU(Pop(stack), Pop(stack)));
+            if(instruction.opcode == OpCodes.Rem_Un) stack.Push(new ILRem(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.And) stack.Push(new ILAnd(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Or) stack.Push(new ILOr(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Xor) stack.Push(new ILXor(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Shl) stack.Push(new ILShl(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Shr) stack.Push(new ILShr(Pop(stack), Pop(stack)));
-            if(instruction.opcode == OpCodes.Shr_Un) stack.Push(new ILShrU(Pop(stack), Pop(stack)));
+            if(instruction.opcode == OpCodes.Shr_Un) stack.Push(new ILShr(Pop(stack), Pop(stack)));
             if(instruction.opcode == OpCodes.Neg) stack.Push(new ILNeg(Pop(stack)));
             if(instruction.opcode == OpCodes.Not) stack.Push(new ILNot(Pop(stack)));
             if(instruction.opcode == OpCodes.Conv_I1) stack.Push(new ILConvert(Pop(stack), typeof(sbyte)));

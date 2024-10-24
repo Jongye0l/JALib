@@ -516,7 +516,6 @@
         <Compile Include="Core\Patch\ILTools\Calculate\ILAnd.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILCalculate.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILDiv.cs"/>
-        <Compile Include="Core\Patch\ILTools\Calculate\ILDivU.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILEqual.cs" />
         <Compile Include="Core\Patch\ILTools\Calculate\ILGreater.cs" />
         <Compile Include="Core\Patch\ILTools\Calculate\IlIsInstance.cs" />
@@ -526,10 +525,8 @@
         <Compile Include="Core\Patch\ILTools\Calculate\ILNot.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILOr.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILRem.cs"/>
-        <Compile Include="Core\Patch\ILTools\Calculate\ILRemU.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILShl.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILShr.cs"/>
-        <Compile Include="Core\Patch\ILTools\Calculate\ILShrU.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILSub.cs"/>
         <Compile Include="Core\Patch\ILTools\Calculate\ILXor.cs"/>
         <Compile Include="Core\Patch\ILTools\Get\ILArrayGet.cs" />

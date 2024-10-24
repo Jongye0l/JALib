@@ -7,6 +7,9 @@ namespace JALib.Core.Patch.ILTools.Value;
 public class ILInt(int value) : ILCode {
     public readonly int Value = value;
 
+    public ILInt(bool value) : this(value ? 1 : 0) {
+    }
+
     public override Type ReturnType => typeof(int);
 
     public static implicit operator int(ILInt ilInt) => ilInt.Value;
@@ -14,6 +17,10 @@ public class ILInt(int value) : ILCode {
     public static implicit operator ILInt(sbyte value) => new(value);
 
     public static implicit operator ILInt(int value) => new(value);
+
+    public static implicit operator ILInt(bool value) => new(value);
+
+    public static implicit operator bool(ILInt ilInt) => ilInt.Value != 0;
 
     public override IEnumerable<CodeInstruction> Load(ILGenerator generator) {
         yield return Value switch {

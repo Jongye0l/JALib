@@ -1,10 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JALib.Tools;
 
 namespace JALib.Core.Patch.ILTools.Calculate;
 
-public class ILMul(ILCode left, ILCode right) : ILCalculate(left, right) {
+public class ILMul : ILCalculate {
+
+    public ILMul(ILCode left, ILCode right) : base(left, right) {
+        if(!left.ReturnType.IsNumeric()) throw new InvalidProgramException("left Type is not numeric");
+        if(!right.ReturnType.IsNumeric()) throw new InvalidProgramException("right Type is not numeric");
+    }
 
     public override IEnumerable<CodeInstruction> Load(ILGenerator generator) {
         foreach(CodeInstruction instruction in Left.Load(generator)) yield return instruction;

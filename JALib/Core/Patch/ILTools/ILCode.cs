@@ -20,4 +20,5 @@ public abstract class ILCode : ILTool {
     public static implicit operator ILCode(float value) => new ILFloat(value);
     public static implicit operator ILCode(double value) => new ILDouble(value);
     public static implicit operator ILCode(string value) => new ILString(value);
+    public static implicit operator ILCode(bool value) => new ILInt(value ? 1 : 0);
 }

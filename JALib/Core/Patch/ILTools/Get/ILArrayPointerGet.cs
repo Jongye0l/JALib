@@ -2,7 +2,7 @@
 using System.Reflection.Emit;
 using HarmonyLib;
 
-namespace JALib.Core.Patch.ILTools;
+namespace JALib.Core.Patch.ILTools.Get;
 
 public class ILArrayPointerGet(ILCode array, ILCode index) : ILCode {
     public readonly ILCode Array = array;
