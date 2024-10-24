@@ -14,7 +14,7 @@ namespace JALib.API;
 
 class ApplicatorAPI(TcpClient client) {
     private static TcpListener listener;
-    private static Listener machine;
+    private static Task<TcpClient> task;
 
     public static int Connect() {
 Setup:
@@ -22,22 +22,41 @@ Setup:
         try {
             listener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
             listener.Start();
-            machine = new Listener();
+            Listen();
             JALib.Instance.Log($"Listening on port: {port}");
         } catch (SocketException) {
             goto Setup;
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            throw;
         }
         return port;
     }
 
     public static void Dispose() {
-        machine?.Dispose();
-        listener?.Stop();
-        machine = null;
+        listener.Stop();
         listener = null;
+        if(task == null) return;
+        task.Dispose();
+        task = null;
     }
 
-    private void run() {
+    public static void Listen() {
+        task = listener.AcceptTcpClientAsync();
+        task.ContinueWith(Work);
+    }
+
+    private static void Work(Task<TcpClient> task) {
+        try {
+            TcpClient client = task.Result;
+            Listen();
+            _ = JATask.Run(JALib.Instance, new ApplicatorAPI(client).Run);
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+        }
+    }
+
+    private void Run() {
         using(client) {
             NetworkStream stream = client.GetStream();
             byte action = stream.ReadByteSafe();
@@ -53,37 +72,5 @@ Setup:
         JAMod mod = JAMod.GetMods(modName);
         if(mod == null) ForceApplyMod.ApplyMod(Path.Combine(UnityModManager.modsPath, modName));
         else _ = mod.ForceReloadMod();
-    }
-
-    private class Listener : IAsyncStateMachine {
-        private AsyncVoidMethodBuilder builder = AsyncVoidMethodBuilder.Create();
-        private Task<TcpClient> task;
-
-        public Listener() {
-            builder.Start(ref machine);
-        }
-
-        public void MoveNext() {
-            try {
-                task ??= listener.AcceptTcpClientAsync();
-                if(!task.IsCompleted) return;
-                TcpClient client = task.Result;
-                task = null;
-                _ = JATask.Run(JALib.Instance, new ApplicatorAPI(client).run);
-            } catch (ThreadAbortException) {
-                builder.SetResult();
-            } catch (Exception e) {
-                JALib.Instance.LogException(e);
-            }
-        }
-
-        public void SetStateMachine(IAsyncStateMachine stateMachine) {
-        }
-
-        public void Dispose() {
-            if(task == null) return;
-            task.Dispose();
-            builder.SetResult();
-        }
     }
 }

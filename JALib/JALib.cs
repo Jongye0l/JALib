@@ -51,7 +51,7 @@ class JALib : JAMod {
             Instance.Log("ModApplicator is only available on Windows. Current: " + ADOBase.platform);
             return;
         }
-        Task<int> portTask = Task.Run(ApplicatorAPI.Connect);
+        Task<int> portTask = JATask.Run(Instance, ApplicatorAPI.Connect);
         string applicationFolderPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator");
         string applicationPath = System.IO.Path.Combine(applicationFolderPath, "JALib ModApplicator.exe");
         using(RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib")) {
