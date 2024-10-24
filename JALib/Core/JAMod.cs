@@ -70,10 +70,10 @@ public abstract class JAMod {
             Gid = gid;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            MainThread.Run(new JAction(this, SetupEvent));
+            SetupEvent();
             mods[Name] = this;
             SaveSetting();
-            FinishInit();
+            Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {
             ModEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
             Error("Failed to Initialize JAMod " + Name);
@@ -83,22 +83,18 @@ public abstract class JAMod {
     }
 
     private async void SetupEvent() {
-        ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
         if(IsExistMethod(nameof(OnUpdate))) ModEntry.OnUpdate = OnUpdate0;
         if(IsExistMethod(nameof(OnFixedUpdate))) ModEntry.OnFixedUpdate = OnFixedUpdate0;
         if(IsExistMethod(nameof(OnLateUpdate))) ModEntry.OnLateUpdate = OnLateUpdate0;
         if(IsExistMethod(nameof(OnSessionStart))) ModEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
         if(IsExistMethod(nameof(OnSessionStop))) ModEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
         if(!initialized) await Task.Yield();
-        if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
-        if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
-        if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
-    }
-
-    private async void FinishInit() {
-        await Task.Yield();
-        initialized = true;
-        Log("JAMod " + Name + " is Initialized");
+        MainThread.Run(this, () => {
+            ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
+            if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
+            if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
+            if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
+        });
     }
 
     private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
@@ -112,11 +108,13 @@ public abstract class JAMod {
     public static ICollection<JAMod> GetMods() => mods.Values;
 
     internal static void EnableInit() {
-        foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
-            if(mod.ModEntry.Active) continue;
-            mod.ModEntry.Active = true;
-            mod.OnEnable();
-        }
+        MainThread.Run(JALib.Instance, () => {
+            foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
+                if(mod.ModEntry.Active) continue;
+                mod.ModEntry.Active = true;
+                mod.OnEnable();
+            }
+        });
     }
 
     internal static void DisableInit() {
@@ -134,6 +132,10 @@ public abstract class JAMod {
 
     protected void AddFeature(params Feature[] feature) {
         Features.Add(feature);
+        if(!initialized || !Enabled || !ModEntry.Active) return;
+        MainThread.Run(this, () => {
+            foreach(Feature f in feature) if(f.Enabled) f.Enable();
+        });
     }
 
     internal void ModInfo(GetModInfo getModInfo) {
@@ -156,9 +158,10 @@ public abstract class JAMod {
         }
         if(value) {
             OnEnable();
-            foreach(Feature feature in Features.Where(feature => feature.Enabled)) feature.Enable();
+            foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
+            initialized = true;
         } else {
-            foreach(Feature feature in Features.Where(feature => feature.Enabled)) feature.Disable();
+            foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
             OnDisable();
         }
         return true;
@@ -318,9 +321,9 @@ public abstract class JAMod {
                 if(JApi.Instance != null) {
                     modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
                     Log("Force Reload: Loading Info...");
-                    getModInfo = await JApi.Send(new GetModInfo(modInfo));
+                    getModInfo = await JApi.Send(new GetModInfo(modInfo), false);
                     if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
-                        _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion));
+                        _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion), false);
                         return;
                     }
                 }
@@ -337,7 +340,7 @@ public abstract class JAMod {
                         Version version = new(dependency.Value);
                         UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == dependency.Key);
                         if(modEntry != null && modEntry.Version >= version) continue;
-                        tasks.Add(JApi.Send(new DownloadMod(dependency.Key, version)));
+                        tasks.Add(JApi.Send(new DownloadMod(dependency.Key, version), false));
                     } catch (Exception e) {
                         ModEntry.Logger.Log($"Failed to Load Dependency {dependency.Key}({dependency.Value})");
                         ModEntry.Logger.LogException(e);
@@ -345,7 +348,14 @@ public abstract class JAMod {
                 }
                 ModEntry.Info.DisplayName = modName + " <color=aqua>[Waiting Dependencies...]</color>";
                 Log("Force Reload: Waiting Dependencies...");
-                await Task.WhenAll(tasks);
+                foreach(Task task in tasks) {
+                    try {
+                        await task;
+                    } catch (Exception e) {
+                        ModEntry.Logger.Log("Failed to Download 1 Dependency");
+                        ModEntry.Logger.LogException(e);
+                    }
+                }
             }
             modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Unloading...]</color>";
             Log("Force Reload: Unloading...");

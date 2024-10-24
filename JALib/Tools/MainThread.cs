@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Concurrent;
 using System.Threading;
+using JALib.Core;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -12,16 +13,15 @@ public static class MainThread {
     private static StaticCoroutine staticCoroutine;
 
     internal static void Initialize() {
-        Thread = Thread.CurrentThread;
         queue ??= new ConcurrentQueue<JAction>();
-        Run(new JAction(JALib.Instance, () => {
+        queue.Enqueue(new JAction(JALib.Instance, () => {
+            Thread = Thread.CurrentThread;
             staticCoroutine = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
             Object.DontDestroyOnLoad(staticCoroutine.gameObject);
         }));
     }
 
     internal static void Dispose() {
-        Thread = null;
         GC.SuppressFinalize(queue);
         if(!staticCoroutine) return;
         staticCoroutine.StopAllCoroutines();
@@ -38,13 +38,14 @@ public static class MainThread {
     }
 
     public static void Run(JAction action) {
-        if(IsMainThread() || Thread == null) {
+        if(IsMainThread()) {
             action.Invoke();
             return;
         }
         queue.Enqueue(action);
     }
 
+    public static void Run(JAMod mod, Action action) => Run(new JAction(mod, action));
     public static bool IsMainThread() => Thread.CurrentThread == Thread;
     public static Coroutine StartCoroutine(IEnumerator routine) => staticCoroutine.StartCoroutine(routine);
     public static void StopCoroutine(Coroutine routine) => staticCoroutine.StopCoroutine(routine);

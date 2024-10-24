@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JALib.Core;
@@ -11,9 +12,9 @@ using UnityModManagerNet;
 
 namespace JALib.API;
 
-class ApplicatorAPI {
+class ApplicatorAPI(TcpClient client) {
     private static TcpListener listener;
-    private static Task listenerTask;
+    private static Task<TcpClient> task;
 
     public static int Connect() {
 Setup:
@@ -21,41 +22,49 @@ Setup:
         try {
             listener = new TcpListener(IPAddress.Parse("127.0.0.1"), port);
             listener.Start();
-            listenerTask = Task.Run(Listen);
+            Listen();
             JALib.Instance.Log($"Listening on port: {port}");
         } catch (SocketException) {
             goto Setup;
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+            throw;
         }
         return port;
     }
 
     public static void Dispose() {
-        listener?.Stop();
-        listenerTask?.Dispose();
+        listener.Stop();
         listener = null;
-        listenerTask = null;
+        if(task == null) return;
+        task.Dispose();
+        task = null;
     }
 
-    public static async void Listen() {
-        while(true) {
-            try {
-                TcpClient client = await listener.AcceptTcpClientAsync();
-                _ = JATask.Run(JALib.Instance, () => {
-                    using (client) {
-                        NetworkStream stream = client.GetStream();
-                        byte action = stream.ReadByteSafe();
-                        if(action == 0) {
-                            string modName = stream.ReadUTF();
-                            JALib.Instance.Log($"Applying mod: {modName}");
-                            LoadMod(modName);
-                        } else throw new Exception("Invalid action");
-                    }
-                });
-            } catch (ThreadAbortException) {
-                break;
-            } catch (Exception e) {
-                JALib.Instance.LogException(e);
-            }
+    public static void Listen() {
+        task = listener.AcceptTcpClientAsync();
+        task.ContinueWith(Work);
+    }
+
+    private static void Work(Task<TcpClient> task) {
+        try {
+            TcpClient client = task.Result;
+            Listen();
+            _ = JATask.Run(JALib.Instance, new ApplicatorAPI(client).Run);
+        } catch (Exception e) {
+            JALib.Instance.LogException(e);
+        }
+    }
+
+    private void Run() {
+        using(client) {
+            NetworkStream stream = client.GetStream();
+            byte action = stream.ReadByteSafe();
+            if(action == 0) {
+                string modName = stream.ReadUTF();
+                JALib.Instance.Log($"Applying mod: {modName}");
+                LoadMod(modName);
+            } else throw new Exception("Invalid action");
         }
     }
 

@@ -535,9 +535,9 @@
         <Compile Include="Data\RawFile.cs"/>
         <Compile Include="GlobalUsings.cs"/>
         <Compile Include="JAException\AlreadyWorkedException.cs"/>
+        <Compile Include="JAException\PacketRunningException.cs"/>
         <Compile Include="JAException\PatchParameterException.cs"/>
         <Compile Include="JAException\PatchReturnException.cs"/>
-        <Compile Include="JAException\ResponseException.cs"/>
         <Compile Include="JALib.cs"/>
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="Tools\ByteTool\ByteTools.cs"/>

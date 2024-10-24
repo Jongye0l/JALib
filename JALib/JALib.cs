@@ -31,7 +31,7 @@ class JALib : JAMod {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         JApi.Initialize();
-        Task.Run(() => {
+        JATask.Run(Instance, () => {
             LoadInfo();
             Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
             Patcher = new JAPatcher(this);
@@ -41,16 +41,18 @@ class JALib : JAMod {
             } catch (Exception) {
                 // ignored
             }
+            SetupModApplicator();
         });
         OnEnable();
     }
 
-    private static void SetupModApplicator() {
+    private static async void SetupModApplicator() {
+        while(ADOBase.platform == Platform.None) await Task.Yield();
         if(ADOBase.platform != Platform.Windows) {
             Instance.Log("ModApplicator is only available on Windows. Current: " + ADOBase.platform);
             return;
         }
-        Task<int> portTask = Task.Run(ApplicatorAPI.Connect);
+        Task<int> portTask = JATask.Run(Instance, ApplicatorAPI.Connect);
         string applicationFolderPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator");
         string applicationPath = System.IO.Path.Combine(applicationFolderPath, "JALib ModApplicator.exe");
         using(RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib")) {
@@ -87,7 +89,7 @@ class JALib : JAMod {
             if(JApi.Instance != null) {
                 getModInfo = new GetModInfo(modInfo);
                 modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
-                await JApi.Send(getModInfo);
+                await JApi.Send(getModInfo, false);
                 if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) AddDownload(modName, getModInfo.LatestVersion);
             }
         } catch (Exception e) {
@@ -98,15 +100,20 @@ class JALib : JAMod {
         if(updateQueue.TryGetValue(modName, out Version version) && version > modInfo.ModEntry.Version) {
             Instance.Log("Update JAMod " + modName);
             modInfo.ModEntry.Info.DisplayName = modName + " <color=aqua>[Updating...]</color>";
-            await JApi.Send(new DownloadMod(modName, version, modInfo.ModEntry.Path));
-            string path = System.IO.Path.Combine(modInfo.ModEntry.Path, "Info.json");
-            if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
-            UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
-            modInfo.ModEntry.SetValue("Info", info);
-            bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [modInfo.ModEntry]);
-            modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modInfo.ModEntry, beta);
-            SetupModInfo(modInfo);
-            await LoadDependencies(modInfo);
+            try {
+                await JApi.Send(new DownloadMod(modName, version, modInfo.ModEntry.Path), false);
+                string path = System.IO.Path.Combine(modInfo.ModEntry.Path, "Info.json");
+                if(!File.Exists(path)) path = System.IO.Path.Combine(modInfo.ModEntry.Path, "info.json");
+                UnityModManager.ModInfo info = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
+                modInfo.ModEntry.SetValue("Info", info);
+                bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [modInfo.ModEntry]);
+                modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modInfo.ModEntry, beta);
+                SetupModInfo(modInfo);
+                await LoadDependencies(modInfo);
+            } catch (Exception e) {
+                modInfo.ModEntry.Logger.Log("Failed to Update JAMod " + modName);
+                modInfo.ModEntry.Logger.LogException(e);
+            }
         }
         modInfo.ModEntry.Info.DisplayName = modName;
         try {
@@ -164,7 +171,14 @@ class JALib : JAMod {
                 }
             }
             modInfo.ModEntry.Info.DisplayName = modName + " <color=aqua>[Waiting Dependencies...]</color>";
-            await Task.WhenAll(tasks);
+            foreach(Task task in tasks) {
+                try {
+                    await task;
+                } catch (Exception e) {
+                    modInfo.ModEntry.Logger.Log("Failed to Load 1 Dependencies");
+                    modInfo.ModEntry.Logger.LogException(e);
+                }
+            }
         }
     }
 
@@ -182,7 +196,7 @@ class JALib : JAMod {
 
     private static async Task DownloadDependency(string name, UnityModManager.ModEntry modEntry) {
         string path = modEntry?.Path ?? System.IO.Path.Combine(UnityModManager.modsPath, name);
-        await JApi.Send(new DownloadMod(name, updateQueue[name], path));
+        await JApi.Send(new DownloadMod(name, updateQueue[name], path), true);
         if(modEntry != null) {
             modEntry.Enabled = false;
             modEntry.Active = false;
@@ -193,18 +207,19 @@ class JALib : JAMod {
     }
 
     private async void LoadInfo() {
-        Task<bool> successTask = JApi.CompleteLoadTask();
-        SetupModApplicator();
-        if(!await successTask) return;
-        if(JaModInfo == null) await Task.Yield();
-        GetModInfo getModInfo = await JApi.Send(new GetModInfo(JaModInfo));
-        ModInfo(getModInfo);
+        try {
+            if(!await JApi.CompleteLoadTask()) return;
+            if(JaModInfo == null) await Task.Yield();
+            GetModInfo getModInfo = await JApi.Send(new GetModInfo(JaModInfo), false);
+            ModInfo(getModInfo);
+        } catch (Exception e) {
+            LogException(e);
+        }
     }
 
     protected override void OnEnable() {
         if(enableInit) return;
         MainThread.Initialize();
-        JApi.Initialize();
         EnableInit();
         enableInit = true;
     }

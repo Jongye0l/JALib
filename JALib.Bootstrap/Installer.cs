@@ -22,6 +22,7 @@ class Installer {
     internal static async Task<bool> CheckMod(UnityModManager.ModEntry modEntry) {
         string modName = modEntry.Info.Id;
         using HttpClient client = new();
+        client.DefaultRequestHeaders.ExpectContinue = false;
         string domain = Domain1;
         try {
             modEntry.Info.DisplayName = modName + "<color=gray> [Check Update...]</color>";
