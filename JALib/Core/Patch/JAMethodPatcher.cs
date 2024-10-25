@@ -626,7 +626,7 @@ class JAMethodPatcher {
                                     if(codes.Current.operand is FieldInfo { Name: "emitter" })
                                         yield return new CodeInstruction(OpCodes.Ldloc, emitter);
                                     else {
-                                        yield return code;
+                                        yield return repeat;
                                         yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
                                         yield return codes.Current;
                                     }
