@@ -558,7 +558,7 @@ class JAMethodPatcher {
                 yield return new CodeInstruction(OpCodes.Ldarg_0);
                 yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
                 yield return new CodeInstruction(OpCodes.Ldarg_1);
-                yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(IEnumerable<HarmonyLib.Patch>)));
+                yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
                 Label falseLabel = generator.DefineLabel();
                 yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
                 yield return new CodeInstruction(OpCodes.Ldarg_0);
@@ -616,8 +616,24 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar);
                             yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("get_Current"));
                             yield return new CodeInstruction(OpCodes.Stloc, tmpBoxVar);
-                            foreach(CodeInstruction repeat in PatchProcessor.GetCurrentInstructions(method, generator: generator))
-                                if(repeat.opcode != OpCodes.Ret) yield return repeat;
+                            IEnumerator<CodeInstruction> codes = PatchProcessor.GetCurrentInstructions(method, generator: generator).GetEnumerator();
+                            while(codes.MoveNext()) {
+                                CodeInstruction repeat = codes.Current;
+                                if(repeat.opcode == OpCodes.Ret) continue;
+                                if(repeat.opcode == OpCodes.Ldarg_0) {
+                                    codes.MoveNext();
+                                    codes.MoveNext();
+                                    if(codes.Current.operand is FieldInfo { Name: "emitter" })
+                                        yield return new CodeInstruction(OpCodes.Ldloc, emitter);
+                                    else {
+                                        yield return code;
+                                        yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+                                        yield return codes.Current;
+                                    }
+                                }
+                                if(repeat.opcode == OpCodes.Ldarg_S || repeat.opcode == OpCodes.Ldarg_1) repeat = new CodeInstruction(OpCodes.Ldloc, tmpBoxVar);
+                                yield return repeat;
+                            }
                             yield return new CodeInstruction(OpCodes.Br, loop);
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(end);
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
