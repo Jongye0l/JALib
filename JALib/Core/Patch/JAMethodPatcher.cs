@@ -421,7 +421,7 @@ class JAMethodPatcher {
                             else {
                                 yield return code;
                                 yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
-                                code = next2;
+                                code = next2.opcode == OpCodes.Ldarg_1 ? new CodeInstruction(OpCodes.Ldloc, fix) : next2;
                             }
                         } else if(field == AddPrefixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
                         else if(field == AddPrefixesSubArguments[2]) code = new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
