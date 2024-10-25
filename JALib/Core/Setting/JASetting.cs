@@ -13,7 +13,7 @@ public class JASetting : IDisposable {
 
     private static readonly JValue NullValue = JValue.CreateNull();
     protected JAMod Mod;
-    protected internal JObject JsonObject;
+    protected JObject JsonObject;
     private IEnumerable<FieldInfo> jsonFields;
     private Dictionary<string, string> fieldValueCache = new();
 

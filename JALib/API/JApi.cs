@@ -18,7 +18,7 @@ class JApi {
 
     private static JApi _instance;
     private static readonly HttpClient HttpClient = new();
-    private static ConcurrentQueue<SendQueue> _queue = new();
+    private static ConcurrentQueue<Action> _queue = new();
     //private const string Domain1 = "jalibtest.jongyeol.kr";
     //private const string Domain2 = "jalibtest.jongyeol.kr";
     private const string Domain1 = "jalib.jongyeol.kr";
@@ -44,12 +44,14 @@ class JApi {
         JATask.Run(JALib.Instance, Connect);
     }
 
-    private async void Connect() {
+    private void Connect() {
         try {
-            if((await HttpClient.GetAsync($"https://{Domain1}/ping")).IsSuccessStatusCode) domain = Domain1;
-            else if((await HttpClient.GetAsync($"https://{Domain2}/ping")).IsSuccessStatusCode) domain = Domain2;
-            else throw new Exception("Failed to connect to the server");
-            OnConnect();
+            domain = domain switch {
+                null => Domain1,
+                Domain1 => Domain2,
+                _ => throw new Exception("Failed to connect to the server")
+            };
+            HttpClient.GetAsync($"https://{Domain1}/ping").ContinueWith(Connect);
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
@@ -58,59 +60,116 @@ class JApi {
         }
     }
 
-    internal static async Task<T> Send<T>(T packet, bool wait) where T : GetRequest {
-        if(_instance != null) {
+    private void Connect(Task<HttpResponseMessage> t) {
+        try {
+            if(t.Result.IsSuccessStatusCode) {
+                OnConnect();
+                return;
+            }
+            Connect();
+        } catch (HttpRequestException e) {
+            JALib.Instance.LogException(e);
+            Connect();
+        } catch (Exception e) {
+            JALib.Instance.Log("Failed to connect to the server: " + domain);
+            JALib.Instance.LogException(e);
+            _instance.completeLoadTask.TrySetResult(false);
+            Dispose();
+        }
+    }
+
+    internal static Task<T> Send<T>(T packet, bool wait) where T : GetRequest {
+        if(_instance == null && !wait)
+            return Task.FromException<T>(new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server")));
+        return new SendHandler<T>(packet, wait).tcs.Task;
+    }
+
+    private class SendHandler<T> where T : GetRequest {
+        private readonly T packet;
+        private readonly bool wait;
+        internal readonly TaskCompletionSource<T> tcs = new();
+        private Task<bool> loadTask;
+        private HttpResponseMessage response;
+
+        internal SendHandler(T packet, bool wait) {
+            this.packet = packet;
+            this.wait = wait;
+            Setup();
+        }
+
+        private void Setup() {
             try {
-                if(!await CompleteLoadTask()) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server"));
-                HttpResponseMessage response = await HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}");
+                if(_instance != null) {
+                    loadTask = CompleteLoadTask();
+                    if(loadTask.IsCompleted) CheckConnect();
+                    else loadTask.GetAwaiter().OnCompleted(CheckConnect);
+                } else Queue();
+            } catch (Exception e) {
+                Error(e);
+            }
+        }
+
+        private void CheckConnect() {
+            try {
+                if(!loadTask.Result) {
+                    if(wait) Queue();
+                    else Error(new Exception("Failed to connect server"));
+                    return;
+                }
+                HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}").ContinueWith(Response);
+            } catch (HttpRequestException e) {
+                if(!wait) Queue();
+                else Error(e);
+            } catch (Exception e) {
+                Error(e);
+            }
+        }
+
+        private void Response(Task<HttpResponseMessage> t) {
+            try {
+                response = t.Result;
                 if(response.IsSuccessStatusCode) {
-                    try {
-                        await Task.Run(() => packet.Run(response));
-                    } catch (Exception e) {
-                        throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e);
-                    }
-                    return packet;
+                    Task.Run(Run).GetAwaiter().OnCompleted(Complete);
+                    return;
                 }
                 string errorLog = "Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name;
-                if(!wait) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception(errorLog));
-                if(response.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout or HttpStatusCode.ServiceUnavailable or (HttpStatusCode) 522)) {
-                    JALib.Instance.Log(errorLog);
-                    return packet;
+                if(!wait) {
+                    Error(new Exception(errorLog));
+                    return;
                 }
-            } catch (HttpRequestException e) {
-                if(!wait) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e);
+                if(response.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout or HttpStatusCode.ServiceUnavailable or (HttpStatusCode) 522)) {
+                    JALib.Instance.Error(errorLog);
+                    Queue();
+                }
+            } catch (Exception e) {
+                Error(e);
             }
-            if(wait) JALib.Instance.Log("Failed to connect server");
-            _instance.Dispose();
         }
-        if(!wait) throw new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server"));
-        TaskCompletionSource<bool> taskCompletionSource = new();
-        _queue.Enqueue(new SendQueue(packet, taskCompletionSource));
-        await taskCompletionSource.Task;
-        return packet;
+
+        private void Run() {
+            try {
+                packet.Run(response);
+            } catch (Exception e) {
+                JALib.Instance.Log("Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name);
+                Error(e);
+            }
+        }
+
+        private void Queue() => _queue.Enqueue(Setup);
+        private void Complete() => tcs.SetResult(packet);
+        private void Error(Exception e) => tcs.SetException(new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e));
     }
 
     private void OnConnect() {
         completeLoadTask.TrySetResult(true);
         completeLoadTask = null;
-        while(_queue.TryDequeue(out SendQueue sendQueue)) Task.Run(sendQueue.run);
+        while(_queue.TryDequeue(out Action handler)) Task.Run(handler);
     }
 
     internal void Dispose() {
         _instance = null;
+        completeLoadTask?.SetCanceled();
         completeLoadTask = null;
         GC.SuppressFinalize(this);
-    }
-
-    private class SendQueue(GetRequest packet, TaskCompletionSource<bool> tcs) {
-        public async void run() {
-            try {
-                await Send(packet, true);
-                tcs.SetResult(true);
-            } catch (Exception e) {
-                JALib.Instance.LogException("Failed Running Request Job " + packet.GetType().Name, e);
-                tcs.SetException(e);
-            }
-        }
     }
 }

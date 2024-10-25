@@ -43,14 +43,14 @@ Setup:
 
     public static void Listen() {
         task = listener.AcceptTcpClientAsync();
-        task.ContinueWith(Work);
+        task.GetAwaiter().UnsafeOnCompleted(Work);
     }
 
-    private static void Work(Task<TcpClient> task) {
+    private static void Work() {
         try {
             TcpClient client = task.Result;
             Listen();
-            _ = JATask.Run(JALib.Instance, new ApplicatorAPI(client).Run);
+            JATask.Run(JALib.Instance, new ApplicatorAPI(client).Run);
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }

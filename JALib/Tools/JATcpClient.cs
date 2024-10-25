@@ -134,25 +134,14 @@ public class JATcpClient : TcpClient {
         return (byte) stream.ReadByte();
     }
 
-    public short ReadShort() {
-        return ReadBytes(2).ToShort();
-    }
-
-    public int ReadInt() {
-        return ReadBytes(4).ToInt();
-    }
-
-    public long ReadLong() {
-        return ReadBytes(8).ToLong();
-    }
-
-    public float ReadFloat() {
-        return ReadBytes(4).ToFloat();
-    }
-
-    public double ReadDouble() {
-        return ReadBytes(8).ToDouble();
-    }
+    public short ReadShort() => ReadBytes(2).ToShort();
+    public int ReadInt() => ReadBytes(4).ToInt();
+    public long ReadLong() => ReadBytes(8).ToLong();
+    public float ReadFloat() => ReadBytes(4).ToFloat();
+    public double ReadDouble() => ReadBytes(8).ToDouble();
+    public bool ReadBoolean() => ReadByte() != 0;
+    public byte[] ReadBytesAndCount() => ReadBytes(ReadInt());
+    public string ReadUTF() => Encoding.UTF8.GetString(ReadBytesAndCount());
 
     public byte[] ReadBytes(int count, bool force = true) {
         CheckConnect();
@@ -165,44 +154,15 @@ public class JATcpClient : TcpClient {
         return buffer;
     }
 
-    public bool ReadBoolean() {
-        return ReadByte() != 0;
-    }
-
-    public byte[] ReadBytesAndCount() {
-        return ReadBytes(ReadInt());
-    }
-
-    public string ReadUTF() {
-        return Encoding.UTF8.GetString(ReadBytesAndCount());
-    }
-
-    public async Task<byte> ReadAsyncByte() {
-        CheckConnect();
-        byte[] buffer = new byte[1];
-        await stream.ReadAsync(buffer, 0, 1);
-        return buffer[0];
-    }
-
-    public async Task<short> ReadAsyncShort() {
-        return (await ReadAsyncBytes(2)).ToShort();
-    }
-
-    public async Task<int> ReadAsyncInt() {
-        return (await ReadAsyncBytes(4)).ToInt();
-    }
-
-    public async Task<long> ReadAsyncLong() {
-        return (await ReadAsyncBytes(8)).ToLong();
-    }
-
-    public async Task<float> ReadAsyncFloat() {
-        return (await ReadAsyncBytes(4)).ToFloat();
-    }
-
-    public async Task<double> ReadAsyncDouble() {
-        return (await ReadAsyncBytes(8)).ToDouble();
-    }
+    public Task<byte> ReadAsyncByte() => ReadAsyncBytes(1).ContinueWith(task => task.Result[0]);
+    public Task<short> ReadAsyncShort() => ReadAsyncBytes(2).ContinueWith(task => task.Result.ToShort());
+    public Task<int> ReadAsyncInt() => ReadAsyncBytes(4).ContinueWith(task => task.Result.ToInt());
+    public Task<long> ReadAsyncLong() => ReadAsyncBytes(8).ContinueWith(task => task.Result.ToLong());
+    public Task<float> ReadAsyncFloat() => ReadAsyncBytes(4).ContinueWith(task => task.Result.ToFloat());
+    public Task<double> ReadAsyncDouble() => ReadAsyncBytes(8).ContinueWith(task => task.Result.ToDouble());
+    public Task<bool> ReadAsyncBoolean() => ReadAsyncBytes(1).ContinueWith(task => task.Result[0] != 0);
+    public Task<byte[]> ReadAsyncBytesAndCount() => ReadAsyncInt().ContinueWith(task => ReadAsyncBytes(task.Result)).Unwrap();
+    public Task<string> ReadAsyncUTF() => ReadAsyncBytesAndCount().ContinueWith(task => Encoding.UTF8.GetString(task.Result));
 
     public async Task<byte[]> ReadAsyncBytes(int count, bool force = true) {
         CheckConnect();
@@ -213,18 +173,6 @@ public class JATcpClient : TcpClient {
             while(offset < count) offset += await stream.ReadAsync(buffer, offset, count - offset);
         } else if(stream.Read(buffer, 0, count) != count) throw new InvalidOperationException("Failed to read bytes");
         return buffer;
-    }
-
-    public async Task<bool> ReadAsyncBoolean() {
-        return await ReadAsyncByte() != 0;
-    }
-
-    public async Task<byte[]> ReadAsyncBytesAndCount() {
-        return await ReadAsyncBytes(await ReadAsyncInt());
-    }
-
-    public async Task<string> ReadAsyncUTF() {
-        return Encoding.UTF8.GetString(await ReadAsyncBytes(await ReadAsyncInt()));
     }
 
     public void WriteBytes(byte[] data) {
@@ -242,75 +190,28 @@ public class JATcpClient : TcpClient {
         stream.WriteByte(value);
     }
 
-    public void WriteShort(short value) {
-        WriteBytes(value.ToBytes());
-    }
+    public void WriteShort(short value) => WriteBytes(value.ToBytes());
+    public void WriteInt(int value) => WriteBytes(value.ToBytes());
+    public void WriteLong(long value) => WriteBytes(value.ToBytes());
+    public void WriteFloat(float value) => WriteBytes(value.ToBytes());
+    public void WriteDouble(double value) => WriteBytes(value.ToBytes());
+    public void WriteBoolean(bool value) => WriteByte((byte) (value ? 1 : 0));
+    public void WriteUTF(string value) => WriteBytesAndCount(Encoding.UTF8.GetBytes(value));
 
-    public void WriteInt(int value) {
-        WriteBytes(value.ToBytes());
-    }
-
-    public void WriteLong(long value) {
-        WriteBytes(value.ToBytes());
-    }
-
-    public void WriteFloat(float value) {
-        WriteBytes(value.ToBytes());
-    }
-
-    public void WriteDouble(double value) {
-        WriteBytes(value.ToBytes());
-    }
-
-    public void WriteBoolean(bool value) {
-        WriteByte((byte) (value ? 1 : 0));
-    }
-
-    public void WriteUTF(string value) {
-        WriteBytesAndCount(Encoding.UTF8.GetBytes(value));
-    }
-
-    public async Task WriteAsyncBytes(byte[] data) {
+    public Task WriteAsyncBytes(byte[] data) {
         CheckConnect();
-        await stream.WriteAsync(data);
+        return stream.WriteAsync(data).AsTask();
     }
 
-    public async Task WriteAsyncBytesAndCount(byte[] data) {
-        await WriteAsyncInt(data.Length);
-        await WriteAsyncBytes(data);
-    }
-
-    public async Task WriteAsyncByte(byte value) {
-        await WriteAsyncBytes(new[] { value });
-    }
-
-    public async Task WriteAsyncShort(short value) {
-        await WriteAsyncBytes(value.ToBytes());
-    }
-
-    public async Task WriteAsyncInt(int value) {
-        await WriteAsyncBytes(value.ToBytes());
-    }
-
-    public async Task WriteAsyncLong(long value) {
-        await WriteAsyncBytes(value.ToBytes());
-    }
-
-    public async Task WriteAsyncFloat(float value) {
-        await WriteAsyncBytes(value.ToBytes());
-    }
-
-    public async Task WriteAsyncDouble(double value) {
-        await WriteAsyncBytes(value.ToBytes());
-    }
-
-    public async Task WriteAsyncBoolean(bool value) {
-        await WriteAsyncByte((byte) (value ? 1 : 0));
-    }
-
-    public async Task WriteAsyncUTF(string value) {
-        await WriteAsyncBytesAndCount(Encoding.UTF8.GetBytes(value));
-    }
+    public Task WriteAsyncBytesAndCount(byte[] data) => WriteAsyncBytes(data.Length.ToBytes().Concat(data).ToArray());
+    public Task WriteAsyncByte(byte value) => WriteAsyncBytes([value]);
+    public Task WriteAsyncShort(short value) => WriteAsyncBytes(value.ToBytes());
+    public Task WriteAsyncInt(int value) => WriteAsyncBytes(value.ToBytes());
+    public Task WriteAsyncLong(long value) => WriteAsyncBytes(value.ToBytes());
+    public Task WriteAsyncFloat(float value) => WriteAsyncBytes(value.ToBytes());
+    public Task WriteAsyncDouble(double value) => WriteAsyncBytes(value.ToBytes());
+    public Task WriteAsyncBoolean(bool value) => WriteAsyncByte((byte) (value ? 1 : 0));
+    public Task WriteAsyncUTF(string value) => WriteAsyncBytesAndCount(Encoding.UTF8.GetBytes(value));
 
     public new void Close() {
         Dispose();

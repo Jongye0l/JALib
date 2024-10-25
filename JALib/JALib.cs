@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -30,23 +29,25 @@ class JALib : JAMod {
         Instance = this;
         Setting = (JALibSetting) base.Setting;
         JApi.Initialize();
-        JATask.Run(Instance, () => {
-            LoadInfo();
-            Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
-            Patcher = new JAPatcher(this);
-            Patcher.Patch();
-            try {
-                JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
-            } catch (Exception) {
-                // ignored
-            }
-            SetupModApplicator();
-        });
+        JATask.Run(Instance, Init);
         OnEnable();
     }
 
-    private static async void SetupModApplicator() {
-        while(ADOBase.platform == Platform.None) await Task.Yield();
+    private void Init() {
+        LoadInfo();
+        Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
+        Patcher = new JAPatcher(this);
+        Patcher.Patch();
+        try {
+            JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
+        } catch (Exception) {
+            // ignored
+        }
+        SetupModApplicator();
+    }
+
+    private static void SetupModApplicator() {
+        while(ADOBase.platform == Platform.None) Task.Yield().GetAwaiter().OnCompleted(SetupModApplicator);
         if(ADOBase.platform != Platform.Windows) {
             Instance.Log("ModApplicator is only available on Windows. Current: " + ADOBase.platform);
             return;
@@ -142,14 +143,6 @@ class JALib : JAMod {
         } else updateQueue.Add(modName, version);
     }
 
-    internal static async void DownloadMod(string modName, Version version) {
-        await Task.Yield();
-        UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == modName);
-        if(modEntry.Version == version) return;
-        AddDownload(modName, version);
-        if(!loadTasks.ContainsKey(modName)) loadTasks.Add(modName, DownloadDependency(modName, modEntry));
-    }
-
     private static async Task LoadDependencies(JAModInfo modInfo) {
         if(modInfo.Dependencies != null) {
             List<Task> tasks = [];
@@ -205,16 +198,25 @@ class JALib : JAMod {
         ForceApplyMod.ApplyMod(path);
     }
 
-    private async void LoadInfo() {
+    private void LoadInfo() {
         try {
-            if(!await JApi.CompleteLoadTask()) return;
-            if(JaModInfo == null) await Task.Yield();
-            GetModInfo getModInfo = await JApi.Send(new GetModInfo(JaModInfo), false);
-            ModInfo(getModInfo);
+            Task<bool> task = JApi.CompleteLoadTask();
+            if(!task.IsCompleted) {
+                task.GetAwaiter().OnCompleted(LoadInfo);
+                return;
+            }
+            if(!task.Result) return;
+            if(JaModInfo == null) {
+                Task.Yield().GetAwaiter().OnCompleted(LoadInfo);
+                return;
+            }
+            JApi.Send(new GetModInfo(JaModInfo), false).ContinueWith(ModInfo);
         } catch (Exception e) {
             LogException(e);
         }
     }
+
+    private void ModInfo(Task<GetModInfo> task) => ModInfo(task.Result);
 
     protected override void OnEnable() {
         MainThread.Initialize();

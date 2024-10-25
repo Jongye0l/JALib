@@ -82,19 +82,24 @@ public abstract class JAMod {
         }
     }
 
-    private async void SetupEvent() {
+    private void SetupEvent() {
         if(IsExistMethod(nameof(OnUpdate))) ModEntry.OnUpdate = OnUpdate0;
         if(IsExistMethod(nameof(OnFixedUpdate))) ModEntry.OnFixedUpdate = OnFixedUpdate0;
         if(IsExistMethod(nameof(OnLateUpdate))) ModEntry.OnLateUpdate = OnLateUpdate0;
         if(IsExistMethod(nameof(OnSessionStart))) ModEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
         if(IsExistMethod(nameof(OnSessionStop))) ModEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
-        if(!initialized) await Task.Yield();
-        MainThread.Run(this, () => {
-            ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
-            if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
-            if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
-            if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
-        });
+        SetupEventMain();
+    }
+
+    private void SetupEventMain() {
+        if(!initialized) {
+            Task.Yield().GetAwaiter().OnCompleted(SetupEventMain);
+            return;
+        }
+        ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
+        if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
+        if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
+        if(CheckGUIEventRequire(nameof(OnHideGUI))) ModEntry.OnHideGUI = OnHideGUI0;
     }
 
     private bool CheckGUIRequire() => IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnGUIBehind)) || Features.Any(feature => feature.CanEnable || feature.IsExistMethod(nameof(OnGUI)));
