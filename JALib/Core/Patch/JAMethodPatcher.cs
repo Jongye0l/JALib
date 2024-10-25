@@ -417,7 +417,7 @@ class JAMethodPatcher {
                         if(field == AddPrefixesSubArguments[0]) {
                             CodeInstruction next2 = enumerator.MoveNext() ? enumerator.Current : null;
                             if(next2 != null && next2.opcode == OpCodes.Ldfld && next2.operand is FieldInfo { Name: "emitter" })
-                                code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels).WithBlocks(code.blocks);
+                                code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels);
                             else {
                                 yield return code;
                                 yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
@@ -454,7 +454,7 @@ class JAMethodPatcher {
                                     if(codes.Current.operand is FieldInfo { Name: "emitter" })
                                         yield return new CodeInstruction(OpCodes.Ldloc, emitter);
                                     else {
-                                        yield return code;
+                                        yield return repeat;
                                         yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
                                         yield return codes.Current;
                                     }
