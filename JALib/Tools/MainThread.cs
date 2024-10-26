@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using JALib.Core;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -12,6 +13,7 @@ public static class MainThread {
     public static Thread Thread { get; private set; }
     private static ConcurrentQueue<JAction> queue = new();
     private static StaticCoroutine staticCoroutine;
+    private static TaskCompletionSource<bool> completeLoadTask;
 
     internal static void Initialize() {
         queue ??= new ConcurrentQueue<JAction>();
@@ -22,7 +24,16 @@ public static class MainThread {
         }));
     }
 
+    public static Task WaitForMainThread() {
+        completeLoadTask ??= new TaskCompletionSource<bool>();
+        return completeLoadTask.Task ?? Task.FromResult(true);
+    }
+
     internal static void Dispose() {
+        if(completeLoadTask != null) {
+            completeLoadTask.SetException(new ObjectDisposedException("JALib is disposed."));
+            completeLoadTask = null;
+        }
         GC.SuppressFinalize(queue);
         if(!staticCoroutine) return;
         staticCoroutine.StopAllCoroutines();
@@ -35,6 +46,10 @@ public static class MainThread {
     }
 
     internal static void OnUpdate() {
+        if(completeLoadTask != null) {
+            completeLoadTask.TrySetResult(true);
+            completeLoadTask = null;
+        }
         while(queue.TryDequeue(out JAction action)) action.Invoke();
     }
 

@@ -47,8 +47,8 @@ class JALib : JAMod {
     }
 
     private static void SetupModApplicator() {
-        while(ADOBase.platform == Platform.None) {
-            Task.Yield().GetAwaiter().OnCompleted(SetupModApplicator);
+        if(ADOBase.platform == Platform.None) {
+            MainThread.WaitForMainThread().GetAwaiter().OnCompleted(SetupModApplicator);
             return;
         }
         if(ADOBase.platform != Platform.Windows) {
