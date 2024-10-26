@@ -51,7 +51,7 @@ class JApi {
                 Domain1 => Domain2,
                 _ => throw new Exception("Failed to connect to the server")
             };
-            HttpClient.GetAsync($"https://{Domain1}/ping").ContinueWith(Connect);
+            HttpClient.GetAsync($"https://{domain}/ping").ContinueWith(Connect);
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
