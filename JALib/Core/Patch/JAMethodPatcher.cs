@@ -410,18 +410,20 @@ class JAMethodPatcher {
             int state = 0;
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
+                Recheck:
                 if(code.opcode == OpCodes.Ldarg_0 && enumerator.MoveNext()) {
                     CodeInstruction next = enumerator.Current;
                     if(next.opcode == OpCodes.Ldfld || next.opcode == OpCodes.Ldflda) {
                         FieldInfo field = (FieldInfo) next.operand;
-                        if(field == AddPrefixesSubArguments[0]) {
-                            CodeInstruction next2 = enumerator.MoveNext() ? enumerator.Current : null;
-                            if(next2 != null && next2.opcode == OpCodes.Ldfld && next2.operand is FieldInfo { Name: "emitter" })
+                        if(field == AddPrefixesSubArguments[0] && enumerator.MoveNext()) {
+                            CodeInstruction next2 = enumerator.Current;
+                            if(next2.opcode == OpCodes.Ldfld && next2.operand is FieldInfo { Name: "emitter" })
                                 code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels);
                             else {
                                 yield return code;
                                 yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
-                                code = next2.opcode == OpCodes.Ldarg_1 ? new CodeInstruction(OpCodes.Ldloc, fix) : next2;
+                                code = next2;
+                                goto Recheck;
                             }
                         } else if(field == AddPrefixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
                         else if(field == AddPrefixesSubArguments[2]) code = new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
@@ -436,12 +438,10 @@ class JAMethodPatcher {
                             LocalBuilder tmpBoxVar = generator.DeclareLocal(typeof(KeyValuePair<LocalBuilder, Type>));
                             yield return new CodeInstruction(OpCodes.Callvirt, typeof(Dictionary<LocalBuilder, Type>).Method("GetEnumerator"));
                             yield return new CodeInstruction(OpCodes.Stloc, enumeratorVar);
-                            Label loop = generator.DefineLabel();
-                            Label end = generator.DefineLabel();
-                            yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(loop);
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("MoveNext"));
-                            yield return new CodeInstruction(OpCodes.Brfalse, end);
-                            yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar);
+                            Label start = generator.DefineLabel();
+                            Label check = generator.DefineLabel();
+                            yield return new CodeInstruction(OpCodes.Br, check);
+                            yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(start);
                             yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("get_Current"));
                             yield return new CodeInstruction(OpCodes.Stloc, tmpBoxVar);
                             IEnumerator<CodeInstruction> codes = PatchProcessor.GetCurrentInstructions(method, generator: generator).GetEnumerator();
@@ -458,12 +458,14 @@ class JAMethodPatcher {
                                         yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
                                         yield return codes.Current;
                                     }
+                                    continue;
                                 }
-                                if(repeat.opcode == OpCodes.Ldarg_S || repeat.opcode == OpCodes.Ldarg_1) repeat = new CodeInstruction(OpCodes.Ldloc, tmpBoxVar);
+                                if(repeat.opcode == OpCodes.Ldarga_S) repeat = new CodeInstruction(OpCodes.Ldloca, tmpBoxVar);
                                 yield return repeat;
                             }
-                            yield return new CodeInstruction(OpCodes.Br, loop);
-                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(end);
+                            yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(check);
+                            yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("MoveNext"));
+                            yield return new CodeInstruction(OpCodes.Brtrue, start);
                             continue;
                         }
                     } else throw new Exception("This Code Is Not field: " + next.opcode);
@@ -523,7 +525,6 @@ class JAMethodPatcher {
                 yield return code;
             }
         }
-
     }
 
     private static bool AddPostfixes(object _, Dictionary<string, LocalBuilder> variables, LocalBuilder runOriginalVariable, bool passthroughPatches, JAMethodPatcher patcher) {
