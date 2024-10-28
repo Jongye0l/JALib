@@ -512,7 +512,10 @@ class JAMethodPatcher {
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
                                 if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
                                    instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
-                                if(instruction.operand is LocalBuilder) instruction.operand = notUsingLocal;
+                                if(instruction.operand is LocalBuilder) {
+                                    if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloc;
+                                    instruction.operand = notUsingLocal;
+                                }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
@@ -559,27 +562,25 @@ class JAMethodPatcher {
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
-            {
-                yield return new CodeInstruction(OpCodes.Ldarg_0);
-                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
-                yield return new CodeInstruction(OpCodes.Ldarg_1);
-                yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
-                Label falseLabel = generator.DefineLabel();
-                yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
-                yield return new CodeInstruction(OpCodes.Ldarg_0);
-                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
-                yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
-                yield return getType;
-                yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
-                yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
-                yield return new CodeInstruction(OpCodes.Ldloc, emitter);
-                yield return new CodeInstruction(OpCodes.Ldc_I4_0);
-                yield return new CodeInstruction(OpCodes.Ldnull);
-                yield return new CodeInstruction(OpCodes.Newobj, typeof(ExceptionBlock).Constructor(typeof(ExceptionBlockType), typeof(Type)));
-                yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
-                yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
-                yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
-            }
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
+            yield return new CodeInstruction(OpCodes.Ldarg_1);
+            yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
+            Label falseLabel = generator.DefineLabel();
+            yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
+            yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
+            yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
+            yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
+            yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
+            yield return new CodeInstruction(OpCodes.Ldloc, emitter);
+            yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+            yield return new CodeInstruction(OpCodes.Ldnull);
+            yield return new CodeInstruction(OpCodes.Newobj, typeof(ExceptionBlock).Constructor(typeof(ExceptionBlockType), typeof(Type)));
+            yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
+            yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
+            yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
                 if(code.opcode == OpCodes.Ldarg_0 && enumerator.MoveNext()) {
@@ -644,7 +645,10 @@ class JAMethodPatcher {
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
                                 if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
                                    instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
-                                if(instruction.operand is LocalBuilder) instruction.operand = notUsingLocal;
+                                if(instruction.operand is LocalBuilder) {
+                                    if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloc;
+                                    instruction.operand = notUsingLocal;
+                                }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
                                 else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
                                 else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
