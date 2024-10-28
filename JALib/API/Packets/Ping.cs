@@ -6,14 +6,10 @@ namespace JALib.API.Packets;
 
 class Ping : GetRequest {
 
-    private long time;
+    private long time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     public int ping;
 
     public override string UrlBehind => "ping";
-
-    public Ping() {
-        time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-    }
 
     public override Task Run(HttpResponseMessage message) {
         ping = (int) (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - time);

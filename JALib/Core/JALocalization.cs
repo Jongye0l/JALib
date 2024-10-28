@@ -40,18 +40,20 @@ public class JALocalization {
         if(!File.Exists(localizationDataPath)) localizationDataPath = Path.Combine(localizationPath, SystemLanguage.Korean + ".json");
         if(File.Exists(localizationDataPath)) {
             _localizations?.Clear();
-            File.ReadAllTextAsync(localizationDataPath).ContinueWith(t => {
-                try {
-                    _localizations = JsonConvert.DeserializeObject<SortedDictionary<string, string>>(t.Result);
-                    _jaMod.OnLocalizationUpdate0();
-                } catch (Exception e) {
-                    _jaMod.Error("Failed to load localization data.");
-                    _jaMod.LogException(e);
-                }
-            });
+            File.ReadAllTextAsync(localizationDataPath).ContinueWith(LoadOnFile);
         }
         if(_jaMod.Gid == -1) return;
         _ = new LocalizationLoader(this, language);
+    }
+
+    private void LoadOnFile(Task<string> t) {
+        try {
+            _localizations = JsonConvert.DeserializeObject<SortedDictionary<string, string>>(t.Result);
+            _jaMod.OnLocalizationUpdate0();
+        } catch (Exception e) {
+            _jaMod.Error("Failed to load localization data.");
+            _jaMod.LogException(e);
+        }
     }
 
     private class LocalizationLoader {

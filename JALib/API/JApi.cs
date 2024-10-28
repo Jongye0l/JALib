@@ -37,10 +37,6 @@ class JApi {
     }
 
     private JApi() {
-        TryConnect();
-    }
-
-    private void TryConnect() {
         JATask.Run(JALib.Instance, Connect);
     }
 
