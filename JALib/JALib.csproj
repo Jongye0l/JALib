@@ -511,6 +511,7 @@
         <Compile Include="Core\Feature.cs" />
         <Compile Include="Core\JALocalization.cs" />
         <Compile Include="Core\JAMod.cs" />
+        <Compile Include="Core\ModLoader.cs" />
         <Compile Include="Core\ModReloadCache.cs" />
         <Compile Include="Core\Patch\JAPatchAttribute.cs" />
         <Compile Include="Core\Patch\JAPatcher.cs" />

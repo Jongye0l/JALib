@@ -15,6 +15,7 @@ public class JABootstrap {
     private static Task _task;
     internal static Harmony harmony;
     private static JAModInfo jalibModInfo;
+    private static int LoadCount;
 
     private static void Setup(UnityModManager.ModEntry modEntry) {
         _task = Task.Run(async () => {
@@ -87,6 +88,7 @@ public class JABootstrap {
     }
 
     public static void Load(UnityModManager.ModEntry modEntry) {
+        LoadCount++;
         Task.Run(async () => {
             bool beta = InitializeVersion(modEntry);
             JAModInfo modInfo = LoadModInfo(modEntry, beta);
