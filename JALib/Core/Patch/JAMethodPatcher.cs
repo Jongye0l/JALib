@@ -31,17 +31,17 @@ class JAMethodPatcher {
         SetupPrefixRemove();
         List<MethodInfo> prefix = prefixes.Select(patch => patch.PatchMethod).ToList();
         tryPrefixes = jaPatchInfo.tryPrefixes;
-        List<MethodInfo> postfix, transpiler, finalizer;
+        List<MethodInfo> postfix = SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
+        List<MethodInfo> finalizer = SortPatchMethods(original, patchInfo.finalizers, debug, out finalizers);
+        List<MethodInfo> transpiler;
+        tryPostfixes = jaPatchInfo.tryPostfixes;
         if(removes.Length > 0) {
-            postfix = transpiler = finalizer = [];
-            postfixes = transpilers = finalizers = tryPostfixes = [];
+            transpiler = [];
+            transpilers = [];
         } else {
-            postfix = SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
             transpiler = SortPatchMethods(original, patchInfo.transpilers, debug, out transpilers);
-            finalizer = SortPatchMethods(original, patchInfo.finalizers, debug, out finalizers);
             SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
             replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
-            tryPostfixes = jaPatchInfo.tryPostfixes;
             if(replace != null) {
                 MethodInfo method = ((Delegate) ChangeParameter).Method;
                 transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
@@ -93,28 +93,28 @@ class JAMethodPatcher {
             removes = [];
             tryPrefixes = attribute.TryCatchChildren ? children.Select(patch => (TriedPatchData) patch).ToArray() : [];
         }
-        if(removes.Length > 0) postfixes = transpilers = finalizers = tryPostfixes = [];
+        children = customPatchMethods.Where(method => method.Name.Contains("Postfix")).Select(changeFunc).ToArray();
+        if(attribute.PatchType.HasFlag(ReversePatchType.PostfixCombine)) {
+            SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
+            tryPostfixes = jaPatchInfo.tryPostfixes;
+            if(attribute.TryCatchChildren) tryPostfixes = tryPostfixes.Concat(children.Select(patch => (TriedPatchData) patch)).ToArray();
+            postfixes = postfixes.Concat(children).ToArray();
+        } else {
+            postfixes = children;
+            tryPostfixes = attribute.TryCatchChildren ? children.Select(patch => (TriedPatchData) patch).ToArray() : [];
+        }
+        children = customPatchMethods.Where(method => method.Name.Contains("Finalizer")).Select(CreateEmptyPatch).ToArray();
+        if(attribute.PatchType.HasFlag(ReversePatchType.FinalizerCombine)) {
+            SortPatchMethods(original, patchInfo.finalizers.ToArray(), debug, out finalizers);
+            finalizers = finalizers.Concat(children).ToArray();
+        } else finalizers = children;
+        if(removes.Length > 0) transpilers = [];
         else {
-            children = customPatchMethods.Where(method => method.Name.Contains("Postfix")).Select(changeFunc).ToArray();
-            if(attribute.PatchType.HasFlag(ReversePatchType.PostfixCombine)) {
-                SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
-                tryPostfixes = jaPatchInfo.tryPostfixes;
-                if(attribute.TryCatchChildren) tryPostfixes = tryPostfixes.Concat(children.Select(patch => (TriedPatchData) patch)).ToArray();
-                postfixes = postfixes.Concat(children).ToArray();
-            } else {
-                postfixes = children;
-                tryPostfixes = attribute.TryCatchChildren ? children.Select(patch => (TriedPatchData) patch).ToArray() : [];
-            }
             children = customPatchMethods.Where(method => method.Name.Contains("Transpiler")).Select(CreateEmptyPatch).ToArray();
             if(attribute.PatchType.HasFlag(ReversePatchType.TranspilerCombine)) {
                 SortPatchMethods(original, patchInfo.transpilers.ToArray(), debug, out transpilers);
                 transpilers = transpilers.Concat(children).ToArray();
             } else transpilers = children;
-            children = customPatchMethods.Where(method => method.Name.Contains("Finalizer")).Select(CreateEmptyPatch).ToArray();
-            if(attribute.PatchType.HasFlag(ReversePatchType.FinalizerCombine)) {
-                SortPatchMethods(original, patchInfo.finalizers.ToArray(), debug, out finalizers);
-                finalizers = finalizers.Concat(children).ToArray();
-            } else finalizers = children;
             if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) {
                 SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
                 replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
@@ -139,7 +139,7 @@ class JAMethodPatcher {
     private void SetupPrefixRemove() {
         bool a = false;
         prefixes = prefixes.Where(pre => {
-            if(a) return false;
+            if(a && PrefixAffectsOriginal(pre.PatchMethod)) return false;
             if(!removes.Contains(pre)) return true;
             a = true;
             return false;
@@ -152,6 +152,8 @@ class JAMethodPatcher {
         sortedPatches = patchSorter.GetValue<HarmonyLib.Patch[]>("sortedPatchArray");
         return sortedMethods;
     }
+
+    internal static bool PrefixAffectsOriginal(MethodInfo fix) => throw new NotImplementedException();
 
     internal static MethodInfo CreateReplacement(JAMethodPatcher patcher, out Dictionary<int, CodeInstruction> finalInstructions) {
         _ = Transpiler(null, null);
