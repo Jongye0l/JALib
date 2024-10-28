@@ -26,6 +26,10 @@ public class JALocalization {
     }
 
     internal void Load() {
+        if(ADOBase.platform == Platform.None) {
+            MainThread.WaitForMainThread().GetAwaiter().OnCompleted(Load);
+            return;
+        }
         SystemLanguage language = _jaMod.CustomLanguage ?? RDString.language;
         if(_curLang == language) return;
         _curLang = language;
