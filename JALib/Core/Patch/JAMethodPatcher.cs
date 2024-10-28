@@ -480,7 +480,7 @@ class JAMethodPatcher {
                 switch(state) {
                     case 0:
                         if(code.opcode == OpCodes.Newobj && code.operand is ConstructorInfo consInfo && consInfo.DeclaringType == typeof(List<KeyValuePair<LocalBuilder, Type>>)) {
-                            yield return new CodeInstruction(OpCodes.Ldarg_0);
+                            yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels);
                             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPrefixes"));
                             yield return new CodeInstruction(OpCodes.Ldarg_1);
                             yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
@@ -499,6 +499,7 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
                             yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
                             yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
+                            code.labels.Clear();
                             state++;
                         }
                         break;
