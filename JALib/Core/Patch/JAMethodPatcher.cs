@@ -42,9 +42,11 @@ class JAMethodPatcher {
             SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
             replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
             tryPostfixes = jaPatchInfo.tryPostfixes;
-            MethodInfo method = ((Delegate) ChangeParameter).Method;
-            transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
-            transpiler.Insert(0, method);
+            if(replace != null) {
+                MethodInfo method = ((Delegate) ChangeParameter).Method;
+                transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
+                transpiler.Insert(0, method);
+            }
         }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, null, prefix, postfix, transpiler, finalizer, debug);
     }
