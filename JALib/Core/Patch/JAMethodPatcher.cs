@@ -321,8 +321,8 @@ class JAMethodPatcher {
     private static FieldInfo[] AddPostfixesSubArguments;
 
     internal static void LoadAddPrePostMethod(Harmony harmony) {
-        MethodInfo prefixMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").Method("AddPrefixes");
-        List<CodeInstruction> instructions = PatchProcessor.GetCurrentInstructions(prefixMethod);
+        MethodInfo methodInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").Method("AddPrefixes");
+        List<CodeInstruction> instructions = PatchProcessor.GetCurrentInstructions(methodInfo);
         MethodInfo subMethod = null;
         AddPrefixesSubArguments = new FieldInfo[3];
         using(IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator()) {
@@ -343,12 +343,12 @@ class JAMethodPatcher {
                     if(next.opcode == OpCodes.Stfld && next.operand is FieldInfo field)
                         AddPrefixesSubArguments[2] = field;
                 }
-                if(code.opcode == OpCodes.Ldftn && code.operand is MethodInfo method) subMethod = method;
+                if(code.opcode == OpCodes.Ldftn && code.operand is MethodInfo m) subMethod = m;
             }
         }
         harmony.CreateReversePatcher(subMethod, new HarmonyMethod(((Delegate) AddPrefixes_b__0).Method)).Patch();
-        prefixMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").Method("AddPostfixes");
-        instructions = PatchProcessor.GetCurrentInstructions(prefixMethod);
+        methodInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").Method("AddPostfixes");
+        instructions = PatchProcessor.GetCurrentInstructions(methodInfo);
         AddPostfixesSubArguments = new FieldInfo[5];
         using(IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator()) {
             while(enumerator.MoveNext()) {
@@ -470,6 +470,11 @@ class JAMethodPatcher {
                         }
                     } else throw new Exception("This Code Is Not field: " + next.opcode);
                 } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix);
+                else if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo field && field.FieldType == typeof(Func<ParameterInfo, bool>)) {
+                    while(enumerator.MoveNext()) if(enumerator.Current.opcode == OpCodes.Call) break;
+                    yield return new CodeInstruction(OpCodes.Call, ((Delegate) CheckArgs).Method);
+                    continue;
+                }
                 switch(state) {
                     case 0:
                         if(code.opcode == OpCodes.Newobj && code.operand is ConstructorInfo consInfo && consInfo.DeclaringType == typeof(List<KeyValuePair<LocalBuilder, Type>>)) {
@@ -660,6 +665,11 @@ class JAMethodPatcher {
                         goto Recheck;
                     }
                 } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix);
+                else if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo field && field.FieldType == typeof(Func<ParameterInfo, bool>)) {
+                    while(enumerator.MoveNext()) if(enumerator.Current.opcode == OpCodes.Call) break;
+                    yield return new CodeInstruction(OpCodes.Call, ((Delegate) CheckArgs).Method);
+                    continue;
+                }
                 yield return code;
             }
         }
@@ -680,6 +690,11 @@ class JAMethodPatcher {
             }
             emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
         }
+    }
+
+    private static bool CheckArgs(ParameterInfo[] parameters) {
+        foreach(ParameterInfo p in parameters) if(p.Name == "__args") return true;
+        return false;
     }
 
     #endregion
