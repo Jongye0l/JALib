@@ -550,7 +550,6 @@ class JAMethodPatcher {
             Assembly harmonyAssembly = typeof(Harmony).Assembly;
             Type emitterType = harmonyAssembly.GetType("HarmonyLib.Emitter");
             LocalBuilder fix = generator.DeclareLocal(typeof(MethodInfo));
-            CodeInstruction getType = new(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
             yield return new CodeInstruction(OpCodes.Ldarg_1);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(HarmonyLib.Patch), "patchMethod"));
             yield return new CodeInstruction(OpCodes.Stloc, fix);
