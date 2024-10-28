@@ -480,8 +480,6 @@ class JAMethodPatcher {
                 switch(state) {
                     case 0:
                         if(code.opcode == OpCodes.Newobj && code.operand is ConstructorInfo consInfo && consInfo.DeclaringType == typeof(List<KeyValuePair<LocalBuilder, Type>>)) {
-                            yield return new CodeInstruction(OpCodes.Ldnull);
-                            yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
                             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPrefixes"));
                             yield return new CodeInstruction(OpCodes.Ldarg_1);
@@ -561,8 +559,6 @@ class JAMethodPatcher {
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
             {
-                yield return new CodeInstruction(OpCodes.Ldnull);
-                yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
                 yield return new CodeInstruction(OpCodes.Ldarg_0);
                 yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
                 yield return new CodeInstruction(OpCodes.Ldarg_1);
