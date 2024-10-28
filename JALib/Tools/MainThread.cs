@@ -17,11 +17,13 @@ public static class MainThread {
 
     internal static void Initialize() {
         queue ??= new ConcurrentQueue<JAction>();
-        queue.Enqueue(new JAction(JALib.Instance, () => {
-            Thread = Thread.CurrentThread;
-            staticCoroutine = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
-            Object.DontDestroyOnLoad(staticCoroutine.gameObject);
-        }));
+        queue.Enqueue(new JAction(JALib.Instance, Setup));
+    }
+
+    private static void Setup() {
+        Thread = Thread.CurrentThread;
+        staticCoroutine = new GameObject("StaticCoroutine").AddComponent<StaticCoroutine>();
+        Object.DontDestroyOnLoad(staticCoroutine.gameObject);
     }
 
     public static Task WaitForMainThread() {

@@ -42,7 +42,7 @@ public class JARandom : Random {
     }
 
     public decimal NextDecimal() {
-        return new decimal(new[] { Next(), Next(), Next(), Next() });
+        return new decimal([Next(), Next(), Next(), Next()]);
     }
 
     public override void NextBytes(byte[] buffer) {

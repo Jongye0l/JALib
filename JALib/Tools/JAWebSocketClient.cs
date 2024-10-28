@@ -26,41 +26,40 @@ public class JAWebSocketClient(JAction read = null, bool autoConnect = true) : I
     public void Connect(string uri, CancellationToken token = default) => Connect(new Uri(uri), token);
     public void Connect(Uri uri, CancellationToken token = default) => ConnectAsync(uri, token).Wait(token);
     public Task ConnectAsync(string uri, CancellationToken token = default) => ConnectAsync(new Uri(uri), token);
-    public Task ConnectAsync(Uri uri, CancellationToken token = default) => new AsyncConnect(this, uri, token).builder.Task;
+    public Task ConnectAsync(Uri uri, CancellationToken token = default) => new AsyncConnect(this, uri, token).tcs.Task;
 
-    private class AsyncConnect : IAsyncStateMachine {
+    private class AsyncConnect {
         private readonly JAWebSocketClient client;
         private readonly Uri uri;
         private readonly CancellationToken token;
-        internal readonly AsyncTaskMethodBuilder builder;
+        internal readonly TaskCompletionSource<bool> tcs = new();
         private Task task;
 
         internal AsyncConnect(JAWebSocketClient client, Uri uri, CancellationToken token) {
             this.client = client;
             this.uri = uri;
             this.token = token;
-            builder = AsyncTaskMethodBuilder.Create();
-            AsyncConnect stateMachine = this;
-            builder.Start(ref stateMachine);
+            MoveNext();
         }
 
         public void MoveNext() {
-            task ??= client.socket.ConnectAsync(uri, token);
-            if(!task.IsCompleted) {
-                task.GetAwaiter().UnsafeOnCompleted(MoveNext);
-                return;
+            try {
+                task ??= client.socket.ConnectAsync(uri, token);
+                if(!task.IsCompleted) {
+                    task.GetAwaiter().UnsafeOnCompleted(MoveNext);
+                    return;
+                }
+                if(client.Connected) {
+                    client.onConnect?.Invoke();
+                    client.Read();
+                    tcs.SetResult(true);
+                } else if(client.autoConnect) {
+                    task = null;
+                    Task.Delay(60000, token).GetAwaiter().OnCompleted(MoveNext);
+                }
+            } catch (Exception e) {
+                tcs.SetException(e);
             }
-            if(client.Connected) {
-                client.onConnect?.Invoke();
-                client.Read();
-            } else if(client.autoConnect) {
-                task = null;
-                Task.Delay(60000, token).GetAwaiter().OnCompleted(MoveNext);
-            }
-            builder.SetResult();
-        }
-
-        public void SetStateMachine(IAsyncStateMachine stateMachine) {
         }
     }
 
