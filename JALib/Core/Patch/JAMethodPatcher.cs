@@ -40,13 +40,7 @@ class JAMethodPatcher {
             transpilers = [];
         } else {
             transpiler = SortPatchMethods(original, patchInfo.transpilers, debug, out transpilers);
-            SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
-            replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
-            if(replace != null) {
-                MethodInfo method = ((Delegate) ChangeParameter).Method;
-                transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
-                transpiler.Insert(0, method);
-            }
+            SetupReplace(original, jaPatchInfo, transpiler);
         }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, null, prefix, postfix, transpiler, finalizer, debug);
     }
@@ -62,13 +56,7 @@ class JAMethodPatcher {
             transpiler.Add(postTranspiler);
             transpilers = transpilers.Concat([CreateEmptyPatch(postTranspiler)]).ToArray();
         }
-        SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
-        replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
-        if(replace != null) {
-            MethodInfo method = ((Delegate) ChangeParameter).Method;
-            transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
-            transpiler.Insert(0, method);
-        }
+        SetupReplace(original, jaPatchInfo, transpiler);
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source, none, none, transpiler, none, debug);
     }
 
@@ -115,14 +103,7 @@ class JAMethodPatcher {
                 SortPatchMethods(original, patchInfo.transpilers.ToArray(), debug, out transpilers);
                 transpilers = transpilers.Concat(children).ToArray();
             } else transpilers = children;
-            if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) {
-                SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
-                replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
-                if(replace != null) {
-                    MethodInfo method = ((Delegate) ChangeParameter).Method;
-                    transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
-                }
-            }
+            if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) SetupReplace(original, jaPatchInfo, null);
         }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, data.original,
             prefixes.Select(patch => patch.PatchMethod).ToList(),
@@ -130,6 +111,15 @@ class JAMethodPatcher {
             transpilers.Select(patch => patch.PatchMethod).ToList(),
             finalizers.Select(patch => patch.PatchMethod).ToList(), debug);
         customReverse = true;
+    }
+
+    private void SetupReplace(MethodBase original, JAPatchInfo jaPatchInfo, List<MethodInfo> transpiler) {
+        SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
+        replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
+        if(replace == null) return;
+        MethodInfo method = ((Delegate) ChangeParameter).Method;
+        transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
+        transpiler?.Insert(0, method);
     }
 
     private HarmonyLib.Patch CreateEmptyPatch(MethodInfo method) => new(method, 0, "", 0, [], [], debug);
