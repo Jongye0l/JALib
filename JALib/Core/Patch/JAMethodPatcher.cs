@@ -315,7 +315,7 @@ class JAMethodPatcher {
         }
     }
 
-    #region AddPrefixes
+    #region AddPrePost
 
     private static FieldInfo[] AddPrefixesSubArguments;
     private static FieldInfo[] AddPostfixesSubArguments;
@@ -434,15 +434,15 @@ class JAMethodPatcher {
                                 if(code.opcode == OpCodes.Ldftn && code.operand is MethodInfo info) method = info;
                                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "Do" }) break;
                             }
-                            LocalBuilder enumeratorVar = generator.DeclareLocal(typeof(Dictionary<LocalBuilder, Type>.Enumerator));
+                            LocalBuilder enumeratorVar = generator.DeclareLocal(typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator));
                             LocalBuilder tmpBoxVar = generator.DeclareLocal(typeof(KeyValuePair<LocalBuilder, Type>));
-                            yield return new CodeInstruction(OpCodes.Callvirt, typeof(Dictionary<LocalBuilder, Type>).Method("GetEnumerator"));
+                            yield return new CodeInstruction(OpCodes.Callvirt, typeof(List<KeyValuePair<LocalBuilder, Type>>).Method("GetEnumerator"));
                             yield return new CodeInstruction(OpCodes.Stloc, enumeratorVar);
                             Label start = generator.DefineLabel();
                             Label check = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Br, check);
                             yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(start);
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("get_Current"));
+                            yield return new CodeInstruction(OpCodes.Call, typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator).Method("get_Current"));
                             yield return new CodeInstruction(OpCodes.Stloc, tmpBoxVar);
                             IEnumerator<CodeInstruction> codes = PatchProcessor.GetCurrentInstructions(method, generator: generator).GetEnumerator();
                             while(codes.MoveNext()) {
@@ -464,7 +464,7 @@ class JAMethodPatcher {
                                 yield return repeat;
                             }
                             yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(check);
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("MoveNext"));
+                            yield return new CodeInstruction(OpCodes.Call, typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator).Method("MoveNext"));
                             yield return new CodeInstruction(OpCodes.Brtrue, start);
                             continue;
                         }
@@ -610,17 +610,17 @@ class JAMethodPatcher {
                                 if(code.opcode == OpCodes.Ldftn && code.operand is MethodInfo info) method = info;
                                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "Do" }) break;
                             }
-                            LocalBuilder enumeratorVar = generator.DeclareLocal(typeof(Dictionary<LocalBuilder, Type>.Enumerator));
+                            LocalBuilder enumeratorVar = generator.DeclareLocal(typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator));
                             LocalBuilder tmpBoxVar = generator.DeclareLocal(typeof(KeyValuePair<LocalBuilder, Type>));
-                            yield return new CodeInstruction(OpCodes.Callvirt, typeof(Dictionary<LocalBuilder, Type>).Method("GetEnumerator"));
+                            yield return new CodeInstruction(OpCodes.Callvirt, typeof(List<KeyValuePair<LocalBuilder, Type>>).Method("GetEnumerator"));
                             yield return new CodeInstruction(OpCodes.Stloc, enumeratorVar);
                             Label loop = generator.DefineLabel();
                             Label end = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(loop);
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("MoveNext"));
+                            yield return new CodeInstruction(OpCodes.Call, typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator).Method("MoveNext"));
                             yield return new CodeInstruction(OpCodes.Brfalse, end);
                             yield return new CodeInstruction(OpCodes.Ldloca, enumeratorVar);
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Dictionary<LocalBuilder, Type>.Enumerator).Method("get_Current"));
+                            yield return new CodeInstruction(OpCodes.Call, typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator).Method("get_Current"));
                             yield return new CodeInstruction(OpCodes.Stloc, tmpBoxVar);
                             IEnumerator<CodeInstruction> codes = PatchProcessor.GetCurrentInstructions(method, generator: generator).GetEnumerator();
                             while(codes.MoveNext()) {
