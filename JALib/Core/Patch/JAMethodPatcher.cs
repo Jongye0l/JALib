@@ -743,7 +743,7 @@ class JAMethodPatcher {
                     list[i++] = new CodeInstruction(OpCodes.Ldarg_0);
                     list.Insert(i, new CodeInstruction(OpCodes.Ldfld, info));
                 } else {
-                    LocalBuilder local = generator.DeclareLocal(info.DeclaringType);
+                    LocalBuilder local = generator.DeclareLocal(info.FieldType);
                     list[i++] = new CodeInstruction(OpCodes.Stloc, local);
                     list.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
                     list.Insert(i++, new CodeInstruction(OpCodes.Ldloc, local));
