@@ -733,34 +733,47 @@ class JAMethodPatcher {
     private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         List<CodeInstruction> list = instructions.ToList();
         for(int i = 0; i < list.Count; i++) {
-            int index = GetParameterIndex(list[i], out bool set);
+            int index = GetParameterIndex(list[i], out bool set, out bool loc);
             if(index <= -1) continue;
             if(_parameterMap.TryGetValue(index, out int newIndex)) {
-                list[i] = GetParameterInstruction(newIndex, set);
+                list[i] = GetParameterInstruction(newIndex, set, loc);
             } else if(_parameterFields.TryGetValue(index, out FieldInfo info)) {
-                if(info.IsStatic) list[i] = new CodeInstruction(set ? OpCodes.Stsfld : OpCodes.Ldsfld, info);
+                if(info.IsStatic) list[i] = new CodeInstruction(set ? OpCodes.Stsfld : loc ? OpCodes.Ldsflda : OpCodes.Ldsfld, info);
                 else if(!set) {
                     list[i++] = new CodeInstruction(OpCodes.Ldarg_0);
-                    list.Insert(i, new CodeInstruction(OpCodes.Ldfld, info));
+                    list.Insert(i, new CodeInstruction(loc ? OpCodes.Ldflda : OpCodes.Ldfld, info));
                 } else {
-                    LocalBuilder local = generator.DeclareLocal(info.FieldType);
-                    list[i++] = new CodeInstruction(OpCodes.Stloc, local);
-                    list.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
-                    list.Insert(i++, new CodeInstruction(OpCodes.Ldloc, local));
-                    list.Insert(i, new CodeInstruction(OpCodes.Stfld, info));
+                    if(i > 0 && IsNonPopLdCode(list[i - 1].opcode)) {
+                        list.Insert(i++ - 1, new CodeInstruction(OpCodes.Ldarg_0));
+                        list[i] = new CodeInstruction(OpCodes.Stfld, info);
+                    } else {
+                        LocalBuilder local = generator.DeclareLocal(info.FieldType);
+                        list[i++] = new CodeInstruction(OpCodes.Stloc, local);
+                        list.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
+                        list.Insert(i++, new CodeInstruction(OpCodes.Ldloc, local));
+                        list.Insert(i, new CodeInstruction(OpCodes.Stfld, info));
+                    }
                 }
             } else list[i] = new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
         }
         return list;
     }
 
-    private static int GetParameterIndex(CodeInstruction instruction, out bool set) {
+    private static bool IsNonPopLdCode(OpCode code) => code.Name.StartsWith("ld") && code.GetValue<byte>("pop") == 0;
+
+    private static int GetParameterIndex(CodeInstruction instruction, out bool set, out bool loc) {
         int index = -1;
         set = false;
+        loc = false;
         if(instruction.opcode == OpCodes.Ldarg) index = (int) instruction.operand;
-        else if(instruction.opcode == OpCodes.Ldarga) index = (int) instruction.operand;
-        else if(instruction.opcode == OpCodes.Ldarg_S) index = (byte) instruction.operand;
-        else if(instruction.opcode == OpCodes.Ldarga_S) index = (byte) instruction.operand;
+        else if(instruction.opcode == OpCodes.Ldarga) {
+            index = (int) instruction.operand;
+            loc = true;
+        } else if(instruction.opcode == OpCodes.Ldarg_S) index = (byte) instruction.operand;
+        else if(instruction.opcode == OpCodes.Ldarga_S) {
+            index = (byte) instruction.operand;
+            loc = true;
+        }
         else if(instruction.opcode == OpCodes.Starg) {
             index = (int) instruction.operand;
             set = true;
@@ -774,8 +787,9 @@ class JAMethodPatcher {
         return index;
     }
 
-    private static CodeInstruction GetParameterInstruction(int index, bool set) {
+    private static CodeInstruction GetParameterInstruction(int index, bool set, bool loc) {
         if(set) return index < 256 ? new CodeInstruction(OpCodes.Starg_S, (byte) index) : new CodeInstruction(OpCodes.Starg, index);
+        if(loc) return index < 256 ? new CodeInstruction(OpCodes.Ldarga_S, (byte) index) : new CodeInstruction(OpCodes.Ldarga, index);
         return index switch {
             0 => new CodeInstruction(OpCodes.Ldarg_0),
             1 => new CodeInstruction(OpCodes.Ldarg_1),
