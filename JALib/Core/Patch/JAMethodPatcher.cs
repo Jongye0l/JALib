@@ -23,6 +23,7 @@ class JAMethodPatcher {
     private TriedPatchData[] tryPostfixes;
     private readonly object originalPatcher;
     private readonly bool customReverse;
+    private LocalBuilder exceptionVar;
 
     public JAMethodPatcher(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
         debug = patchInfo.Debugging || Harmony.DEBUG;
@@ -154,6 +155,13 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Ldarg_0);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             yield return new CodeInstruction(OpCodes.Stloc, patcher);
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return new CodeInstruction(OpCodes.Ldloc, patcher);
+            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "il"));
+            yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
+            yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
+            yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
+            yield return new CodeInstruction(OpCodes.Stfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             int state = 0;
             FieldInfo replace = SimpleReflect.Field(typeof(JAMethodPatcher), "replace");
@@ -400,7 +408,6 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "emitter"));
             yield return new CodeInstruction(OpCodes.Stloc, emitter);
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
             int state = 0;
             while(enumerator.MoveNext()) {
@@ -479,13 +486,6 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
                             Label falseLabel = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
-                            yield return new CodeInstruction(OpCodes.Ldarg_0);
-                            yield return originalPatcher;
-                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
-                            yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
-                            yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
-                            yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
                             yield return new CodeInstruction(OpCodes.Ldloc, emitter);
                             yield return new CodeInstruction(OpCodes.Ldc_I4_0);
                             yield return new CodeInstruction(OpCodes.Ldnull);
@@ -515,8 +515,10 @@ class JAMethodPatcher {
                                     instruction.operand = notUsingLocal;
                                 }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
-                                else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
-                                else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
+                                else if(instruction.opcode == OpCodes.Ldarg_2) {
+                                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                                    yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
+                                } else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
                                     yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Prefix Patch ");
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
@@ -558,7 +560,6 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "emitter"));
             yield return new CodeInstruction(OpCodes.Stloc, emitter);
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
             yield return new CodeInstruction(OpCodes.Ldarg_0);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
@@ -566,13 +567,6 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
             Label falseLabel = generator.DefineLabel();
             yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
-            yield return new CodeInstruction(OpCodes.Ldarg_0);
-            yield return originalPatcher;
-            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
-            yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
-            yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
-            yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
-            yield return new CodeInstruction(OpCodes.Stloc, exceptionVar);
             yield return new CodeInstruction(OpCodes.Ldloc, emitter);
             yield return new CodeInstruction(OpCodes.Ldc_I4_0);
             yield return new CodeInstruction(OpCodes.Ldnull);
@@ -648,8 +642,10 @@ class JAMethodPatcher {
                                     instruction.operand = notUsingLocal;
                                 }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
-                                else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldloc, exceptionVar);
-                                else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
+                                else if(instruction.opcode == OpCodes.Ldarg_2) {
+                                    yield return new CodeInstruction(OpCodes.Ldarg_0);
+                                    yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
+                                } else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
                                     yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Postfix Patch ");
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
