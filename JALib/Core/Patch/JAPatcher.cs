@@ -262,7 +262,8 @@ public class JAPatcher : IDisposable {
                     break;
             }
             MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
-            typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", original, replacement, patchInfo);
+            MethodInfo updateMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Method("UpdatePatchInfo");
+            updateMethod.Invoke(null, updateMethod.GetParameters().Length == 2 ? [original, patchInfo] : [original, replacement, patchInfo]);
             jaPatches[original] = jaPatchInfo;
         }
     }
