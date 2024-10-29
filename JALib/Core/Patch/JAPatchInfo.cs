@@ -29,7 +29,7 @@ class JAPatchInfo {
 
     public static HarmonyLib.Patch[] Add(string owner, HarmonyMethod add, HarmonyLib.Patch[] current) {
         int initialIndex = current.Length;
-        return current.Concat([new HarmonyLib.Patch(add, initialIndex, owner)]).ToArray();
+        return current.Concat([new HarmonyLib.Patch(add.method, initialIndex, owner, add.priority, add.before, add.after, add.debug.GetValueOrDefault())]).ToArray();
     }
 
     public static TriedPatchData[] Add(string owner, HarmonyMethod add, TriedPatchData[] current, JAMod mod) {

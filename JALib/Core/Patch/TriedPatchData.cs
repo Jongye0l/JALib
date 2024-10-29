@@ -10,7 +10,7 @@ public class TriedPatchData : HarmonyLib.Patch {
         this.mod = mod;
     }
 
-    public TriedPatchData(HarmonyMethod method, int index, string owner, JAMod mod) : base(method, index, owner) {
+    public TriedPatchData(HarmonyMethod method, int index, string owner, JAMod mod) : base(method.method, index, owner, method.priority, method.before, method.after, method.debug.GetValueOrDefault()) {
         this.mod = mod;
     }
 }
