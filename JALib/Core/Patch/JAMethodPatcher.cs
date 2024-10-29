@@ -597,6 +597,7 @@ class JAMethodPatcher {
                                 yield return code;
                                 yield return originalPatcher;
                                 code = next2;
+                                goto Recheck;
                             }
                         } else if(field == AddPostfixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
                         else if(field == AddPostfixesSubArguments[2]) code =new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
