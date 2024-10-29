@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using JALib.Tools;
 
@@ -7,8 +6,8 @@ namespace JALib.Core;
 
 public class ModReloadCache {
     public Dictionary<(Type, int), object> CachedObjects = new();
-    public Assembly OldAssembly;
     public Assembly NewAssembly;
+    public Assembly OldAssembly;
 
     internal ModReloadCache(Assembly oldAssembly, Assembly assembly) {
         OldAssembly = oldAssembly;

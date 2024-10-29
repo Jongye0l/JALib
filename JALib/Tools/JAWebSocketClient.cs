@@ -1,9 +1,7 @@
-﻿using System;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +10,7 @@ using JALib.Tools.ByteTool;
 namespace JALib.Tools;
 
 public class JAWebSocketClient(JAction read = null, bool autoConnect = true) : IDisposable {
-    private ClientWebSocket socket = new();
+    private readonly ClientWebSocket socket = new();
     private Thread thread;
     private JAction onClose;
     private JAction onConnect;

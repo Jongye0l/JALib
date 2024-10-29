@@ -1,16 +1,9 @@
-﻿using System;
-using JALib.Core;
+﻿using JALib.Core;
 using UnityEngine;
 
 namespace JALib.Tools;
 
-public class SettingGUI {
-    private JAMod mod;
-
-    public SettingGUI(JAMod mod) {
-        this.mod = mod;
-    }
-
+public class SettingGUI(JAMod mod) {
     public void AddSettingToggle(ref bool value, string text, Action onChanged = null) {
         bool result = GUILayout.Toggle(value, text);
         if(value == result) return;

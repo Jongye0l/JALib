@@ -1,7 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using TinyJson;
+using UnityEngine;
 using UnityModManagerNet;
 
 namespace JALib.Tools;
@@ -25,7 +25,7 @@ public static class ForceApplyMod {
             foreach(UnityModManager.Param.Mod mod in typeof(UnityModManager).GetValue<UnityModManager.Param>("Params").ModParams.Where(mod => mod.Id == info.Id)) modEntry.Enabled = mod.Enabled;
         } catch (Exception ex) {
             UnityModManager.Logger.Error("Error parsing file '" + path1 + "'.");
-            UnityEngine.Debug.LogException(ex);
+            Debug.LogException(ex);
         }
     }
 }

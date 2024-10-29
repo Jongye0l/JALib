@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -24,9 +23,9 @@ class JALib : JAMod {
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
     internal static JAPatcher Patcher;
+    private static bool enableInit;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
-        Instance = this;
         Setting = (JALibSetting) base.Setting;
         JApi.Initialize();
         JATask.Run(Instance, Init);
@@ -222,11 +221,14 @@ class JALib : JAMod {
     private void ModInfo(Task<GetModInfo> task) => ModInfo(task.Result);
 
     protected override void OnEnable() {
+        if(enableInit) return;
         MainThread.Initialize();
         EnableInit();
+        enableInit = true;
     }
 
     protected override void OnDisable() {
+        enableInit = false;
         DisableInit();
         JApi.Instance.Dispose();
         MainThread.Dispose();

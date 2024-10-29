@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -45,13 +44,9 @@ public static class Zipper {
         return files.ToArray();
     }
 
-    public static RawFile Unzip(string name, byte[] zipData) {
-        return new RawFile(name, Unzip(zipData));
-    }
+    public static RawFile Unzip(string name, byte[] zipData) => new(name, Unzip(zipData));
 
-    public static RawFile Unzip(string name, Stream stream) {
-        return new RawFile(name, Unzip(stream));
-    }
+    public static RawFile Unzip(string name, Stream stream) => new(name, Unzip(stream));
 
     public static void Unzip(byte[] zipData, string path) {
         using MemoryStream zipStream = new(zipData);

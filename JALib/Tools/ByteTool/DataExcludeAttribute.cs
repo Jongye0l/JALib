@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JALib.Tools.ByteTool;
+﻿namespace JALib.Tools.ByteTool;
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
 public class DataExcludeAttribute : DataAttribute {

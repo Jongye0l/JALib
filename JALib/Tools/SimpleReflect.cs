@@ -1,5 +1,4 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using HarmonyLib;
 using JetBrains.Annotations;
 
@@ -101,13 +100,17 @@ public static class SimpleReflect {
 
     public static MethodInfo Method(this object obj, [NotNull] string name, [NotNull] params Type[] types) => obj.GetType().Method(name, types);
 
-    public static object Invoke(this object obj, [NotNull] string name) => obj.Method(name).Invoke(obj);
+    public static object Invoke(this object obj, [NotNull] string name) => obj.Method(name, []).Invoke(obj);
 
     public static object Invoke(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke(obj, objects);
 
-    public static T Invoke<T>(this object obj, [NotNull] string name) => obj.Method(name).Invoke<T>(obj) ?? default;
+    public static object Invoke(this object obj, [NotNull] string name, [NotNull] Type[] types, [NotNull] params object[] objects) => obj.Method(name, types).Invoke(obj, objects);
+
+    public static T Invoke<T>(this object obj, [NotNull] string name) => obj.Method(name, []).Invoke<T>(obj) ?? default;
 
     public static T Invoke<T>(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke<T>(obj, objects) ?? default;
+
+    public static T Invoke<T>(this object obj, [NotNull] string name, [NotNull] Type[] types, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(obj, objects) ?? default;
 
     public static object GetValue(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke(obj, objects);
 
