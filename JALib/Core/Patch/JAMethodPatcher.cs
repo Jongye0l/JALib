@@ -401,6 +401,7 @@ class JAMethodPatcher {
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
+            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             int state = 0;
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
@@ -415,7 +416,7 @@ class JAMethodPatcher {
                                 code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels);
                             else {
                                 yield return code;
-                                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+                                yield return originalPatcher;
                                 code = next2;
                                 goto Recheck;
                             }
@@ -479,6 +480,7 @@ class JAMethodPatcher {
                             Label falseLabel = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
+                            yield return originalPatcher;
                             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
                             yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
                             yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
@@ -557,6 +559,7 @@ class JAMethodPatcher {
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
+            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             yield return new CodeInstruction(OpCodes.Ldarg_0);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
             yield return new CodeInstruction(OpCodes.Ldarg_1);
@@ -564,6 +567,7 @@ class JAMethodPatcher {
             Label falseLabel = generator.DefineLabel();
             yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
             yield return new CodeInstruction(OpCodes.Ldarg_0);
+            yield return originalPatcher;
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "il"));
             yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
             yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
@@ -591,7 +595,7 @@ class JAMethodPatcher {
                                 code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels).WithBlocks(code.blocks);
                             else {
                                 yield return code;
-                                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+                                yield return originalPatcher;
                                 code = next2;
                             }
                         } else if(field == AddPostfixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
