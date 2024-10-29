@@ -390,18 +390,18 @@ class JAMethodPatcher {
             Assembly harmonyAssembly = typeof(Harmony).Assembly;
             Type emitterType = harmonyAssembly.GetType("HarmonyLib.Emitter");
             LocalBuilder fix = generator.DeclareLocal(typeof(MethodInfo));
+            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             yield return new CodeInstruction(OpCodes.Ldarg_1);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(HarmonyLib.Patch), "patchMethod"));
             yield return new CodeInstruction(OpCodes.Stloc, fix);
             LocalBuilder emitter = generator.DeclareLocal(emitterType);
             yield return new CodeInstruction(OpCodes.Ldarg_0);
-            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+            yield return originalPatcher;
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "emitter"));
             yield return new CodeInstruction(OpCodes.Stloc, emitter);
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
-            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             int state = 0;
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
@@ -450,7 +450,7 @@ class JAMethodPatcher {
                                         yield return new CodeInstruction(OpCodes.Ldloc, emitter);
                                     else {
                                         yield return repeat;
-                                        yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+                                        yield return originalPatcher;
                                         yield return codes.Current;
                                     }
                                     continue;
@@ -548,18 +548,18 @@ class JAMethodPatcher {
             Assembly harmonyAssembly = typeof(Harmony).Assembly;
             Type emitterType = harmonyAssembly.GetType("HarmonyLib.Emitter");
             LocalBuilder fix = generator.DeclareLocal(typeof(MethodInfo));
+            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             yield return new CodeInstruction(OpCodes.Ldarg_1);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(HarmonyLib.Patch), "patchMethod"));
             yield return new CodeInstruction(OpCodes.Stloc, fix);
             LocalBuilder emitter = generator.DeclareLocal(emitterType);
             yield return new CodeInstruction(OpCodes.Ldarg_0);
-            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+            yield return originalPatcher;
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "emitter"));
             yield return new CodeInstruction(OpCodes.Stloc, emitter);
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             LocalBuilder exceptionVar = generator.DeclareLocal(typeof(LocalBuilder));
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
-            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             yield return new CodeInstruction(OpCodes.Ldarg_0);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes"));
             yield return new CodeInstruction(OpCodes.Ldarg_1);
@@ -582,12 +582,10 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
+                Recheck:
                 if(code.opcode == OpCodes.Ldarg_0 && enumerator.MoveNext()) {
                     CodeInstruction next = enumerator.Current;
-                    List<CodeInstruction> queue = [];
-                    Recheck:
                     if(next.opcode == OpCodes.Ldfld || next.opcode == OpCodes.Ldflda || next.opcode == OpCodes.Stfld) {
-                        foreach(CodeInstruction instruction in queue) yield return instruction;
                         FieldInfo field = (FieldInfo) next.operand;
                         if(field == AddPostfixesSubArguments[0]) {
                             CodeInstruction next2 = enumerator.MoveNext() ? enumerator.Current : null;
@@ -600,7 +598,7 @@ class JAMethodPatcher {
                                 goto Recheck;
                             }
                         } else if(field == AddPostfixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
-                        else if(field == AddPostfixesSubArguments[2]) code =new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
+                        else if(field == AddPostfixesSubArguments[2]) code = new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
                         else if(field == AddPostfixesSubArguments[3]) code = new CodeInstruction(OpCodes.Ldarg_S, 4).WithLabels(code.labels).WithBlocks(code.blocks);
                         else if(field == AddPostfixesSubArguments[4]) code = new CodeInstruction(next.opcode == OpCodes.Stfld ? OpCodes.Starg_S : OpCodes.Ldarg_S, 5).WithLabels(code.labels).WithBlocks(code.blocks);
                         else {
@@ -633,7 +631,7 @@ class JAMethodPatcher {
                                         yield return new CodeInstruction(OpCodes.Ldloc, emitter);
                                     else {
                                         yield return repeat;
-                                        yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+                                        yield return originalPatcher;
                                         yield return codes.Current;
                                     }
                                 }
@@ -662,10 +660,10 @@ class JAMethodPatcher {
                             continue;
                         }
                     } else {
-                        if(!enumerator.MoveNext()) throw new Exception("This Code Is Not field: " + next.opcode);
-                        queue.Add(next);
-                        next = enumerator.Current;
-                        goto Recheck;
+                        yield return next;
+                        if(!enumerator.MoveNext() || enumerator.Current.opcode != OpCodes.Stfld) throw new Exception("This Code Is Not field: " + next.opcode);
+                        yield return new CodeInstruction(OpCodes.Starg_S, 5);
+                        continue;
                     }
                 } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix);
                 else if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo field && field.FieldType == typeof(Func<ParameterInfo, bool>)) {
