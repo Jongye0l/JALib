@@ -9,6 +9,7 @@ namespace JALib.Core.Patch;
 
 public class JAPatcher : IDisposable {
 
+    private static bool _isOldHarmony;
     private List<JAPatchBaseAttribute> patchData;
     private JAMod mod;
     public event FailPatch OnFailPatch;
@@ -21,7 +22,8 @@ public class JAPatcher : IDisposable {
         Harmony harmony = JALib.Harmony;
         Assembly assembly = typeof(Harmony).Assembly;
         Type patchFunctions = assembly.GetType("HarmonyLib.PatchFunctions");
-        if(assembly.GetName().Version < new Version(2, 0, 3, 0)) harmony.Patch(typeof(HarmonyLib.Patch).Constructor(), new HarmonyMethod(((Delegate) FixPatchCtorNull).Method));
+        _isOldHarmony = assembly.GetName().Version < new Version(2, 0, 3, 0);
+        if(_isOldHarmony) harmony.Patch(typeof(HarmonyLib.Patch).Constructor(), new HarmonyMethod(((Delegate) FixPatchCtorNull).Method));
         harmony.CreateReversePatcher(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperReverse).Method)).Patch();
         harmony.CreateReversePatcher(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchReverse).Method)).Patch();
         Type methodPatcher = assembly.GetType("HarmonyLib.MethodPatcher");
@@ -245,17 +247,21 @@ public class JAPatcher : IDisposable {
                 case PatchType.Prefix:
                     if(CheckRemove(patchMethod.method)) jaPatchInfo.AddRemoves(id, patchMethod);
                     else if(mod != null) jaPatchInfo.AddTryPrefixes(id, patchMethod, mod);
+                    else if(_isOldHarmony) patchInfo.AddPrefix(patchMethod.method, id, attribute.Priority, attribute.Before, attribute.After, attribute.Debug);
                     else patchInfo.Invoke("AddPrefixes", id, new[] { patchMethod });
                     break;
                 case PatchType.Postfix:
                     if(mod != null) jaPatchInfo.AddTryPostfixes(id, patchMethod, mod);
+                    else if(_isOldHarmony) patchInfo.AddPostfix(patchMethod.method, id, attribute.Priority, attribute.Before, attribute.After, attribute.Debug);
                     else patchInfo.Invoke("AddPostfixes", id, new[] { patchMethod });
                     break;
                 case PatchType.Transpiler:
-                    patchInfo.Invoke("AddTranspilers", id, new[] { patchMethod });
+                    if(_isOldHarmony) patchInfo.AddTranspiler(patchMethod.method, id, attribute.Priority, attribute.Before, attribute.After, attribute.Debug);
+                    else patchInfo.Invoke("AddTranspilers", id, new[] { patchMethod });
                     break;
                 case PatchType.Finalizer:
-                    patchInfo.Invoke("AddFinalizers", id, new[] { patchMethod });
+                    if(_isOldHarmony) patchInfo.AddFinalizer(patchMethod.method, id, attribute.Priority, attribute.Before, attribute.After, attribute.Debug);
+                    else patchInfo.Invoke("AddFinalizers", id, new[] { patchMethod });
                     break;
                 case PatchType.Replace:
                     jaPatchInfo.AddReplaces(id, patchMethod);
