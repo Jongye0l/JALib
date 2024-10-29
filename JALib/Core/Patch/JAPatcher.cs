@@ -21,6 +21,7 @@ public class JAPatcher : IDisposable {
         Harmony harmony = JALib.Harmony;
         Assembly assembly = typeof(Harmony).Assembly;
         Type patchFunctions = assembly.GetType("HarmonyLib.PatchFunctions");
+        if(assembly.GetName().Version < new Version(2, 0, 3, 0)) harmony.Patch(typeof(HarmonyLib.Patch).Constructor(), new HarmonyMethod(((Delegate) FixPatchCtorNull).Method));
         harmony.CreateReversePatcher(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperReverse).Method)).Patch();
         harmony.CreateReversePatcher(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchReverse).Method)).Patch();
         Type methodPatcher = assembly.GetType("HarmonyLib.MethodPatcher");
@@ -30,6 +31,11 @@ public class JAPatcher : IDisposable {
         harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
         harmony.Patch(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
         harmony.Patch(assembly.GetType("HarmonyLib.MethodCopier").Method("GetInstructions"), new HarmonyMethod(((Delegate) GetInstructions).Method));
+    }
+
+    private static void FixPatchCtorNull(ref string[] before, ref string[] after) {
+        before ??= [];
+        after ??= [];
     }
 
     private static bool PatchUpdateWrapperPatch(MethodBase original, PatchInfo patchInfo, ref MethodInfo __result) {
