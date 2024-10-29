@@ -155,13 +155,6 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Ldarg_0);
             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             yield return new CodeInstruction(OpCodes.Stloc, patcher);
-            yield return new CodeInstruction(OpCodes.Ldarg_0);
-            yield return new CodeInstruction(OpCodes.Ldloc, patcher);
-            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "il"));
-            yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
-            yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
-            yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
-            yield return new CodeInstruction(OpCodes.Stfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             int state = 0;
             FieldInfo replace = SimpleReflect.Field(typeof(JAMethodPatcher), "replace");
@@ -213,7 +206,13 @@ class JAMethodPatcher {
                                 yield return cur;
                                 if(cur.opcode == OpCodes.Call) break;
                             }
-                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipLabel);
+                            yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(skipLabel);
+                            yield return new CodeInstruction(OpCodes.Ldloc, patcher);
+                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "il"));
+                            yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
+                            yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
+                            yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
+                            yield return new CodeInstruction(OpCodes.Stfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
                             state++;
                             continue;
                         }
