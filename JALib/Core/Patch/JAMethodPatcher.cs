@@ -645,7 +645,7 @@ class JAMethodPatcher {
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     yield return instruction;
-                                } else if(instruction.opcode == OpCodes.Ret) yield return code.WithLabels(skipLabel);
+                                } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipLabel);
                                 else yield return instruction;
                             }
                             continue;
