@@ -729,18 +729,15 @@ class JAMethodPatcher {
     }
 
     private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions) {
-        foreach(CodeInstruction instruction in instructions) {
-            int index = GetParameterIndex(instruction, out bool set);
-            if(index > -1) {
-                if(_parameterMap.TryGetValue(index, out int newIndex)) {
-                    yield return GetParameterInstruction(newIndex, set);
-                } else if(_parameterFields.TryGetValue(index, out FieldInfo info)) {
-                    yield return new CodeInstruction(set ? OpCodes.Stfld : OpCodes.Ldfld, info);
-                } else yield return new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
-            } else {
-                yield return instruction;
-            }
+        CodeInstruction[] list = instructions.ToArray();
+        for(int i = 0; i < list.Length; i++) {
+            int index = GetParameterIndex(list[i], out bool set);
+            if(index <= -1) continue;
+            list[i] = _parameterMap.TryGetValue(index, out int newIndex)      ? GetParameterInstruction(newIndex, set) :
+                      _parameterFields.TryGetValue(index, out FieldInfo info) ? new CodeInstruction(set ? OpCodes.Stfld : OpCodes.Ldfld, info) :
+                                                                                new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
         }
+        return list;
     }
 
     private static int GetParameterIndex(CodeInstruction instruction, out bool set) {
