@@ -505,7 +505,7 @@ class JAMethodPatcher {
                                 if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
                                    instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
                                 if(instruction.operand is LocalBuilder) {
-                                    if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloc;
+                                    if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloca;
                                     instruction.operand = notUsingLocal;
                                 }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
@@ -637,7 +637,7 @@ class JAMethodPatcher {
                                 if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
                                    instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
                                 if(instruction.operand is LocalBuilder) {
-                                    if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloc;
+                                    if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloca;
                                     instruction.operand = notUsingLocal;
                                 }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
