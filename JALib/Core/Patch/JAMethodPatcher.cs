@@ -730,14 +730,26 @@ class JAMethodPatcher {
         }
     }
 
-    private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions) {
-        CodeInstruction[] list = instructions.ToArray();
-        for(int i = 0; i < list.Length; i++) {
+    private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+        List<CodeInstruction> list = instructions.ToList();
+        for(int i = 0; i < list.Count; i++) {
             int index = GetParameterIndex(list[i], out bool set);
             if(index <= -1) continue;
-            list[i] = _parameterMap.TryGetValue(index, out int newIndex)      ? GetParameterInstruction(newIndex, set) :
-                      _parameterFields.TryGetValue(index, out FieldInfo info) ? new CodeInstruction(set ? OpCodes.Stfld : OpCodes.Ldfld, info) :
-                                                                                new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
+            if(_parameterMap.TryGetValue(index, out int newIndex)) {
+                list[i] = GetParameterInstruction(newIndex, set);
+            } else if(_parameterFields.TryGetValue(index, out FieldInfo info)) {
+                if(info.IsStatic) list[i] = new CodeInstruction(set ? OpCodes.Stsfld : OpCodes.Ldsfld, info);
+                else if(!set) {
+                    list[i++] = new CodeInstruction(OpCodes.Ldarg_0);
+                    list.Insert(i, new CodeInstruction(OpCodes.Ldfld, info));
+                } else {
+                    LocalBuilder local = generator.DeclareLocal(info.DeclaringType);
+                    list[i++] = new CodeInstruction(OpCodes.Stloc, local);
+                    list.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
+                    list.Insert(i++, new CodeInstruction(OpCodes.Ldloc, local));
+                    list.Insert(i, new CodeInstruction(OpCodes.Stfld, info));
+                }
+            } else list[i] = new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
         }
         return list;
     }
