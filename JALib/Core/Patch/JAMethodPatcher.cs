@@ -23,7 +23,6 @@ class JAMethodPatcher {
     private TriedPatchData[] tryPostfixes;
     private readonly object originalPatcher;
     private readonly bool customReverse;
-    private LocalBuilder exceptionVar;
 
     public JAMethodPatcher(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
         debug = patchInfo.Debugging || Harmony.DEBUG;
@@ -144,8 +143,6 @@ class JAMethodPatcher {
         return sortedMethods;
     }
 
-    private bool NeedException() => tryPrefixes.Length != 0 || tryPostfixes.Length != 0;
-
     internal static bool PrefixAffectsOriginal(MethodInfo fix) => throw new NotImplementedException();
 
     internal static MethodInfo CreateReplacement(JAMethodPatcher patcher, out Dictionary<int, CodeInstruction> finalInstructions) {
@@ -208,18 +205,7 @@ class JAMethodPatcher {
                                 yield return cur;
                                 if(cur.opcode == OpCodes.Call) break;
                             }
-                            yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(skipLabel);
-                            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("NeedException"));
-                            Label skipException = generator.DefineLabel();
-                            yield return new CodeInstruction(OpCodes.Brfalse, skipException);
-                            yield return new CodeInstruction(OpCodes.Ldarg_0);
-                            yield return new CodeInstruction(OpCodes.Ldloc, patcher);
-                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "il"));
-                            yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
-                            yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
-                            yield return new CodeInstruction(OpCodes.Stfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
-                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipException);
+                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipLabel);
                             state++;
                             continue;
                         }
@@ -523,18 +509,12 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Brfalse, skipLabel);
                             code.labels.Clear();
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
-                                if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
-                                   instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
                                 if(instruction.operand is LocalBuilder) {
                                     if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloca;
                                     instruction.operand = notUsingLocal;
                                 }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
-                                else if(instruction.opcode == OpCodes.Ldarg_2) {
-                                    yield return new CodeInstruction(OpCodes.Ldarg_0);
-                                    yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
-                                } else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
-                                    yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Prefix Patch ");
+                                else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldc_I4_1);
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     yield return instruction;
@@ -656,22 +636,16 @@ class JAMethodPatcher {
                             yield return new CodeInstruction(OpCodes.Ldloc, requireTry).WithLabels(end);
                             yield return new CodeInstruction(OpCodes.Brfalse, skipLabel);
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
-                                if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
-                                   instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
                                 if(instruction.operand is LocalBuilder) {
                                     if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloca;
                                     instruction.operand = notUsingLocal;
                                 }
                                 if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
-                                else if(instruction.opcode == OpCodes.Ldarg_2) {
-                                    yield return new CodeInstruction(OpCodes.Ldarg_0);
-                                    yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
-                                } else if(instruction.opcode == OpCodes.Ldarg_S && (byte) instruction.operand == 4)
-                                    yield return new CodeInstruction(OpCodes.Ldstr, "An error occurred while invoking a Postfix Patch ");
+                                else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldc_I4_0);
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     yield return instruction;
-                                } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipLabel);
+                                } else if(instruction.opcode == OpCodes.Ret) yield return code.WithLabels(skipLabel);
                                 else yield return instruction;
                             }
                             continue;
@@ -693,18 +667,12 @@ class JAMethodPatcher {
         }
     }
 
-    private static void handleException(JAEmitter emitter, HarmonyLib.Patch patch, LocalBuilder exceptionVar, LocalBuilder runOriginalVariable, string desc) {
+    private static void handleException(JAEmitter emitter, HarmonyLib.Patch patch, OpCode isPrefix) {
         emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock), out _);
-        emitter.Emit(OpCodes.Stloc, exceptionVar);
-        emitter.Emit(OpCodes.Ldstr, ((TriedPatchData) patch).mod.Name);
-        emitter.Emit(OpCodes.Call, typeof(JAMod).Method("GetMods", typeof(string)));
-        emitter.Emit(OpCodes.Ldstr, desc + patch.owner);
-        emitter.Emit(OpCodes.Ldloc, exceptionVar);
-        emitter.Emit(OpCodes.Call, typeof(JAMod).Method("LogException", typeof(string), typeof(Exception)));
-        if(patch.PatchMethod.ReturnType == typeof(bool)) {
-            emitter.Emit(OpCodes.Ldc_I4_1);
-            emitter.Emit(OpCodes.Stloc, runOriginalVariable);
-        }
+        emitter.Emit(OpCodes.Ldsfld, ((TriedPatchData) patch).mod.staticField);
+        emitter.Emit(OpCodes.Ldstr, patch.owner);
+        emitter.Emit(isPrefix);
+        emitter.Emit(OpCodes.Call, ((Delegate) JAMod.LogPatchException).Method);
         emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
     }
 

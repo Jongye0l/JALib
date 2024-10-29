@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -28,7 +26,6 @@ class JALib : JAMod {
     private static bool enableInit = false;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
-        Instance = this;
         Setting = (JALibSetting) base.Setting;
         JApi.Initialize();
         JATask.Run(Instance, () => {

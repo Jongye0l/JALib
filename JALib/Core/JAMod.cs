@@ -48,6 +48,7 @@ public abstract class JAMod {
     internal int Gid;
     internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
     private bool initialized;
+    internal FieldInfo staticField;
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -73,6 +74,7 @@ public abstract class JAMod {
             SetupEvent();
             mods[Name] = this;
             SaveSetting();
+            SetupStaticField();
             Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {
             ModEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
@@ -102,6 +104,20 @@ public abstract class JAMod {
     private bool CheckGUIEventRequire(string name) => IsExistMethod(name) || Features.Any(feature => feature.IsExistMethod(name));
 
     private bool IsExistMethod(string name) => GetType().Method(name).DeclaringType == GetType();
+
+    private void SetupStaticField() {
+        foreach(FieldInfo field in GetType().Fields()) {
+            if(!field.IsStatic || field.FieldType != GetType()) continue;
+            staticField = field;
+            field.SetValue(null, this);
+            return;
+        }
+        TypeBuilder typeBuilder = ModuleBuilder.DefineType($"JALib.StaticField.{Name}.{GetHashCode()}", TypeAttributes.Public);
+        typeBuilder.DefineField("Mod", GetType(), FieldAttributes.Private | FieldAttributes.Static);
+        Type type = typeBuilder.CreateType();
+        staticField = type.GetField("Mod");
+        staticField.SetValue(null, this);
+    }
 
     public static JAMod GetMods(string name) => mods.GetValueOrDefault(name);
 
@@ -300,6 +316,8 @@ public abstract class JAMod {
     public void LogException(string key, Exception e) => Logger.LogException(key, e);
 
     public void LogException(Exception e) => Logger.LogException(e);
+
+    internal static void LogPatchException(Exception e, JAMod mod, string id, bool prefix) => mod.LogException("An error occurred while invoking a " + (prefix ? "Pre" : "Post") + "fix Patch " + id, e);
 
     public void SaveSetting() => ModSetting?.Save();
 
