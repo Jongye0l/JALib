@@ -537,7 +537,8 @@ class JAMethodPatcher {
 
     private static bool AddPostfixes(object _, Dictionary<string, LocalBuilder> variables, LocalBuilder runOriginalVariable, bool passthroughPatches, JAMethodPatcher patcher) {
         bool result = false;
-        foreach(HarmonyLib.Patch patch in patcher.postfixes) AddPostfixes_b__0(patcher, patch, variables, runOriginalVariable, passthroughPatches, ref result);
+        foreach(HarmonyLib.Patch patch in patcher.postfixes) if(passthroughPatches == (patch.PatchMethod.ReturnType != typeof (void)))
+            AddPostfixes_b__0(patcher, patch, variables, runOriginalVariable, passthroughPatches, ref result);
         return result;
     }
 
