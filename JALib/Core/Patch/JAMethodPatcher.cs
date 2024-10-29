@@ -466,7 +466,7 @@ class JAMethodPatcher {
                             continue;
                         }
                     } else throw new Exception("This Code Is Not field: " + next.opcode);
-                } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix);
+                } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix).WithLabels(code.labels);
                 else if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo field && field.FieldType == typeof(Func<ParameterInfo, bool>)) {
                     while(enumerator.MoveNext()) if(enumerator.Current.opcode == OpCodes.Call) break;
                     yield return new CodeInstruction(OpCodes.Call, ((Delegate) CheckArgs).Method);
@@ -474,30 +474,37 @@ class JAMethodPatcher {
                 }
                 switch(state) {
                     case 0:
-                        if(code.opcode == OpCodes.Newobj && code.operand is ConstructorInfo consInfo && consInfo.DeclaringType == typeof(List<KeyValuePair<LocalBuilder, Type>>)) {
-                            yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels);
-                            yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPrefixes"));
-                            yield return new CodeInstruction(OpCodes.Ldarg_1);
-                            yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
-                            yield return new CodeInstruction(OpCodes.Dup);
-                            yield return new CodeInstruction(OpCodes.Stloc, requireTry);
-                            Label falseLabel = generator.DefineLabel();
-                            yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
-                            yield return new CodeInstruction(OpCodes.Ldloc, emitter);
-                            yield return new CodeInstruction(OpCodes.Ldc_I4_0);
-                            yield return new CodeInstruction(OpCodes.Ldnull);
-                            yield return new CodeInstruction(OpCodes.Newobj, typeof(ExceptionBlock).Constructor(typeof(ExceptionBlockType), typeof(Type)));
-                            yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
-                            yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
-                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
-                            code.labels.Clear();
+                    case 1:
+                        if(code.opcode == OpCodes.Callvirt && code.operand is MethodInfo { Name: "Emit" }) {
                             state++;
+                            if(state == 1) {
+                                yield return code;
+                                enumerator.MoveNext();
+                                code = enumerator.Current;
+                                yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels);
+                                yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPrefixes"));
+                                yield return new CodeInstruction(OpCodes.Ldarg_1);
+                                yield return new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch)));
+                                yield return new CodeInstruction(OpCodes.Dup);
+                                yield return new CodeInstruction(OpCodes.Stloc, requireTry);
+                                Label falseLabel = generator.DefineLabel();
+                                yield return new CodeInstruction(OpCodes.Brfalse, falseLabel);
+                                yield return new CodeInstruction(OpCodes.Ldloc, emitter);
+                                yield return new CodeInstruction(OpCodes.Ldc_I4_0);
+                                yield return new CodeInstruction(OpCodes.Ldnull);
+                                yield return new CodeInstruction(OpCodes.Newobj, typeof(ExceptionBlock).Constructor(typeof(ExceptionBlockType), typeof(Type)));
+                                yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
+                                yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
+                                yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
+                                code.labels.Clear();
+                                goto Recheck;
+                            }
                         }
                         break;
-                    case 1:
+                    case 2:
                         if(code.opcode == OpCodes.Throw) state++;
                         break;
-                    case 2:
+                    case 3:
                         if((code.opcode == OpCodes.Call || code.opcode == OpCodes.Callvirt) && code.operand is MethodInfo { Name: "Emit" }) {
                             yield return code;
                             enumerator.MoveNext();
