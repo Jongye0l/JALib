@@ -585,6 +585,7 @@ class JAMethodPatcher {
             yield return new CodeInstruction(OpCodes.Ldloca, notUsingLocal);
             yield return new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"));
             yield return new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel);
+            bool parameterCheck = true;
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
                 Recheck:
@@ -644,31 +645,41 @@ class JAMethodPatcher {
                                 yield return repeat;
                             }
                             yield return new CodeInstruction(OpCodes.Br, loop);
-                            Label skipLabel = generator.DefineLabel();
-                            yield return new CodeInstruction(OpCodes.Ldloc, requireTry).WithLabels(end);
-                            yield return new CodeInstruction(OpCodes.Brfalse, skipLabel);
-                            foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
-                                if(instruction.operand is LocalBuilder) {
-                                    if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloca;
-                                    instruction.operand = notUsingLocal;
-                                }
-                                if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
-                                else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(OpCodes), "Ldc_I4_0"));
-                                else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
-                                    instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
-                                    yield return instruction;
-                                } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipLabel);
-                                else yield return instruction;
-                            }
+                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(end);
                             continue;
                         }
                     } else {
-                        yield return next;
                         if(!enumerator.MoveNext() || enumerator.Current.opcode != OpCodes.Stfld) throw new Exception("This Code Is Not field: " + next.opcode);
-                        yield return new CodeInstruction(OpCodes.Starg_S, 5);
+                        yield return new CodeInstruction(OpCodes.Ldarg_S, 5);
+                        yield return next;
+                        yield return new CodeInstruction(OpCodes.Stind_I1);
                         continue;
                     }
-                } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix);
+                } else if(code.opcode == OpCodes.Ldarg_1) {
+                    enumerator.MoveNext();
+                    code = enumerator.Current;
+                    if(parameterCheck && code.operand is MethodInfo { Name: "get_ReturnType" }) {
+                        Label skipLabel = generator.DefineLabel();
+                        yield return new CodeInstruction(OpCodes.Ldloc, requireTry);
+                        yield return new CodeInstruction(OpCodes.Brfalse, skipLabel);
+                        foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
+                            if(instruction.operand is LocalBuilder) {
+                                if(instruction.opcode == OpCodes.Ldloca_S) instruction.opcode = OpCodes.Ldloca;
+                                instruction.operand = notUsingLocal;
+                            }
+                            if(instruction.opcode == OpCodes.Ldarg_0) yield return new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels);
+                            else if(instruction.opcode == OpCodes.Ldarg_2) yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(OpCodes), "Ldc_I4_0"));
+                            else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
+                                instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+                                yield return instruction;
+                            } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipLabel);
+                            else yield return instruction;
+                        }
+                        parameterCheck = false;
+                    }
+                    yield return new CodeInstruction(OpCodes.Ldloc, fix);
+                    goto Recheck;
+                }
                 else if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo field && field.FieldType == typeof(Func<ParameterInfo, bool>)) {
                     while(enumerator.MoveNext()) if(enumerator.Current.opcode == OpCodes.Call) break;
                     yield return new CodeInstruction(OpCodes.Call, ((Delegate) CheckArgs).Method);
