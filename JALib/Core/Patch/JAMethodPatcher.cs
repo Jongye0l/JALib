@@ -168,7 +168,7 @@ class JAMethodPatcher {
                 }
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPostfixes" }) {
                     yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels);
-                    code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("AddPostfixes"));
+                    code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method(((MethodInfo) code.operand).GetParameters().Length == 3 ? "AddPostfixes" : "AddPostfixes_old"));
                 }
                 switch(state) {
                     case 0:
@@ -256,9 +256,7 @@ class JAMethodPatcher {
                             Label notIf = generator.DefineLabel();
                             yield return new CodeInstruction(OpCodes.Brfalse, notIf);
                             LocalBuilder locking = generator.DeclareLocal(typeof(bool).MakeByRefType());
-                            yield return new CodeInstruction(OpCodes.Ldc_I4_0).WithLabels(notNullLabel);
-                            yield return new CodeInstruction(OpCodes.Stloc, locking);
-                            yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap")).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
+                            yield return new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap")).WithLabels(notNullLabel).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
                             yield return new CodeInstruction(OpCodes.Ldloca, locking);
                             yield return new CodeInstruction(OpCodes.Call, typeof(Monitor).Method("Enter", typeof(object), locking.LocalType));
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
@@ -535,6 +533,13 @@ class JAMethodPatcher {
         bool result = false;
         foreach(HarmonyLib.Patch patch in patcher.postfixes) if(passthroughPatches == (patch.PatchMethod.ReturnType != typeof (void)))
             AddPostfixes_b__0(patcher, patch, variables, runOriginalVariable, passthroughPatches, ref result);
+        return result;
+    }
+
+    private static bool AddPostfixes_old(object _, Dictionary<string, LocalBuilder> variables, bool passthroughPatches, JAMethodPatcher patcher) {
+        bool result = false;
+        foreach(HarmonyLib.Patch patch in patcher.postfixes) if(passthroughPatches == (patch.PatchMethod.ReturnType != typeof (void)))
+            AddPostfixes_b__0(patcher, patch, variables, null, passthroughPatches, ref result);
         return result;
     }
 
