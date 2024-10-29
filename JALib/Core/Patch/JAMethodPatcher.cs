@@ -225,15 +225,22 @@ class JAMethodPatcher {
                         }
                         break;
                     case 1:
-                        if(code.opcode == OpCodes.Ldfld && code.operand is FieldInfo { Name: "source" }) {
-                            yield return new CodeInstruction(OpCodes.Pop);
+                        if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPrefixes" }) {
+                            yield return code;
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
                             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes"));
                             yield return new CodeInstruction(OpCodes.Ldlen);
+                            yield return new CodeInstruction(OpCodes.Brtrue, removeLabel);
+                            state++;
+                            continue;
+                        }
+                        break;
+                    case 2:
+                        if(code.opcode == OpCodes.Ldfld && code.operand is FieldInfo { Name: "source" }) {
+                            yield return new CodeInstruction(OpCodes.Pop);
                             enumerator.MoveNext();
                             enumerator.MoveNext();
                             CodeInstruction moveLabel = enumerator.Current;
-                            yield return new CodeInstruction(OpCodes.Brtrue, removeLabel);
                             yield return new CodeInstruction(OpCodes.Ldarg_0);
                             yield return new CodeInstruction(OpCodes.Ldfld, replace);
                             yield return new CodeInstruction(OpCodes.Dup);
@@ -247,7 +254,7 @@ class JAMethodPatcher {
                             continue;
                         }
                         break;
-                    case 2:
+                    case 3:
                         if(code.opcode == OpCodes.Newobj && code.operand is ConstructorInfo info && info.DeclaringType == typeof(List<Label>)) {
                             yield return code;
                             enumerator.MoveNext();
@@ -306,15 +313,12 @@ class JAMethodPatcher {
                             continue;
                         }
                         break;
-                    case 3:
-                        if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPostfixes" }) {
+                    case 4:
+                        if(code.opcode == OpCodes.Callvirt && code.operand is MethodInfo { Name: "Emit" }) {
                             yield return code;
                             enumerator.MoveNext();
                             code = enumerator.Current;
-                            if(code.opcode == OpCodes.Stloc || code.opcode == OpCodes.Stloc_S) {
-                                yield return code;
-                                code = new CodeInstruction(OpCodes.Nop).WithLabels(removeLabel);
-                            }
+                            code.labels.Add(removeLabel);
                         }
                         break;
                 }
