@@ -501,6 +501,10 @@ class JAMethodPatcher {
                     case 2:
                         if((code.opcode == OpCodes.Call || code.opcode == OpCodes.Callvirt) && code.operand is MethodInfo { Name: "Emit" }) {
                             yield return code;
+                            enumerator.MoveNext();
+                            code = enumerator.Current;
+                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(code.labels);
+                            code.labels.Clear();
                             foreach(CodeInstruction instruction in PatchProcessor.GetCurrentInstructions(((Delegate) handleException).Method, generator: generator)) {
                                 if(instruction.opcode == OpCodes.Ldloc_0 || instruction.opcode == OpCodes.Ldloc_2 ||
                                    instruction.opcode == OpCodes.Stloc_0 || instruction.opcode == OpCodes.Stloc_2) continue;
@@ -515,7 +519,7 @@ class JAMethodPatcher {
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     yield return instruction;
-                                } else if(instruction.opcode == OpCodes.Ret) yield return new CodeInstruction(OpCodes.Nop).WithLabels(instruction.labels);
+                                } else if(instruction.opcode == OpCodes.Ret) yield return code.WithLabels(instruction.labels);
                                 else yield return instruction;
                             }
                             state++;
