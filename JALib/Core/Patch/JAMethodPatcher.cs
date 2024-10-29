@@ -144,6 +144,8 @@ class JAMethodPatcher {
         return sortedMethods;
     }
 
+    private bool NeedException() => tryPrefixes.Length != 0 || tryPostfixes.Length != 0;
+
     internal static bool PrefixAffectsOriginal(MethodInfo fix) => throw new NotImplementedException();
 
     internal static MethodInfo CreateReplacement(JAMethodPatcher patcher, out Dictionary<int, CodeInstruction> finalInstructions) {
@@ -207,12 +209,17 @@ class JAMethodPatcher {
                                 if(cur.opcode == OpCodes.Call) break;
                             }
                             yield return new CodeInstruction(OpCodes.Ldarg_0).WithLabels(skipLabel);
+                            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("NeedException"));
+                            Label skipException = generator.DefineLabel();
+                            yield return new CodeInstruction(OpCodes.Brfalse, skipException);
+                            yield return new CodeInstruction(OpCodes.Ldarg_0);
                             yield return new CodeInstruction(OpCodes.Ldloc, patcher);
                             yield return new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "il"));
                             yield return new CodeInstruction(OpCodes.Ldtoken, typeof(Exception));
                             yield return new CodeInstruction(OpCodes.Call, typeof(Type).Method("GetTypeFromHandle"));
                             yield return new CodeInstruction(OpCodes.Callvirt, typeof(ILGenerator).Method("DeclareLocal", typeof(Type)));
                             yield return new CodeInstruction(OpCodes.Stfld, SimpleReflect.Field(typeof(JAMethodPatcher), "exceptionVar"));
+                            yield return new CodeInstruction(OpCodes.Nop).WithLabels(skipException);
                             state++;
                             continue;
                         }
