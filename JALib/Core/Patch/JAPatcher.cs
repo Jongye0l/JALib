@@ -248,7 +248,7 @@ public class JAPatcher : IDisposable {
     }
 
 
-#pragma warning disable CS0618 Because Old Harmony Support // Type or member is obsolete
+#pragma warning disable CS0618
     private static void CustomPatch(MethodBase original, HarmonyMethod patchMethod, JAPatchAttribute attribute, JAMod mod) {
         lock (typeof(PatchProcessor).GetValue("locker")) {
             PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]) ?? new PatchInfo();
@@ -284,7 +284,7 @@ public class JAPatcher : IDisposable {
             jaPatches[original] = jaPatchInfo;
         }
     }
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore CS0618
 
     private static void CustomReversePatch(MethodBase original, MethodInfo patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
         PatchInfo patchInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke<PatchInfo>("GetPatchInfo", [original]) ?? new PatchInfo();

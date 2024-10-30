@@ -9,7 +9,7 @@ using JALib.Tools;
 
 namespace JALib.Core.Patch;
 
-// Resharper Disable CS0414 because these fields are used by il code
+#pragma warning disable CS0414
 class JAMethodPatcher {
     private static Dictionary<int, int> _parameterMap = new();
     private static Dictionary<int, FieldInfo> _parameterFields = new();

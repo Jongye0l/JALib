@@ -16,8 +16,8 @@ using UnityModManagerNet;
 
 namespace JALib;
 
+#pragma warning disable CS0649
 class JALib : JAMod {
-    // Resharper Disable CS0649 because these fields are assigned by reflection
     internal static JALib Instance;
     internal static Harmony Harmony;
     internal new JALibSetting Setting;
