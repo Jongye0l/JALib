@@ -166,7 +166,7 @@ public class JAPatcher : IDisposable {
 
     #endregion
 
-    public delegate void FailPatch(string patchId);
+    public delegate void FailPatch(string patchId, bool disabled);
     public JAPatcher(JAMod mod) {
         this.mod = mod;
         patchData = [];
@@ -239,8 +239,9 @@ public class JAPatcher : IDisposable {
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
             mod.LogException(e);
-            OnFailPatch?.Invoke(attribute.PatchId);
-            if(attribute is not JAPatchAttribute { Disable: true }) return;
+            bool disabled = attribute is JAPatchAttribute { Disable: true };
+            OnFailPatch?.Invoke(attribute.PatchId, disabled);
+            if(!disabled) return;
             mod.Error($"Mod {mod.Name} is Disabled.");
             Unpatch();
             throw;

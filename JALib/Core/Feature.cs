@@ -38,10 +38,15 @@ public abstract class Feature {
         Mod = mod;
         Name = name;
         Patcher = new JAPatcher(mod);
+        Patcher.OnFailPatch += OnFailPatch;
         if(patchClass != null) Patcher.AddPatch(patchClass);
         CanEnable = canEnable;
         FeatureSetting = new JAFeatureSetting(this, settingType);
         _canExpand = IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnShowGUI)) || IsExistMethod(nameof(OnHideGUI));
+    }
+
+    private void OnFailPatch(string name, bool disabled) {
+        if(disabled) Disable();
     }
 
     internal bool IsExistMethod(string name) => GetType().Method(name).DeclaringType == GetType();
