@@ -31,8 +31,11 @@ class JALib : JAMod {
         JApi.Initialize();
         JATask.Run(Instance, Init);
         OnEnable();
+        MainThread.Run(Instance, CompleteInit);
         //ModLoader.CheckAllLoaded();
     }
+
+    private void CompleteInit() => initialized = true;
 
     private void Init() {
         LoadInfo();

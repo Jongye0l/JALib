@@ -47,7 +47,7 @@ public abstract class JAMod {
     public bool Enabled => ModEntry.Enabled;
     internal int Gid;
     internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
-    private bool initialized;
+    internal bool initialized;
     internal FieldInfo staticField;
 
     protected internal SystemLanguage? CustomLanguage {
