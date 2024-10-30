@@ -42,9 +42,6 @@ class ModLoader {
                         loader.downloadTask ??= new TaskCompletionSource<bool>();
                         tasks.Add(loader.downloadTask.Task);
                         loader.Install();
-                    } else if(!loader.state.HasFlag(State.Installed)) {
-                        loader.downloadTask = new TaskCompletionSource<bool>();
-                        tasks.Add(loader.downloadTask.Task);
                     }
                 }
                 if(modLoader.updateVersion != null) {
@@ -54,8 +51,7 @@ class ModLoader {
                 }
                 Task.WhenAll(tasks).GetAwaiter().OnCompleted(modLoader.CheckAndApply);
             }
-        }
-        else {
+        } else {
             _count++;
             _loader.Add(modInfo.ModEntry.Info.Id, new ModLoader(modInfo));
         }
