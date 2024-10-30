@@ -24,6 +24,8 @@ class JApi {
     private const string Domain2 = "jalib2.jongyeol.kr";
     private string domain;
     private TaskCompletionSource<bool> completeLoadTask = new();
+    private int retryCount = 0;
+    private Task retryTask;
 
     public static void Initialize() {
         HttpClient.DefaultRequestHeaders.ExpectContinue = false;
@@ -40,6 +42,7 @@ class JApi {
     }
 
     private void Connect() {
+        if(_instance != this) return;
         try {
             domain = domain switch {
                 null => Domain1,
@@ -51,7 +54,7 @@ class JApi {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
             _instance.completeLoadTask.TrySetResult(false);
-            Dispose();
+            Restart();
         }
     }
 
@@ -69,7 +72,7 @@ class JApi {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
             _instance.completeLoadTask.TrySetResult(false);
-            Dispose();
+            Restart();
         }
     }
 
@@ -157,8 +160,13 @@ class JApi {
 
     private void OnConnect() {
         completeLoadTask.TrySetResult(true);
-        completeLoadTask = null;
+        retryCount = 0;
         while(_queue.TryDequeue(out Action handler)) Task.Run(handler);
+    }
+
+    internal void Restart() {
+        retryTask = Task.Delay(1000 * ++retryCount);
+        retryTask.GetAwaiter().OnCompleted(Connect);
     }
 
     internal void Dispose() {
