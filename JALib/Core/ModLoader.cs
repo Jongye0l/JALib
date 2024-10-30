@@ -19,7 +19,6 @@ class ModLoader {
     private static bool _complete;
     private JAModInfo info;
     private string name;
-    private bool exist;
     private State state;
     private GetModInfo apiModInfo;
     private Version updateVersion;
@@ -105,7 +104,6 @@ class ModLoader {
     private ModLoader(JAModInfo info) {
         this.info = info;
         name = info.ModEntry.Info.Id;
-        exist = true;
         info.ModEntry.Info.DisplayName = name + " <color=gray>[Loading Info...]</color>";
         LoadAPIModInfo();
         LoadDependencies();
@@ -113,7 +111,6 @@ class ModLoader {
 
     private void InitAfter(JAModInfo info) {
         this.info = info;
-        exist = true;
         info.ModEntry.Info.DisplayName = name + " <color=gray>[Loading Info...]</color>";
         LoadAPIModInfo();
         LoadDependencies();
