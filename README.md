@@ -52,7 +52,7 @@
 ---
 ### 개발 환경 Development environment
 * Windows 11
-* Rider 2024.2.5
+* Rider 2024.2.7
 * .NET Framework 4.8.1
 * C# 13
 * A Dance of Fire and Ice 2.8.1(r123, 0a4e966)
