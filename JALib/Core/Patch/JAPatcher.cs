@@ -62,10 +62,12 @@ public class JAPatcher : IDisposable {
         throw new NotImplementedException();
 
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-            yield return new CodeInstruction(OpCodes.Ldarg_0);
-            yield return new CodeInstruction(OpCodes.Ldarg_1);
-            yield return new CodeInstruction(OpCodes.Ldarg_2);
-            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(PatchInfo), typeof(JAPatchInfo)));
+            List<CodeInstruction> list = [
+                new(OpCodes.Ldarg_0),
+                new(OpCodes.Ldarg_1),
+                new(OpCodes.Ldarg_2),
+                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(PatchInfo), typeof(JAPatchInfo)))
+            ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
@@ -73,11 +75,12 @@ public class JAPatcher : IDisposable {
                 enumerator.MoveNext();
                 if(enumerator.Current.opcode != OpCodes.Call && enumerator.Current.opcode != OpCodes.Callvirt ||
                    enumerator.Current.operand is not MethodInfo { Name: "CreateReplacement" }) continue;
-                yield return code;
+                list.Add(code);
                 break;
             }
-            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement"));
-            while(enumerator.MoveNext()) yield return enumerator.Current;
+            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement")));
+            while(enumerator.MoveNext()) list.Add(enumerator.Current);
+            return list;
         }
     }
 
@@ -100,23 +103,26 @@ public class JAPatcher : IDisposable {
         throw new NotImplementedException();
 
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+            List<CodeInstruction> list = [
+                new(OpCodes.Ldarg_0),
+                new(OpCodes.Ldarg_1),
+                new(OpCodes.Ldarg_3),
+                new(OpCodes.Ldarg_2),
+                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(HarmonyMethod), typeof(MethodBase), typeof(JAPatchInfo), typeof(MethodInfo)))
+            ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            yield return new CodeInstruction(OpCodes.Ldarg_0);
-            yield return new CodeInstruction(OpCodes.Ldarg_1);
-            yield return new CodeInstruction(OpCodes.Ldarg_3);
-            yield return new CodeInstruction(OpCodes.Ldarg_2);
-            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(HarmonyMethod), typeof(MethodBase), typeof(JAPatchInfo), typeof(MethodInfo)));
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
                 if(code.opcode != OpCodes.Ldloca_S && code.opcode != OpCodes.Ldloca) continue;
                 enumerator.MoveNext();
                 if(enumerator.Current.opcode != OpCodes.Call && enumerator.Current.opcode != OpCodes.Callvirt ||
                    enumerator.Current.operand is not MethodInfo { Name: "CreateReplacement" }) continue;
-                yield return code;
+                list.Add(code);
                 break;
             }
-            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement"));
-            while(enumerator.MoveNext()) yield return enumerator.Current;
+            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement")));
+            while(enumerator.MoveNext()) list.Add(enumerator.Current);
+            return list;
         }
     }
 
@@ -125,22 +131,25 @@ public class JAPatcher : IDisposable {
         throw new NotImplementedException();
 
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+            List<CodeInstruction> list = [
+                new(OpCodes.Ldarg_0),
+                new(OpCodes.Ldarg_1),
+                new(OpCodes.Ldarg_2),
+                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(ReversePatchData), typeof(PatchInfo), typeof(JAPatchInfo)))
+            ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-            yield return new CodeInstruction(OpCodes.Ldarg_0);
-            yield return new CodeInstruction(OpCodes.Ldarg_1);
-            yield return new CodeInstruction(OpCodes.Ldarg_2);
-            yield return new CodeInstruction(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(ReversePatchData), typeof(PatchInfo), typeof(JAPatchInfo)));
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
                 if(code.opcode != OpCodes.Ldloca_S && code.opcode != OpCodes.Ldloca) continue;
                 enumerator.MoveNext();
                 if(enumerator.Current.opcode != OpCodes.Call && enumerator.Current.opcode != OpCodes.Callvirt ||
                    enumerator.Current.operand is not MethodInfo { Name: "CreateReplacement" }) continue;
-                yield return code;
+                list.Add(code);
                 break;
             }
-            yield return new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement"));
-            while(enumerator.MoveNext()) yield return enumerator.Current;
+            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement")));
+            while(enumerator.MoveNext()) list.Add(enumerator.Current);
+            return list;
         }
     }
 
