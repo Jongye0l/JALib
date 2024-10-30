@@ -36,4 +36,6 @@ class JAPatchInfo {
         int initialIndex = current.Length;
         return current.Concat([new TriedPatchData(add, initialIndex, owner, mod)]).ToArray();
     }
+
+    public bool IsDebug() => tryPrefixes.Any(x => x.debug) || tryPostfixes.Any(x => x.debug) || replaces.Any(x => x.debug) || removes.Any(x => x.debug);
 }

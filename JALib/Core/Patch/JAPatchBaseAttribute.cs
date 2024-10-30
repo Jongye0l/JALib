@@ -18,5 +18,4 @@ public abstract class JAPatchBaseAttribute : Attribute {
     public bool TryingCatch = true;
     internal MethodInfo Method;
     public bool Debug;
-
 }

@@ -25,7 +25,7 @@ class JAMethodPatcher {
     private readonly bool customReverse;
 
     public JAMethodPatcher(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        debug = patchInfo.Debugging || Harmony.DEBUG;
+        debug = patchInfo.Debugging || Harmony.DEBUG || jaPatchInfo.IsDebug();
         SortPatchMethods(original, patchInfo.prefixes.Concat(jaPatchInfo.tryPrefixes).Concat(jaPatchInfo.removes).ToArray(), debug, out prefixes);
         removes = jaPatchInfo.removes;
         SetupPrefixRemove();
