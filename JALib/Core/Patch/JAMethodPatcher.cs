@@ -163,6 +163,7 @@ class JAMethodPatcher {
             Label removeLabel = generator.DefineLabel();
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
+                Recheck:
                 if(code.opcode == OpCodes.Ldarg_0) code = originalArg0.Clone().WithLabels(code.labels);
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPrefixes" }) {
                     list.Add(new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels));
@@ -175,11 +176,12 @@ class JAMethodPatcher {
                 switch(state) {
                     case 0:
                         if(code.opcode == OpCodes.Ldfld && code.operand is FieldInfo { Name: "il" }) {
-                            list.RemoveAt(list.Count - 1);
+                            CodeInstruction oldCode = list[^1];
+                            list.Remove(oldCode);
                             Label falseLabel = generator.DefineLabel();
                             Label skipLabel = generator.DefineLabel();
                             list.AddRange([
-                                new CodeInstruction(OpCodes.Ldarg_0),
+                                new CodeInstruction(OpCodes.Ldarg_0).WithLabels(oldCode.labels),
                                 new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes")),
                                 new CodeInstruction(OpCodes.Ldlen),
                                 new CodeInstruction(OpCodes.Brfalse, falseLabel),
@@ -211,9 +213,11 @@ class JAMethodPatcher {
                                 list.Add(cur);
                                 if(cur.opcode == OpCodes.Call) break;
                             }
-                            list[^1].labels.Add(skipLabel);
+                            enumerator.MoveNext();
+                            code = enumerator.Current;
+                            code.labels.Add(skipLabel);
                             state++;
-                            continue;
+                            goto Recheck;
                         }
                         break;
                     case 1:
@@ -231,12 +235,13 @@ class JAMethodPatcher {
                         break;
                     case 2:
                         if(code.opcode == OpCodes.Ldfld && code.operand is FieldInfo { Name: "source" }) {
-                            list.RemoveAt(list.Count - 1);
+                            CodeInstruction oldCode = list[^1];
+                            list.Remove(oldCode);
                             enumerator.MoveNext();
                             enumerator.MoveNext();
                             CodeInstruction moveLabel = enumerator.Current;
                             list.AddRange([
-                                new CodeInstruction(OpCodes.Ldarg_0),
+                                new CodeInstruction(OpCodes.Ldarg_0).WithLabels(oldCode.labels),
                                 new CodeInstruction(OpCodes.Ldfld, replace),
                                 new CodeInstruction(OpCodes.Dup),
                                 moveLabel,
