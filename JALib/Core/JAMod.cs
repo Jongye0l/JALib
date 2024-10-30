@@ -88,8 +88,6 @@ public abstract class JAMod {
         if(IsExistMethod(nameof(OnUpdate))) ModEntry.OnUpdate = OnUpdate0;
         if(IsExistMethod(nameof(OnFixedUpdate))) ModEntry.OnFixedUpdate = OnFixedUpdate0;
         if(IsExistMethod(nameof(OnLateUpdate))) ModEntry.OnLateUpdate = OnLateUpdate0;
-        if(IsExistMethod(nameof(OnSessionStart))) ModEntry.SetValue("OnSessionStart", (Action<UnityModManager.ModEntry>) OnSessionStart0);
-        if(IsExistMethod(nameof(OnSessionStop))) ModEntry.SetValue("OnSessionStop", (Action<UnityModManager.ModEntry>) OnSessionStop0);
         SetupEventMain();
     }
 
@@ -285,20 +283,6 @@ public abstract class JAMod {
     }
 
     protected virtual void OnLateUpdate(float deltaTime) {
-    }
-
-    private void OnSessionStart0(UnityModManager.ModEntry modEntry) {
-        OnSessionStart();
-    }
-
-    protected virtual void OnSessionStart() {
-    }
-
-    private void OnSessionStop0(UnityModManager.ModEntry modEntry) {
-        OnSessionStop();
-    }
-
-    protected virtual void OnSessionStop() {
     }
 
     internal void OnLocalizationUpdate0() {
