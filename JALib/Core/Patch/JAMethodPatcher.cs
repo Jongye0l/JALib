@@ -657,15 +657,13 @@ class JAMethodPatcher {
                             }
                             LocalBuilder enumeratorVar = generator.DeclareLocal(typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator));
                             LocalBuilder tmpBoxVar = generator.DeclareLocal(typeof(KeyValuePair<LocalBuilder, Type>));
-                            Label loop = generator.DefineLabel();
-                            Label end = generator.DefineLabel();
+                            Label start = generator.DefineLabel();
+                            Label check = generator.DefineLabel();
                             list.AddRange([
                                 new CodeInstruction(OpCodes.Callvirt, typeof(List<KeyValuePair<LocalBuilder, Type>>).Method("GetEnumerator")),
                                 new CodeInstruction(OpCodes.Stloc, enumeratorVar),
-                                new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(loop),
-                                new CodeInstruction(OpCodes.Call, typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator).Method("MoveNext")),
-                                new CodeInstruction(OpCodes.Brfalse, end),
-                                new CodeInstruction(OpCodes.Ldloca, enumeratorVar),
+                                new CodeInstruction(OpCodes.Br, check),
+                                new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(start),
                                 new CodeInstruction(OpCodes.Call, typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator).Method("get_Current")),
                                 new CodeInstruction(OpCodes.Stloc, tmpBoxVar)
                             ]);
@@ -684,14 +682,17 @@ class JAMethodPatcher {
                                         originalPatcher,
                                         codes.Current
                                     ]);
+                                    continue;
                                 }
-                                if(repeat.opcode == OpCodes.Ldarg_S || repeat.opcode == OpCodes.Ldarg_1) repeat = new CodeInstruction(OpCodes.Ldloc, tmpBoxVar);
+                                if(repeat.opcode == OpCodes.Ldarga_S) repeat = new CodeInstruction(OpCodes.Ldloca, tmpBoxVar);
                                 list.Add(repeat);
                             }
-                            list.Add(new CodeInstruction(OpCodes.Br, loop));
-                            enumerator.MoveNext();
-                            code = enumerator.Current.WithLabels(end);
-                            goto Recheck;
+                            list.AddRange([
+                                new CodeInstruction(OpCodes.Ldloca, enumeratorVar).WithLabels(check),
+                                new CodeInstruction(OpCodes.Call, typeof(List<KeyValuePair<LocalBuilder, Type>>.Enumerator).Method("MoveNext")),
+                                new CodeInstruction(OpCodes.Brtrue, start)
+                            ]);
+                            continue;
                         }
                     } else {
                         if(!enumerator.MoveNext() || enumerator.Current.opcode != OpCodes.Stfld) throw new Exception("This Code Is Not field: " + next.opcode);
