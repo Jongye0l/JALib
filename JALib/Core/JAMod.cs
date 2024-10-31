@@ -48,6 +48,7 @@ public abstract class JAMod {
     internal int Gid;
     internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
     internal FieldInfo staticField;
+    internal bool Initialized;
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -144,7 +145,7 @@ public abstract class JAMod {
 
     protected void AddFeature(params Feature[] feature) {
         Features.Add(feature);
-        if(!Enabled || !ModEntry.Active) return;
+        if(!Enabled || !ModEntry.Active || !Initialized) return;
         MainThread.Run(this, () => {
             foreach(Feature f in feature) if(f.Enabled) f.Enable();
         });
@@ -172,9 +173,11 @@ public abstract class JAMod {
             SetupEvent();
             SetupEventMain();
             OnEnable();
+            Initialized = true;
             foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
         } else {
             foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
+            Initialized = false;
             OnDisable();
         }
         return true;
