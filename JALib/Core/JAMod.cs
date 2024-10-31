@@ -47,7 +47,6 @@ public abstract class JAMod {
     public bool Enabled => ModEntry.Enabled;
     internal int Gid;
     internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
-    internal bool initialized;
     internal FieldInfo staticField;
 
     protected internal SystemLanguage? CustomLanguage {
@@ -71,7 +70,6 @@ public abstract class JAMod {
             Gid = gid;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            SetupEvent();
             mods[Name] = this;
             SaveSetting();
             SetupStaticField();
@@ -84,18 +82,13 @@ public abstract class JAMod {
         }
     }
 
-    private void SetupEvent() {
+    internal void SetupEvent() {
         if(IsExistMethod(nameof(OnUpdate))) ModEntry.OnUpdate = OnUpdate0;
         if(IsExistMethod(nameof(OnFixedUpdate))) ModEntry.OnFixedUpdate = OnFixedUpdate0;
         if(IsExistMethod(nameof(OnLateUpdate))) ModEntry.OnLateUpdate = OnLateUpdate0;
-        SetupEventMain();
     }
 
-    private void SetupEventMain() {
-        if(!initialized) {
-            Task.Yield().GetAwaiter().OnCompleted(SetupEventMain);
-            return;
-        }
+    internal void SetupEventMain() {
         ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
         if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
         if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
@@ -151,7 +144,7 @@ public abstract class JAMod {
 
     protected void AddFeature(params Feature[] feature) {
         Features.Add(feature);
-        if(!initialized || !Enabled || !ModEntry.Active) return;
+        if(!Enabled || !ModEntry.Active) return;
         MainThread.Run(this, () => {
             foreach(Feature f in feature) if(f.Enabled) f.Enable();
         });
@@ -176,9 +169,10 @@ public abstract class JAMod {
             return false;
         }
         if(value) {
+            SetupEvent();
+            SetupEventMain();
             OnEnable();
             foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
-            initialized = true;
         } else {
             foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
             OnDisable();
