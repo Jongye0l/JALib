@@ -11,8 +11,9 @@ namespace JALib.API.Packets;
 
 class GetModInfo : GetRequest {
 
-    private JAMod mod;
-    private JAModInfo modInfo;
+    private string name;
+    private Version version;
+    private bool beta;
     internal bool Success;
     internal Version LatestVersion;
     internal bool ForceUpdate;
@@ -21,15 +22,13 @@ class GetModInfo : GetRequest {
     internal string Discord;
     internal int Gid;
 
-    public GetModInfo(JAMod mod) {
-        this.mod = mod;
-    }
-
     public GetModInfo(JAModInfo modInfo) {
-        this.modInfo = modInfo;
+        name = modInfo.ModEntry.Info.Id;
+        version = modInfo.ModEntry.Version;
+        beta = modInfo.IsBetaBranch;
     }
 
-    public override string UrlBehind => $"modInfo/{modInfo.ModEntry.Info.Id}/{modInfo.ModEntry.Version}/{(modInfo.IsBetaBranch ? 1 : 0)}";
+    public override string UrlBehind => $"modInfo/{name}/{version}/{(beta ? 1 : 0)}";
 
     public override async Task Run(HttpResponseMessage message) {
         await using Stream input = await message.Content.ReadAsStreamAsync();
