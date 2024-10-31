@@ -73,13 +73,11 @@ class RawModData {
             }
         }
         loadDependencies = true;
-        info.ModEntry.Logger.Log("Load Dependencies Complete");
         JAModLoader.CheckDependenciesLoadComplete();
         CheckFinishInit();
     }
 
     public void CheckFinishInit() {
-        info.ModEntry.Logger.Log("CheckFinishInit");
         if(!checkUpdated || !loadDependencies || !JAModLoader.LoadComplete) return;
         if(data.DownloadModData != null) {
             modInfo.DisplayName = name + " <color=aqua>[Updating...]</color>";
