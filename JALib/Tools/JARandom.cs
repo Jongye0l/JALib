@@ -26,6 +26,10 @@ public class JARandom : Random {
 
     public float NextFloat() => (float) NextDouble();
 
+    public float NextAllFloat() => Next().ToBytes().ToFloat();
+
+    public double NextAllDouble() => NextBytes(8).ToDouble();
+
     public decimal NextDecimal() => new([Next(), Next(), Next(), Next()]);
 
     public override void NextBytes(byte[] buffer) {
