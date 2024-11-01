@@ -12,7 +12,6 @@ using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
 using Microsoft.Win32;
-using TinyJson;
 using UnityModManagerNet;
 
 namespace JALib;

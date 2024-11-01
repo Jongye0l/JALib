@@ -234,6 +234,11 @@ public abstract class JAMod {
         } catch (Exception e) {
             LogException(e);
         }
+        foreach(JAMod mod in usedMods) {
+            mod.Error("Dependency Mod " + Name + " is Unloaded");
+            mod.OnUnload0(null);
+        }
+        foreach(JAMod mod in usingMods) mod.usedMods.Remove(this);
         try {
             OnUnload();
         } catch (Exception e) {
@@ -245,6 +250,8 @@ public abstract class JAMod {
         Discord = null;
         Localization.Dispose();
         Localization = null;
+        usedMods = null;
+        usingMods = null;
         return true;
     }
 
