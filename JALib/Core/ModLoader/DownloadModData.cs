@@ -28,6 +28,7 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
         string name = data.name;
         if(!downloadTask.IsCompletedSuccessfully) {
             (data.RawModData?.info.ModEntry.Logger ?? JALib.Instance.Logger).LogException($"Failed to download {name} mod", downloadTask.Exception);
+            data.RawModData?.InstallFinish();
             return;
         }
         if(data.RawModData == null) {
