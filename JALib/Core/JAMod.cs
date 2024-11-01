@@ -216,6 +216,8 @@ public abstract class JAMod {
         ModEntry.Active = false;
     }
 
+    public void Inactive() => ModEntry.SetValue("mActive", false);
+
     protected virtual void OnUnload() {
     }
 
