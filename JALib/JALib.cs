@@ -31,6 +31,7 @@ class JALib : JAMod {
         Setting = (JALibSetting) base.Setting;
         JApi.Initialize();
         JATask.Run(Instance, Init);
+        DomainHandler.Setup();
         OnEnable();
         SetupEvent();
         MainThread.Run(Instance, SetupEventMain);

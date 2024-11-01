@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using JALib.API;
 using JALib.API.Packets;
 using JALib.Bootstrap;
+using JALib.Core.ModLoader;
 using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
@@ -52,6 +53,7 @@ public abstract class JAMod {
     internal bool Initialized;
     internal List<JAMod> usedMods = [];
     internal List<JAMod> usingMods = [];
+    internal AppDomain Domain;
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -66,6 +68,7 @@ public abstract class JAMod {
     protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null, int gid = -1) {
         try {
             ModEntry = modEntry;
+            Domain = AppDomain.CurrentDomain;
             Name = ModEntry.Info.Id;
             ModSetting = new JAModSetting(this, settingPath, settingType);
             Features = [];
@@ -218,14 +221,18 @@ public abstract class JAMod {
         ModSetting = null;
         foreach(Feature feature in Features) feature.Unload();
         if(mods[Name] == this) mods.Remove(Name);
-        OnDisable();
-        OnUnload();
-        ModEntry = null;
-        Name = null;
-        Features = null;
-        Discord = null;
-        Localization.Dispose();
-        Localization = null;
+        try {
+            OnDisable();
+        } catch (Exception e) {
+            LogException(e);
+        }
+        try {
+            OnUnload();
+        } catch (Exception e) {
+            LogException(e);
+        }
+        foreach(JAMod mod in usedMods) mod.OnUnload0(null);
+        DomainHandler.UnloadDomain(Domain);
         return true;
     }
 
@@ -424,10 +431,6 @@ public abstract class JAMod {
                         loadScene = null;
                     }
                     if(getModInfo != null) mod.ModInfo(getModInfo);
-                    // TODO : Fix this
-                    // modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reloading...]</color>";
-                    // modInfo.ModEntry.Logger.Log("Force Reload: Force Reloading...");
-                    // ForceReloadMod(type.Assembly);
                     modInfo.ModEntry.Info.DisplayName = modName;
                     modInfo.ModEntry.Logger.Log("Force Reload: Complete");
                 } catch (Exception e) {
@@ -454,86 +457,5 @@ public abstract class JAMod {
             lib.SaveSetting();
         }
         modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Waiting...]</color>";
-    }
-
-    internal void ForceReloadMod(Assembly newAssembly) {
-        Assembly oldAssembly = GetType().Assembly;
-        ModReloadCache cache = new(oldAssembly, newAssembly);
-        TypeBuilder typeBuilder = ModuleBuilder.DefineType($"JALib.ForceReload.{Name}.{oldAssembly.GetHashCode()}", TypeAttributes.Public);
-        FieldBuilder fieldBuilder = typeBuilder.DefineField("cache", typeof(ModReloadCache), FieldAttributes.Private | FieldAttributes.Static);
-        fieldBuilder.SetConstant(cache);
-        MethodInfo dataChangeMethod = typeof(ModReloadCache).Method("GetCachedObject", typeof(object));
-        Dictionary<string, JAPatchAttribute> patchAttributes = new();
-        JAPatcher patcher = JALib.Patcher;
-        foreach(Type type in oldAssembly.GetTypes()) {
-            try {
-                Type newType = newAssembly.GetType(type.FullName);
-                foreach(FieldInfo field in type.Fields()) {
-                    if(!field.IsStatic) continue;
-                    object oldValue = field.GetValue(null);
-                    try {
-                        newType.SetValue(field.Name, cache.GetCachedObject(oldValue));
-                    } catch (Exception e) {
-                        JALib.Instance.Log("Failed to reload field " + field.Name + " of type " + type.FullName);
-                        JALib.Instance.LogException(e);
-                    }
-                }
-                foreach(MethodInfo method in type.Methods()) {
-                    try {
-                        Type[] oldParameters = method.GetParameters().Select(parameter => parameter.ParameterType).ToArray();
-                        Type[] parameters = oldParameters.Select(parameterType => parameterType.Assembly == oldAssembly ? newAssembly.GetType(parameterType.FullName) : parameterType).ToArray();
-                        MethodInfo newMethod = newType.Method(method.Name, parameters);
-                        if(newMethod == null) continue;
-                        if(oldParameters.All(parameterType => parameterType.Assembly != oldAssembly)) {
-                            patcher.AddPatch(newMethod, new JAPatchAttribute(method, PatchType.Replace, false));
-                            continue;
-                        }
-                        int c = parameters.Length;
-                        int staticCount = -1;
-                        int returnCount = -1;
-                        if(!method.IsStatic) staticCount = c++;
-                        if(method.ReturnType != typeof(void)) returnCount = c++;
-                        Type[] types = new Type[c];
-                        for(int i = 0; i < method.GetGenericArguments().Length; i++) types[i] = method.GetGenericArguments()[i];
-                        if(!method.IsStatic) types[staticCount] = type;
-                        if(returnCount != -1) types[returnCount] = method.ReturnType.MakeByRefType();
-                        MethodBuilder methodBuilder = typeBuilder.DefineMethod($"{type.FullName}_{method.Name}_{method.GetHashCode()}_Patch",
-                            MethodAttributes.Public | MethodAttributes.Static, typeof(bool), types);
-                        foreach(ParameterInfo parameter in method.GetParameters()) methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.Name);
-                        if(!method.IsStatic) methodBuilder.DefineParameter(staticCount, ParameterAttributes.None, "__instance");
-                        if(returnCount != -1) methodBuilder.DefineParameter(returnCount, ParameterAttributes.None, "__result");
-                        ILGenerator ilGenerator = methodBuilder.GetILGenerator();
-                        if(returnCount != -1) ilGenerator.Emit(OpCodes.Ldarg, returnCount);
-                        if(!method.IsStatic) ilGenerator.Emit(OpCodes.Ldarg, staticCount);
-                        for(int i = 0; i < method.GetParameters().Length; i++) {
-                            if(parameters[i].Assembly == newAssembly) {
-                                ilGenerator.Emit(OpCodes.Ldsfld, fieldBuilder);
-                                ilGenerator.Emit(OpCodes.Ldarg, i);
-                                if(parameters[i].IsValueType) ilGenerator.Emit(OpCodes.Box, parameters[i]);
-                                ilGenerator.Emit(OpCodes.Callvirt, dataChangeMethod);
-                                ilGenerator.Emit(parameters[i].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, parameters[i]);
-                            } else ilGenerator.Emit(OpCodes.Ldarg, i);
-                        }
-                        ilGenerator.Emit(OpCodes.Callvirt, newMethod);
-                        ilGenerator.Emit(OpCodes.Stind_Ref);
-                        ilGenerator.Emit(OpCodes.Ldc_I4_0);
-                        ilGenerator.Emit(OpCodes.Ret);
-                        patchAttributes[methodBuilder.Name] = new JAPatchAttribute(method, PatchType.Prefix, false);
-                    } catch (Exception e) {
-                        JALib.Instance.Log("Failed to reload method " + method.Name + " of type " + type.FullName);
-                        JALib.Instance.LogException(e);
-                    }
-                }
-            } catch (Exception e) {
-                Log("Failed to reload type " + type.FullName);
-                LogException(e);
-            }
-        }
-        if(patchAttributes.Count == 0) return;
-        Type patchType = typeBuilder.CreateType();
-        foreach(KeyValuePair<string, JAPatchAttribute> patchAttribute in patchAttributes) {
-            Log("Force Reload: Patching " + patchAttribute.Key);
-            patcher.AddPatch(patchType.Method(patchAttribute.Key), patchAttribute.Value);
-        }
     }
 }

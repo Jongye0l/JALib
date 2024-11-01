@@ -11,7 +11,6 @@ using UnityModManagerNet;
 namespace JALib.Core.ModLoader;
 
 class RawModData {
-    private static AppDomain domain = AppDomain.CurrentDomain;
     public JAModLoader data;
     public string name;
     public JAModInfo info;
@@ -164,6 +163,7 @@ class RawModData {
     }
 
     private void LoadMod() {
+        AppDomain domain = DomainHandler.CreateDomain(name);
         if(info.DependencyPath != null) {
             string dependencyPath = info.DependencyRequireModPath ? Path.Combine(info.ModEntry.Path, info.DependencyPath) : info.DependencyPath;
             foreach(string file in Directory.GetFiles(dependencyPath)) {
