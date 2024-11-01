@@ -11,7 +11,6 @@ namespace JALib.Core.ModLoader;
 
 class DownloadModData(JAModLoader data, Version targetVersion) {
     public Task<DownloadMod> downloadTask;
-    private int tryCount;
     private bool redownload;
 
     public void DownloadRequest(Version version) {
@@ -23,7 +22,7 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
     public void Download() {
         if(data.LoadState == ModLoadState.Downloading) return;
         data.LoadState = ModLoadState.Downloading;
-        downloadTask = JApi.Send(new DownloadMod(data.name, targetVersion, data.RawModData?.info.ModEntry.Path), false);
+        downloadTask = JApi.Send(new DownloadMod(data.name, targetVersion, data.RawModData?.info.ModEntry.Path), data.RawModData == null);
         downloadTask.GetAwaiter().UnsafeOnCompleted(DownloadComplete);
     }
 
