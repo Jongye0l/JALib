@@ -23,6 +23,7 @@ public static class ForceApplyMod {
             UnityModManager.ModEntry modEntry = new(info, path + Path.DirectorySeparatorChar);
             UnityModManager.modEntries.Add(modEntry);
             foreach(UnityModManager.Param.Mod mod in typeof(UnityModManager).GetValue<UnityModManager.Param>("Params").ModParams.Where(mod => mod.Id == info.Id)) modEntry.Enabled = mod.Enabled;
+            if(modEntry.Enabled) modEntry.Active = true;
         } catch (Exception ex) {
             UnityModManager.Logger.Error("Error parsing file '" + path1 + "'.");
             Debug.LogException(ex);

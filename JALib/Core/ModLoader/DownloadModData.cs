@@ -35,7 +35,6 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == name);
             string path = modEntry?.Path ?? Path.Combine(UnityModManager.modsPath, name);
             if(modEntry != null) {
-                modEntry.Enabled = false;
                 modEntry.Active = false;
                 modEntry.OnUnload(modEntry);
                 UnityModManager.modEntries.Remove(modEntry);
@@ -52,5 +51,6 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             JAMod.SetupModInfo(data.RawModData.info);
             data.RawModData.InstallFinish();
         }
+        data.DownloadModData = null;
     }
 }
