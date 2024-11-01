@@ -24,8 +24,5 @@ class DownloadMod : GetRequest {
     public override async Task Run(HttpResponseMessage message) {
         await using Stream stream = await message.Content.ReadAsStreamAsync();
         Zipper.Unzip(stream, ModPath);
-        JAMod mod = JAMod.GetMods(ModName);
-        Task task = mod?.ForceReloadMod();
-        if(task != null) await task;
     }
 }

@@ -60,10 +60,14 @@ class RawModData {
                         version = new Version();
                     }
                     UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == pair.Key);
-                    if(modEntry != null && modEntry.Version < version) loadData.DownloadRequest(version);
+                    if(modEntry != null && modEntry.Version < version) {
+                        if(loadData.LoadState is ModLoadState.Loading or ModLoadState.Loaded) data.LoadState = ModLoadState.NeedRestart;
+                        loadData.DownloadRequest(version);
+                    }
                     if(modEntry?.Enabled != false) continue;
                     info.ModEntry.Logger.Log($"Dependency {pair.Key} is disabled");
                     modInfo.DisplayName = name + " <color=red>[Dependency Mod is disabled]</color>";
+                    SetError();
                     loadData.LoadState = ModLoadState.Disabled;
                     data.LoadState = ModLoadState.DependencyDisabled;
                 } catch (Exception e) {
@@ -84,12 +88,11 @@ class RawModData {
             data.DownloadModData.Download();
             return;
         }
-        data.LoadState = ModLoadState.Loading;
         RecheckDependencies();
     }
 
     public void RecheckDependencies() {
-        if(data.LoadState == ModLoadState.Loaded) return;
+        if(data.LoadState is ModLoadState.Loaded or ModLoadState.NeedRestart) return;
         modInfo.DisplayName = name + " <color=gray>[Waiting Dependency]</color>";
         if(waitingLoad != null) foreach(JAModLoader loadData in waitingLoad)
             switch(loadData.LoadState) {
@@ -101,15 +104,19 @@ class RawModData {
                 case ModLoadState.Failed:
                 case ModLoadState.DependencyFailed:
                     modInfo.DisplayName = name + " <color=red>[Dependency Mod is Failed]</color>";
+                    SetError();
                     data.LoadState = ModLoadState.DependencyFailed;
                     return;
                 case ModLoadState.Disabled:
                 case ModLoadState.DependencyDisabled:
                     modInfo.DisplayName = name + " <color=red>[Dependency Mod is Disabled]</color>";
+                    SetError();
                     data.LoadState = ModLoadState.DependencyDisabled;
                     return;
                 case ModLoadState.NeedRestart:
                     modInfo.DisplayName = name + " <color=red>[Need Restart]</color>";
+                    SetError();
+                    data.LoadState = ModLoadState.NeedRestart;
                     return;
             }
         Start();
@@ -123,14 +130,20 @@ class RawModData {
         } catch (Exception e) {
             info.ModEntry.Logger.Log("Failed to Load JAMod " + name);
             info.ModEntry.Logger.LogException(e);
-            info.ModEntry.SetValue("mErrorOnLoading", true);
-            info.ModEntry.SetValue("mActive", false);
+            SetError();
             return;
         }
         MainThread.Run(data.mod, Enable);
         if(modInfoTask.IsCompletedSuccessfully) data.mod.ModInfo(modInfoTask.Result);
         data.LoadState = ModLoadState.Loaded;
+        info.ModEntry.SetValue("mErrorOnLoading", false);
+        info.ModEntry.SetValue("mActive", true);
         data.Complete();
+    }
+
+    private void SetError() {
+        info.ModEntry.SetValue("mErrorOnLoading", true);
+        info.ModEntry.SetValue("mActive", false);
     }
 
     private void Enable() {
