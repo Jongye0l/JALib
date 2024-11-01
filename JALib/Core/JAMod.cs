@@ -124,21 +124,11 @@ public abstract class JAMod {
     public static ICollection<JAMod> GetMods() => mods.Values;
 
     internal static void EnableInit() {
-        MainThread.Run(JALib.Instance, () => {
-            foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance && mod.Enabled)) {
-                if(mod.ModEntry.Active) continue;
-                mod.ModEntry.Active = true;
-                mod.OnEnable();
-            }
-        });
+        foreach(JAMod mod in mods.Values) if(mod != JALib.Instance && mod.Enabled && !mod.Active) mod.OnToggle(null, true);
     }
 
     internal static void DisableInit() {
-        foreach(JAMod mod in mods.Values.Where(mod => mod != JALib.Instance)) {
-            mod.ModEntry.Active = false;
-            foreach(Feature feature in mod.Features.Where(feature => feature.Enabled)) feature.Disable();
-            mod.OnDisable();
-        }
+        foreach(JAMod mod in mods.Values) if(mod != JALib.Instance) mod.OnToggle(null, false);
     }
 
     internal static void Dispose() {
@@ -188,12 +178,14 @@ public abstract class JAMod {
             SetupEvent();
             SetupEventMain();
             OnEnable();
+            Task.Run(OnEnableAsync).ContinueWith(OnEnableAsyncAfter);
             Initialized = true;
             foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
             foreach(JAMod mod in usedMods) mod.OnToggle(null, true);
         } else {
             foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
             Initialized = false;
+            Task.Run(OnDisableAsync).ContinueWith(OnDisableAsyncAfter);
             OnDisable();
             foreach(JAMod mod in usedMods) {
                 if(mod.Initialized) {
@@ -204,6 +196,20 @@ public abstract class JAMod {
             }
         }
         return true;
+    }
+
+    private void OnEnableAsyncAfter(Task task) {
+        if(task.IsCompletedSuccessfully) return;
+        Error("Failed to Enable JAMod " + Name);
+        LogException(task.Exception);
+        if(Enabled) ModEntry.SetValue("mActive", false);
+    }
+
+    private void OnDisableAsyncAfter(Task task) {
+        if(task.IsCompletedSuccessfully) return;
+        Error("Failed to Disable JAMod " + Name);
+        LogException(task.Exception);
+        if(!Enabled) ModEntry.SetValue("mActive", true);
     }
 
     private bool OnUnload0(UnityModManager.ModEntry modEntry) {
@@ -219,6 +225,7 @@ public abstract class JAMod {
         foreach(Feature feature in Features) feature.Unload();
         if(mods[Name] == this) mods.Remove(Name);
         OnDisable();
+        OnDisableAsync().RunSynchronously();
         OnUnload();
         ModEntry = null;
         Name = null;
@@ -247,8 +254,12 @@ public abstract class JAMod {
     protected virtual void OnEnable() {
     }
 
+    protected virtual Task OnEnableAsync() => Task.CompletedTask;
+
     protected virtual void OnDisable() {
     }
+
+    protected virtual Task OnDisableAsync() => Task.CompletedTask;
 
     internal void OnGUI0(UnityModManager.ModEntry modEntry) {
         OnGUI();
