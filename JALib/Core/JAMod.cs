@@ -224,9 +224,21 @@ public abstract class JAMod {
         ModSetting = null;
         foreach(Feature feature in Features) feature.Unload();
         if(mods[Name] == this) mods.Remove(Name);
-        OnDisable();
-        OnDisableAsync().RunSynchronously();
-        OnUnload();
+        try {
+            OnDisable();
+        } catch (Exception e) {
+            LogException(e);
+        }
+        try {
+            OnDisableAsync().RunSynchronously();
+        } catch (Exception e) {
+            LogException(e);
+        }
+        try {
+            OnUnload();
+        } catch (Exception e) {
+            LogException(e);
+        }
         ModEntry = null;
         Name = null;
         Features = null;
