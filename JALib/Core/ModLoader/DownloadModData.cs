@@ -12,9 +12,12 @@ namespace JALib.Core.ModLoader;
 class DownloadModData(JAModLoader data, Version targetVersion) {
     public Task<DownloadMod> downloadTask;
     private int tryCount;
+    private bool redownload;
 
     public void DownloadRequest(Version version) {
-        if(targetVersion < version) targetVersion = version;
+        if(targetVersion >= version) return;
+        targetVersion = version;
+        if(data.LoadState == ModLoadState.Downloading) redownload = true;
     }
 
     public void Download() {
@@ -31,6 +34,7 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             data.RawModData?.InstallFinish();
             return;
         }
+        if(CheckReDownload()) return;
         if(data.RawModData == null) {
             UnityModManager.ModEntry modEntry = UnityModManager.modEntries.Find(entry => entry.Info.Id == name);
             string path = modEntry?.Path ?? Path.Combine(UnityModManager.modsPath, name);
@@ -39,6 +43,8 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
                 modEntry.OnUnload(modEntry);
                 UnityModManager.modEntries.Remove(modEntry);
             }
+            if(CheckReDownload()) return;
+            data.LoadState = ModLoadState.None;
             ForceApplyMod.ApplyMod(path);
         } else {
             UnityModManager.ModEntry modEntry = data.RawModData.info.ModEntry;
@@ -49,8 +55,17 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [modEntry]);
             data.RawModData.info = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modEntry, beta);
             JAMod.SetupModInfo(data.RawModData.info);
+            if(CheckReDownload()) return;
             data.RawModData.InstallFinish();
         }
         data.DownloadModData = null;
+    }
+
+    public bool CheckReDownload() {
+        if(!redownload) return false;
+        redownload = false;
+        data.LoadState = ModLoadState.None;
+        Download();
+        return true;
     }
 }
