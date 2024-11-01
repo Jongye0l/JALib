@@ -2,10 +2,10 @@
 
 namespace JALib.Core.Patch;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
 public class JAPatchAttribute : JAPatchBaseAttribute {
-    internal bool Disable;
-    internal PatchType PatchType;
+    public bool? Disable;
+    public PatchType? PatchType;
     public int Priority = -1;
     public string[] Before;
     public string[] After;
@@ -31,5 +31,24 @@ public class JAPatchAttribute : JAPatchBaseAttribute {
     }
 
     public JAPatchAttribute(Delegate @delegate, PatchType patchType, bool disable) : this(@delegate.Method, patchType, disable) {
+    }
+
+    public JAPatchAttribute() {
+    }
+
+    public JAPatchAttribute(Type @class) {
+        ClassType = @class;
+    }
+
+    public JAPatchAttribute(string methodName) {
+        MethodName = methodName;
+    }
+
+    public JAPatchAttribute(PatchType patchType) {
+        PatchType = patchType;
+    }
+
+    public JAPatchAttribute(bool disable) {
+        Disable = disable;
     }
 }

@@ -1,16 +1,14 @@
 ﻿using System.Reflection;
+using JALib.Core.Patch.PatchAttribute;
 
 namespace JALib.Core.Patch;
 
-public abstract class JAPatchBaseAttribute : Attribute {
-    internal static int GetCurrentVersion => GCNS.releaseNumber;
+public abstract class JAPatchBaseAttribute : JAPatchBase {
     internal string PatchId => Method.DeclaringType.FullName + "." + Method.Name;
-    internal string Class;
-    internal Type ClassType;
-    internal string MethodName;
-    internal MethodBase MethodBase;
-    public int MinVersion = GetCurrentVersion;
-    public int MaxVersion = GetCurrentVersion;
+    public string Class;
+    public Type ClassType;
+    public string MethodName;
+    public MethodBase MethodBase;
     public string[] ArgumentTypes;
     public Type[] ArgumentTypesType;
     public string[] GenericName;

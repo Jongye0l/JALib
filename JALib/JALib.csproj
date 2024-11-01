@@ -523,6 +523,9 @@
         <Compile Include="Core\Patch\JAPatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatcher.cs"/>
         <Compile Include="Core\Patch\JAReversePatchAttribute.cs"/>
+        <Compile Include="Core\Patch\PatchAttribute\JAPatchBase.cs"/>
+        <Compile Include="Core\Patch\PatchAttribute\JAPatchMethodAttribute.cs"/>
+        <Compile Include="Core\Patch\PatchAttribute\JAPatchTypeAttribute.cs"/>
         <Compile Include="Core\Patch\PatchType.cs"/>
         <Compile Include="Core\Patch\ReversePatchData.cs"/>
         <Compile Include="Core\Patch\ReversePatchType.cs"/>
