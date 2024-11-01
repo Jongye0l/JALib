@@ -139,6 +139,11 @@ class RawModData {
         data.LoadState = ModLoadState.Loaded;
         info.ModEntry.SetValue("mErrorOnLoading", false);
         info.ModEntry.SetValue("mActive", true);
+        if(waitingLoad != null)
+            foreach(JAModLoader loadData in waitingLoad) {
+                loadData.mod.usedMods.Add(data.mod);
+                data.mod.usingMods.Add(loadData.mod);
+            }
         data.Complete();
     }
 
@@ -149,12 +154,13 @@ class RawModData {
 
     private void Enable() {
         JAMod mod = data.mod;
+        bool active = false;
         try {
-            mod.OnToggle(null, true);
+            active = mod.OnToggle(info.ModEntry, true);
         } catch (Exception e) {
             mod.LogException(e);
-            mod.ModEntry.SetValue("mActive", false);
         }
+        if(!active) mod.ModEntry.SetValue("mActive", false);
     }
 
     private void LoadMod() {

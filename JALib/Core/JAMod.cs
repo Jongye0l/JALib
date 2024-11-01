@@ -45,10 +45,13 @@ public abstract class JAMod {
     protected JASetting Setting => ModSetting.Setting;
     protected string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
+    public bool Active => ModEntry.Active;
     internal int Gid;
     internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
     internal FieldInfo staticField;
     internal bool Initialized;
+    internal List<JAMod> usedMods = [];
+    internal List<JAMod> usingMods = [];
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -165,20 +168,40 @@ public abstract class JAMod {
     }
 
     internal bool OnToggle(UnityModManager.ModEntry modEntry, bool value) {
-        if(this != JALib.Instance && !JALib.Instance.ModEntry.Active) {
+        if(this != JALib.Instance && !JALib.Instance.Active) {
             Error("JALib is Disabled");
             return false;
         }
+        if(value == Initialized) return true;
         if(value) {
+            foreach(JAMod mod in usingMods) {
+                if(!mod.Enabled) {
+                    if(modEntry != null) Error("Dependency Mod " + mod.Name + " is Disabled");
+                    return false;
+                }
+                if(!mod.Initialized) {
+                    if(modEntry != null) Error("Dependency Mod " + mod.Name + " is Inactive");
+                    return false;
+                }
+            }
+            if(modEntry == null) ModEntry.SetValue("mActive", true);
             SetupEvent();
             SetupEventMain();
             OnEnable();
             Initialized = true;
             foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
+            foreach(JAMod mod in usedMods) mod.OnToggle(null, true);
         } else {
             foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
             Initialized = false;
             OnDisable();
+            foreach(JAMod mod in usedMods) {
+                if(mod.Initialized) {
+                    mod.Error("Dependency Mod " + Name + " is Disabled");
+                    mod.ModEntry.Active = false;
+                    mod.ModEntry.Enabled = true;
+                }
+            }
         }
         return true;
     }

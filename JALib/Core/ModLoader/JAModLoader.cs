@@ -8,7 +8,7 @@ namespace JALib.Core.ModLoader;
 
 class JAModLoader {
     public static Dictionary<string, JAModLoader> ModLoadDataList = new();
-    private static int count = 0;
+    private static int count;
     public static bool LoadComplete;
     public string name;
     public RawModData RawModData;
