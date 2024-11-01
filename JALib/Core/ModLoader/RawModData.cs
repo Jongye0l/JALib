@@ -50,6 +50,7 @@ class RawModData {
 
     private void LoadDependencies() {
         if(info.Dependencies != null) {
+            waitingLoad ??= [];
             foreach(KeyValuePair<string, string> pair in info.Dependencies) {
                 try {
                     JAModLoader loadData = JAModLoader.GetModLoadData(pair.Key);
