@@ -778,9 +778,10 @@ class JAMethodPatcher {
                 }
             }
             ParameterInfo parameter = originalParameter.FirstOrDefault(info => info.Name == parameterInfo.Name);
+            int isNonStatic = original.IsStatic ? 0 : 1;
             if(parameter != null) {
                 if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
-                _parameterMap[parameterInfo.Position] = parameter.Position;
+                _parameterMap[parameterInfo.Position] = parameter.Position + isNonStatic;
                 continue;
             }
             if(!customReverse) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
