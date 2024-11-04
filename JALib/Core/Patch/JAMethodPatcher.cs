@@ -149,9 +149,9 @@ class JAMethodPatcher {
 
     internal static bool PrefixAffectsOriginal(MethodInfo fix) => throw new NotImplementedException();
 
-    internal static void InitOverride(JAMethodPatcher patcher, ILGenerator il, MethodBase original, JAEmitter emitter, ref Label? label) {
+    internal static void AddOverride(JAMethodPatcher patcher, ILGenerator il, MethodBase original, JAEmitter emitter, bool ignore, ref Label? label) {
         foreach(OverridePatchData patch in patcher.overridePatches) {
-            if(!patch.IgnoreBasePatch) continue;
+            if(patch.IgnoreBasePatch != ignore) continue;
             label ??= il.DefineLabel();
             Label endLabel = il.DefineLabel();
             emitter.Emit(OpCodes.Ldarg_0);
@@ -189,7 +189,7 @@ class JAMethodPatcher {
         }
     }
 
-    internal static IEnumerable<CodeInstruction> InitOverridePatch(IEnumerable<CodeInstruction> transpiler, ILGenerator generator) {
+    internal static IEnumerable<CodeInstruction> AddOverridePatch(IEnumerable<CodeInstruction> transpiler, ILGenerator generator) {
         CodeInstruction[] list = transpiler.ToArray();
         Type emitterType = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter");
         foreach(CodeInstruction instruction in list)
@@ -206,12 +206,15 @@ class JAMethodPatcher {
             Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
             LocalBuilder patcher = generator.DeclareLocal(methodPatcher);
             LocalBuilder gotoFinishLabel = generator.DeclareLocal(typeof(Label?));
+            LocalBuilder gotoPostfixLabel = generator.DeclareLocal(typeof(Label?));
             CodeInstruction originalArg0 = new(OpCodes.Ldloc, patcher);
             List<CodeInstruction> list = [
                 new(OpCodes.Ldarg_0),
                 new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher")),
                 new(OpCodes.Stloc, patcher),
                 new(OpCodes.Ldloca, gotoFinishLabel),
+                new(OpCodes.Initobj, typeof(Label?)),
+                new(OpCodes.Ldloca, gotoPostfixLabel),
                 new(OpCodes.Initobj, typeof(Label?)),
                 new(OpCodes.Ldarg_0),
                 originalArg0,
@@ -220,8 +223,9 @@ class JAMethodPatcher {
                 new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
                 originalArg0,
                 new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "emitter")),
+                new(OpCodes.Ldc_I4_1),
                 new(OpCodes.Ldloca, gotoFinishLabel),
-                new(OpCodes.Call, ((Delegate) InitOverride).Method)
+                new(OpCodes.Call, ((Delegate) AddOverride).Method)
             ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             int state = 0;
@@ -308,6 +312,16 @@ class JAMethodPatcher {
                             CodeInstruction moveLabel = enumerator.Current;
                             list.AddRange([
                                 new CodeInstruction(OpCodes.Ldarg_0).WithLabels(oldCode.labels),
+                                originalArg0,
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "il")),
+                                originalArg0,
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
+                                originalArg0,
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "emitter")),
+                                new CodeInstruction(OpCodes.Ldc_I4_0),
+                                new CodeInstruction(OpCodes.Ldloca, gotoPostfixLabel),
+                                new CodeInstruction(OpCodes.Call, ((Delegate) AddOverride).Method),
+                                new CodeInstruction(OpCodes.Ldarg_0),
                                 new CodeInstruction(OpCodes.Ldfld, replace),
                                 new CodeInstruction(OpCodes.Dup),
                                 moveLabel,
@@ -385,10 +399,19 @@ class JAMethodPatcher {
                         break;
                     case 4:
                         if(code.opcode == OpCodes.Callvirt && code.operand is MethodInfo { Name: "Emit" }) {
-                            list.Add(code);
+                            list.AddRange([
+                                code,
+                                new CodeInstruction(OpCodes.Ldloca, gotoPostfixLabel),
+                                new CodeInstruction(OpCodes.Call, typeof(Label?).Method("get_HasValue")),
+                                new CodeInstruction(OpCodes.Brfalse, removeLabel),
+                                originalArg0,
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "emitter")),
+                                new CodeInstruction(OpCodes.Ldloca, gotoPostfixLabel),
+                                new CodeInstruction(OpCodes.Call, typeof(Label?).Method("get_Value")),
+                                new CodeInstruction(OpCodes.Call, typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method("MarkLabel", typeof(Label))),
+                            ]);
                             enumerator.MoveNext();
-                            code = enumerator.Current;
-                            code.labels.Add(removeLabel);
+                            code = enumerator.Current.WithLabels(removeLabel);
                             state++;
                         }
                         break;
