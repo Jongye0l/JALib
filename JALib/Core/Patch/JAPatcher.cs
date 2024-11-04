@@ -349,6 +349,14 @@ public class JAPatcher : IDisposable {
     }
 
     private static void OverridePatch(MethodBase original, MethodInfo patchMethod, JAOverridePatchAttribute attribute) {
+        Type originalType;
+        if(original.IsStatic) {
+            if(original.GetParameters().Length == 0) throw new NotSupportedException("Static Method with no Parameters");
+            originalType = original.GetParameters()[0].ParameterType;
+        } else originalType = original.DeclaringType;
+        Type patchType = patchMethod.DeclaringType;
+        if(originalType == patchType) throw new NotSupportedException("Same Type Override");
+        if(!originalType.IsAssignableFrom(patchType) && !patchType.IsAssignableFrom(originalType) && !patchType.IsInterface && !originalType.IsInterface) throw new NotSupportedException("Incompatible Types");
         PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
         JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
         attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.DeclaringType : Type.GetType(attribute.targetTypeName);
