@@ -31,7 +31,7 @@ public class JAPatcher : IDisposable {
         Type methodPatcher = assembly.GetType("HarmonyLib.MethodPatcher");
         harmony.CreateReversePatcher(methodPatcher.Method("PrefixAffectsOriginal"), new HarmonyMethod(((Delegate) JAMethodPatcher.PrefixAffectsOriginal).Method)).Patch();
         harmony.Patch(((Delegate) JAMethodPatcher.AddOverride).Method, transpiler: new HarmonyMethod(((Delegate) JAMethodPatcher.AddOverridePatch).Method));
-        harmony.CreateReversePatcher(methodPatcher.Method("CreateReplacement"), new HarmonyMethod(((Delegate) JAMethodPatcher.CreateReplacement).Method, debug:true)).Patch();
+        harmony.CreateReversePatcher(methodPatcher.Method("CreateReplacement"), new HarmonyMethod(((Delegate) JAMethodPatcher.CreateReplacement).Method)).Patch();
         JAMethodPatcher.LoadAddPrePostMethod(harmony);
         harmony.CreateReversePatcher(assembly.GetType("HarmonyLib.HarmonySharedState").Method("GetPatchInfo"), new HarmonyMethod(((Delegate) GetPatchInfo).Method)).Patch();
         harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));

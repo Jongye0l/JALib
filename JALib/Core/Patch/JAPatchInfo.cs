@@ -28,6 +28,6 @@ class JAPatchInfo {
         return result;
     }
 
-    public bool IsDebug() => tryPrefixes.Any(IsDebug) || tryPostfixes.Any(IsDebug) || replaces.Any(IsDebug) || removes.Any(IsDebug);
+    public bool IsDebug() => tryPrefixes.Any(IsDebug) || tryPostfixes.Any(IsDebug) || replaces.Any(IsDebug) || removes.Any(IsDebug) || reversePatches.Any(patch => patch.debug) || overridePatches.Any(patch => patch.debug);
     private static bool IsDebug<T>(T patch) where T : HarmonyLib.Patch => patch.debug;
 }
