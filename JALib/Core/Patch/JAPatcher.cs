@@ -349,6 +349,7 @@ public class JAPatcher : IDisposable {
     }
 
     private static void OverridePatch(MethodBase original, MethodInfo patchMethod, JAOverridePatchAttribute attribute) {
+        if(patchMethod.IsStatic) throw new NotSupportedException("Static Method Override");
         Type originalType;
         if(original.IsStatic) {
             if(original.GetParameters().Length == 0) throw new NotSupportedException("Static Method with no Parameters");
