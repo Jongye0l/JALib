@@ -292,16 +292,15 @@ public class JAPatcher : IDisposable {
 #pragma warning restore CS0618
 
     private static void CustomReversePatch(MethodBase original, MethodInfo patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
-        MethodInfo replacement = UpdateReversePatch(attribute.Data ??= new ReversePatchData {
         PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
         JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
+        UpdateReversePatch(attribute.Data ??= new ReversePatchData {
             original = original,
             patchMethod = patchMethod,
             debug = attribute.Debug,
             attribute = attribute,
             mod = mod
         }, patchInfo, jaPatchInfo);
-        typeof(Harmony).Assembly.GetType("HarmonyLib.PatchTools").Invoke("RememberObject", patchMethod, replacement);
         if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
     }
 
