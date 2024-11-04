@@ -190,51 +190,94 @@ public class JAPatcher : IDisposable {
         }
     }
 
+    private static void FindMethod(List<MethodBase> list, Type type, string name, Type[] argumentTypes) {
+        if(name == ".ctor") {
+            if(argumentTypes == null) list.AddRange(type.Constructors());
+            else list.Add(type.Constructor(argumentTypes));
+        } else if(name == ".cctor") list.Add(type.TypeInitializer);
+        else if(name.EndsWith(".get")) {
+            string realName = name[..^4];
+            if(realName == "[]") realName = "Item";
+            list.Add(type.Getter(realName));
+        } else if(name.EndsWith(".set")) {
+            string realName = name[..^4];
+            if(realName == "[]") realName = "Item";
+            list.Add(type.Setter(realName));
+        }
+        else AddMethods(list, type, name switch {
+            "u+" => "op_UnaryPlus",
+            "u-" => "op_UnaryNegation",
+            "++" => "op_Increment",
+            "--" => "op_Decrement",
+            "!" => "op_LogicalNot",
+            "+" => "op_Addition",
+            "-" => "op_Subtraction",
+            "*" => "op_Multiply",
+            "/" => "op_Division",
+            "&" => "op_BitwiseAnd",
+            "|" => "op_BitwiseOr",
+            "^" => "op_ExclusiveOr",
+            "~" => "op_OnesComplement",
+            "==" => "op_Equality",
+            "!=" => "op_Inequality",
+            "<" => "op_LessThan",
+            ">" => "op_GreaterThan",
+            "<=" => "op_LessThanOrEqual",
+            ">=" => "op_GreaterThanOrEqual",
+            "<<" => "op_LeftShift",
+            ">>" => "op_RightShift",
+            "%" => "op_Modulus",
+            ".implicit" => "op_Implicit",
+            ".explicit" => "op_Explicit",
+            ".true" => "op_True",
+            ".false" => "op_False",
+            _ => name
+        }, argumentTypes);
+    }
+
+    private static void AddMethods(List<MethodBase> list, Type type, string name, Type[] argumentTypes) {
+        if(argumentTypes == null) list.AddRange(type.Methods(name));
+        else list.Add(type.Method(name, argumentTypes));
+    }
+
     private void Patch(JAPatchBaseAttribute attribute) {
         try {
-            if(attribute.MinVersion > GCNS.releaseNumber || attribute.MaxVersion < GCNS.releaseNumber) return;
+            if(attribute.MinVersion > JAPatchBaseAttribute.GetCurrentVersion || attribute.MaxVersion < JAPatchBaseAttribute.GetCurrentVersion) return;
             if(attribute.MethodBase == null) {
-                attribute.ClassType ??= Type.GetType(attribute.Class);
+                if(attribute is JAOverridePatchAttribute overridePatch) {
+                    attribute.MethodName ??= overridePatch.Method.Name;
+                    if(attribute.Class != null) attribute.ClassType ??= Type.GetType(attribute.Class);
+                    attribute.ClassType ??= overridePatch.Method.DeclaringType.BaseType;
+                } else attribute.ClassType ??= Type.GetType(attribute.Class);
                 if(attribute.ArgumentTypesType == null && attribute.ArgumentTypes != null) attribute.ArgumentTypesType = new Type[attribute.ArgumentTypes.Length];
                 if(attribute.ArgumentTypesType != null && attribute.ArgumentTypes != null) for(int i = 0; i < attribute.ArgumentTypes.Length; i++) attribute.ArgumentTypesType[i] ??= Type.GetType(attribute.ArgumentTypes[i]);
-                if(attribute.MethodName == ".ctor")
-                    attribute.MethodBase = attribute.ArgumentTypesType == null ? attribute.ClassType.Constructor() : attribute.ClassType.Constructor(attribute.ArgumentTypesType);
-                else if(attribute.MethodName == ".cctor") attribute.MethodBase = attribute.ClassType.TypeInitializer;
-                else if(attribute.MethodName == "u+") attribute.MethodBase = attribute.ClassType.GetMethod("op_UnaryPlus");
-                else if(attribute.MethodName == "u-") attribute.MethodBase = attribute.ClassType.GetMethod("op_UnaryNegation");
-                else if(attribute.MethodName == "++") attribute.MethodBase = attribute.ClassType.GetMethod("op_Increment");
-                else if(attribute.MethodName == "--") attribute.MethodBase = attribute.ClassType.GetMethod("op_Decrement");
-                else if(attribute.MethodName == "!") attribute.MethodBase = attribute.ClassType.GetMethod("op_LogicalNot");
-                else if(attribute.MethodName == "+") attribute.MethodBase = attribute.ClassType.GetMethod("op_Addition");
-                else if(attribute.MethodName == "-") attribute.MethodBase = attribute.ClassType.GetMethod("op_Subtraction");
-                else if(attribute.MethodName == "*") attribute.MethodBase = attribute.ClassType.GetMethod("op_Multiply");
-                else if(attribute.MethodName == "/") attribute.MethodBase = attribute.ClassType.GetMethod("op_Division");
-                else if(attribute.MethodName == "&") attribute.MethodBase = attribute.ClassType.GetMethod("op_BitwiseAnd");
-                else if(attribute.MethodName == "|") attribute.MethodBase = attribute.ClassType.GetMethod("op_BitwiseOr");
-                else if(attribute.MethodName == "^") attribute.MethodBase = attribute.ClassType.GetMethod("op_ExclusiveOr");
-                else if(attribute.MethodName == "~") attribute.MethodBase = attribute.ClassType.GetMethod("op_OnesComplement");
-                else if(attribute.MethodName == "==") attribute.MethodBase = attribute.ClassType.GetMethod("op_Equality");
-                else if(attribute.MethodName == "!=") attribute.MethodBase = attribute.ClassType.GetMethod("op_Inequality");
-                else if(attribute.MethodName == "<") attribute.MethodBase = attribute.ClassType.GetMethod("op_LessThan");
-                else if(attribute.MethodName == ">") attribute.MethodBase = attribute.ClassType.GetMethod("op_GreaterThan");
-                else if(attribute.MethodName == "<=") attribute.MethodBase = attribute.ClassType.GetMethod("op_LessThanOrEqual");
-                else if(attribute.MethodName == ">=") attribute.MethodBase = attribute.ClassType.GetMethod("op_GreaterThanOrEqual");
-                else if(attribute.MethodName == "<<") attribute.MethodBase = attribute.ClassType.GetMethod("op_LeftShift");
-                else if(attribute.MethodName == ">>") attribute.MethodBase = attribute.ClassType.GetMethod("op_RightShift");
-                else if(attribute.MethodName == "%") attribute.MethodBase = attribute.ClassType.GetMethod("op_Modulus");
-                else if(attribute.MethodName == ".implicit") attribute.MethodBase = attribute.ClassType.GetMethod("op_Implicit");
-                else if(attribute.MethodName == ".explicit") attribute.MethodBase = attribute.ClassType.GetMethod("op_Explicit");
-                else if(attribute.MethodName == ".true") attribute.MethodBase = attribute.ClassType.GetMethod("op_True");
-                else if(attribute.MethodName == ".false") attribute.MethodBase = attribute.ClassType.GetMethod("op_False");
-                else if(attribute.MethodName == "[].get") attribute.MethodBase = attribute.ClassType.Getter("Item");
-                else if(attribute.MethodName == "[].set") attribute.MethodBase = attribute.ClassType.Setter("Item");
-                else if(attribute.MethodName.EndsWith(".get")) attribute.MethodBase = attribute.ClassType.Getter(attribute.MethodName[..4]);
-                else if(attribute.MethodName.EndsWith(".set")) attribute.MethodBase = attribute.ClassType.Setter(attribute.MethodName[..4]);
-                else attribute.MethodBase = attribute.ArgumentTypesType == null ? attribute.ClassType.Method(attribute.MethodName) : attribute.ClassType.Method(attribute.MethodName, attribute.ArgumentTypesType);
+                List<MethodBase> list = [];
+                FindMethod(list, attribute.ClassType, attribute.MethodName, attribute.ArgumentTypesType);
+                if(list.Count == 1) attribute.MethodBase = list[0];
+                else if(list.Count == 0) throw new MissingMethodException();
+                else if(attribute is JAOverridePatchAttribute overridePatch2) {
+                    Dictionary<MethodBase, int> dictionary = new();
+                    foreach(MethodBase @base in list) dictionary[@base] = @base.GetParameters().Length;
+                    foreach(ParameterInfo parameter in overridePatch2.Method.GetParameters()) {
+                        foreach(MethodBase @base in list) {
+                            if(@base.GetParameters().Any(p => p.Name == parameter.Name)) dictionary[@base]--;
+                            else if(!parameter.Name.StartsWith("___")) {
+                                dictionary.Remove(@base);
+                                break;
+                            }
+                        }
+                    }
+                    if(dictionary.Count == 1) attribute.MethodBase = dictionary.First().Key;
+                    else if(dictionary.Count == 0) throw new MissingMethodException();
+                    else if(dictionary.Values.All(v => v == 0)) {
+                        (MethodBase, int) min = (null, int.MaxValue);
+                        foreach((MethodBase key, int value) in dictionary) if(value < min.Item2) min = (key, value);
+                        attribute.MethodBase = min.Item1;
+                    } else throw new AmbiguousMatchException();
+                } else throw new AmbiguousMatchException();
                 if(attribute.GenericType == null && attribute.GenericName != null) attribute.GenericType = new Type[attribute.GenericName.Length];
                 if(attribute.GenericType != null) {
                     if(attribute.GenericName != null) for(int i = 0; i < attribute.GenericType.Length; i++) attribute.GenericType[i] ??= Type.GetType(attribute.GenericName[i]);
-                    attribute.GenericType ??= attribute.GenericName.Select(name => Type.GetType(name)).ToArray();
                     attribute.MethodBase = ((MethodInfo) attribute.MethodBase).MakeGenericMethod(attribute.GenericType);
                 }
             }
@@ -254,7 +297,6 @@ public class JAPatcher : IDisposable {
             throw;
         }
     }
-
 
 #pragma warning disable CS0618
     private static void CustomPatch(MethodBase original, HarmonyMethod patchMethod, JAPatchAttribute attribute, JAMod mod) {
