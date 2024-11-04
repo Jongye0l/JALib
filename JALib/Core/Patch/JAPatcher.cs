@@ -257,8 +257,8 @@ public class JAPatcher : IDisposable {
 #pragma warning disable CS0618
     private static void CustomPatch(MethodBase original, HarmonyMethod patchMethod, JAPatchAttribute attribute, JAMod mod) {
         lock (typeof(PatchProcessor).GetValue("locker")) {
-            JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
             PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
+            JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
             string id = attribute.PatchId;
             switch(attribute.PatchType) {
                 case PatchType.Prefix:
@@ -287,15 +287,14 @@ public class JAPatcher : IDisposable {
             MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
             MethodInfo updateMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Method("UpdatePatchInfo");
             updateMethod.Invoke(null, updateMethod.GetParameters().Length == 2 ? [original, patchInfo] : [original, replacement, patchInfo]);
-            jaPatches[original] = jaPatchInfo;
         }
     }
 #pragma warning restore CS0618
 
     private static void CustomReversePatch(MethodBase original, MethodInfo patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
-        JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
         MethodInfo replacement = UpdateReversePatch(attribute.Data ??= new ReversePatchData {
         PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
+        JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
             original = original,
             patchMethod = patchMethod,
             debug = attribute.Debug,
