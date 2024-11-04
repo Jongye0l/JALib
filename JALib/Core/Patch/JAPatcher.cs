@@ -301,7 +301,7 @@ public class JAPatcher : IDisposable {
             attribute = attribute,
             mod = mod
         }, patchInfo, jaPatchInfo);
-        if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.reversePatches.Add(attribute.Data);
+        if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.AddReversePatches(attribute.Data);
     }
 
     private static bool CheckRemove(MethodInfo method) {
@@ -354,7 +354,7 @@ public class JAPatcher : IDisposable {
                 if(reversePatchAttribute.PatchType == ReversePatchType.Original || reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
                 JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(reversePatchAttribute.Data.original);
                 if(jaPatchInfo == null) continue;
-                jaPatchInfo.reversePatches.Remove(reversePatchAttribute.Data);
+                jaPatchInfo.reversePatches = jaPatchInfo.reversePatches.Where(patch => patch != reversePatchAttribute.Data).ToArray();
             }
         }
     }

@@ -9,7 +9,7 @@ class JAPatchInfo {
     public TriedPatchData[] tryPostfixes = [];
     public HarmonyLib.Patch[] replaces = [];
     public HarmonyLib.Patch[] removes = [];
-    public List<ReversePatchData> reversePatches = [];
+    public ReversePatchData[] reversePatches = [];
 
     public void AddReplaces(string owner, HarmonyMethod methods) {
         replaces = Add(owner, methods, replaces);
@@ -27,15 +27,20 @@ class JAPatchInfo {
         tryPostfixes = Add(owner, methods, tryPostfixes, mod);
     }
 
-    public static HarmonyLib.Patch[] Add(string owner, HarmonyMethod add, HarmonyLib.Patch[] current) {
-        int initialIndex = current.Length;
-        return current.Concat([new HarmonyLib.Patch(add.method, initialIndex, owner, add.priority, add.before, add.after, add.debug.GetValueOrDefault())]).ToArray();
+    public void AddReversePatches(ReversePatchData data) => reversePatches = Add(reversePatches, data);
+
+    public static HarmonyLib.Patch[] Add(string owner, HarmonyMethod add, HarmonyLib.Patch[] current) =>
+        Add(current, new HarmonyLib.Patch(add.method, current.Length, owner, add.priority, add.before, add.after, add.debug.GetValueOrDefault()));
+
+    public static TriedPatchData[] Add(string owner, HarmonyMethod add, TriedPatchData[] current, JAMod mod) => Add(current, new TriedPatchData(add, current.Length, owner, mod));
+
+    private static T[] Add<T>(T[] current, T add) {
+        T[] result = new T[current.Length + 1];
+        current.CopyTo(result, 0);
+        result[current.Length] = add;
+        return result;
     }
 
-    public static TriedPatchData[] Add(string owner, HarmonyMethod add, TriedPatchData[] current, JAMod mod) {
-        int initialIndex = current.Length;
-        return current.Concat([new TriedPatchData(add, initialIndex, owner, mod)]).ToArray();
-    }
-
-    public bool IsDebug() => tryPrefixes.Any(x => x.debug) || tryPostfixes.Any(x => x.debug) || replaces.Any(x => x.debug) || removes.Any(x => x.debug);
+    public bool IsDebug() => tryPrefixes.Any(IsDebug) || tryPostfixes.Any(IsDebug) || replaces.Any(IsDebug) || removes.Any(IsDebug);
+    private static bool IsDebug<T>(T patch) where T : HarmonyLib.Patch => patch.debug;
 }
