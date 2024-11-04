@@ -30,7 +30,8 @@ public class JAPatcher : IDisposable {
         harmony.CreateReversePatcher(reversePatchMethod, new HarmonyMethod(((Delegate) UpdateReversePatch).Method)).Patch();
         Type methodPatcher = assembly.GetType("HarmonyLib.MethodPatcher");
         harmony.CreateReversePatcher(methodPatcher.Method("PrefixAffectsOriginal"), new HarmonyMethod(((Delegate) JAMethodPatcher.PrefixAffectsOriginal).Method)).Patch();
-        harmony.CreateReversePatcher(methodPatcher.Method("CreateReplacement"), new HarmonyMethod(((Delegate) JAMethodPatcher.CreateReplacement).Method)).Patch();
+        harmony.Patch(((Delegate) JAMethodPatcher.InitOverride).Method, transpiler: new HarmonyMethod(((Delegate) JAMethodPatcher.InitOverridePatch).Method));
+        harmony.CreateReversePatcher(methodPatcher.Method("CreateReplacement"), new HarmonyMethod(((Delegate) JAMethodPatcher.CreateReplacement).Method, debug:true)).Patch();
         JAMethodPatcher.LoadAddPrePostMethod(harmony);
         harmony.CreateReversePatcher(assembly.GetType("HarmonyLib.HarmonySharedState").Method("GetPatchInfo"), new HarmonyMethod(((Delegate) GetPatchInfo).Method)).Patch();
         harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
@@ -240,6 +241,7 @@ public class JAPatcher : IDisposable {
             if(attribute is JAPatchAttribute patchAttribute) CustomPatch(attribute.MethodBase,
                 new HarmonyMethod(attribute.Method, patchAttribute.Priority, patchAttribute.Before, patchAttribute.After, attribute.Debug), patchAttribute, attribute.TryingCatch ? mod : null);
             else if(attribute is JAReversePatchAttribute reversePatchAttribute) CustomReversePatch(attribute.MethodBase, attribute.Method, reversePatchAttribute, mod);
+            else if(attribute is JAOverridePatchAttribute overridePatchAttribute) OverridePatch(attribute.MethodBase, attribute.Method, overridePatchAttribute);
             else throw new NotSupportedException("Unsupported Patch Type");
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
@@ -304,6 +306,20 @@ public class JAPatcher : IDisposable {
         if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.AddReversePatches(attribute.Data);
     }
 
+    private static void OverridePatch(MethodBase original, MethodInfo patchMethod, JAOverridePatchAttribute attribute) {
+        PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
+        JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
+        attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.GetType() : Type.GetType(attribute.targetTypeName);
+        OverridePatchData data = new() {
+            patchMethod = patchMethod,
+            debug = attribute.Debug,
+            IgnoreBasePatch = attribute.IgnoreBasePatch,
+            targetType = attribute.targetType
+        };
+        jaPatchInfo.AddOverridePatches(data);
+        PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+    }
+
     private static bool CheckRemove(MethodInfo method) {
         if(method.ReturnType != typeof(bool)) return false;
         List<CodeInstruction> code = PatchProcessor.GetCurrentInstructions(method);
@@ -355,6 +371,10 @@ public class JAPatcher : IDisposable {
                 JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(reversePatchAttribute.Data.original);
                 if(jaPatchInfo == null) continue;
                 jaPatchInfo.reversePatches = jaPatchInfo.reversePatches.Where(patch => patch != reversePatchAttribute.Data).ToArray();
+            } else if(baseAttribute is JAOverridePatchAttribute overridePatchAttribute) {
+                JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(overridePatchAttribute.MethodBase);
+                if(jaPatchInfo == null) continue;
+                jaPatchInfo.overridePatches = jaPatchInfo.overridePatches.Where(patch => patch.patchMethod != overridePatchAttribute.Method).ToArray();
             }
         }
     }

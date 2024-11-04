@@ -22,6 +22,7 @@ class JAMethodPatcher {
     private MethodBase replace;
     private TriedPatchData[] tryPrefixes;
     private TriedPatchData[] tryPostfixes;
+    private OverridePatchData[] overridePatches;
     private readonly object originalPatcher;
     private readonly bool customReverse;
 
@@ -36,9 +37,11 @@ class JAMethodPatcher {
         List<MethodInfo> finalizer = SortPatchMethods(original, patchInfo.finalizers, debug, out finalizers);
         List<MethodInfo> transpiler;
         tryPostfixes = jaPatchInfo.tryPostfixes;
+        overridePatches = jaPatchInfo.overridePatches;
         if(removes.Length > 0) {
             transpiler = [];
             transpilers = [];
+            overridePatches = overridePatches.Where(patch => patch.IgnoreBasePatch).ToArray();
         } else {
             transpiler = SortPatchMethods(original, patchInfo.transpilers, debug, out transpilers);
             SetupReplace(original, jaPatchInfo, transpiler);
@@ -146,21 +149,83 @@ class JAMethodPatcher {
 
     internal static bool PrefixAffectsOriginal(MethodInfo fix) => throw new NotImplementedException();
 
+    internal static void InitOverride(JAMethodPatcher patcher, ILGenerator il, MethodBase original, JAEmitter emitter, ref Label? label) {
+        foreach(OverridePatchData patch in patcher.overridePatches) {
+            if(!patch.IgnoreBasePatch) continue;
+            label ??= il.DefineLabel();
+            Label endLabel = il.DefineLabel();
+            emitter.Emit(OpCodes.Ldarg_0);
+            emitter.Emit(OpCodes.Isinst, patch.targetType);
+            emitter.Emit(OpCodes.Brfalse, endLabel);
+            emitter.Emit(OpCodes.Ldarg_0);
+            foreach(ParameterInfo parameter in patch.patchMethod.GetParameters()) {
+                ParameterInfo originalParameter = original.GetParameters().FirstOrDefault(p => p.Name == parameter.Name);
+                if(originalParameter != null) {
+                    CodeInstruction code = GetParameterInstruction(originalParameter.Position + (original.IsStatic ? 0 : 1), false, false);
+                    switch(code.operand) {
+                        case null:
+                            emitter.Emit(code.opcode);
+                            break;
+                        case byte b:
+                            emitter.Emit(code.opcode, b);
+                            break;
+                        default:
+                            emitter.Emit(code.opcode, (int) code.operand);
+                            break;
+                    }
+                } else if(parameter.Name.StartsWith("___")) {
+                    FieldInfo field = patch.targetType.GetField(parameter.Name[3..]);
+                    if(field == null) throw new Exception("Field Not Found: " + parameter.Name);
+                    if(field.IsStatic) emitter.Emit(parameter.ParameterType.IsByRef ? OpCodes.Ldsflda : OpCodes.Ldsfld, field);
+                    else {
+                        emitter.Emit(OpCodes.Ldarg_0);
+                        emitter.Emit(parameter.ParameterType.IsByRef ? OpCodes.Ldflda : OpCodes.Ldfld, field);
+                    }
+                }
+            }
+            emitter.Emit(OpCodes.Call, patch.patchMethod);
+            emitter.Emit(OpCodes.Br, label.Value);
+            emitter.MarkLabel(endLabel);
+        }
+    }
+
+    internal static IEnumerable<CodeInstruction> InitOverridePatch(IEnumerable<CodeInstruction> transpiler, ILGenerator generator) {
+        CodeInstruction[] list = transpiler.ToArray();
+        Type emitterType = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter");
+        foreach(CodeInstruction instruction in list)
+            if(instruction.operand is MethodInfo method && method.DeclaringType == typeof(JAEmitter))
+                instruction.operand = emitterType.Method(method.Name, method.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
+        return list;
+    }
+
     internal static MethodInfo CreateReplacement(JAMethodPatcher patcher, out Dictionary<int, CodeInstruction> finalInstructions) {
         _ = Transpiler(null, null);
         throw new NotImplementedException();
 
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
-            LocalBuilder patcher = generator.DeclareLocal(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"));
+            Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
+            LocalBuilder patcher = generator.DeclareLocal(methodPatcher);
+            LocalBuilder gotoFinishLabel = generator.DeclareLocal(typeof(Label?));
+            CodeInstruction originalArg0 = new(OpCodes.Ldloc, patcher);
             List<CodeInstruction> list = [
                 new(OpCodes.Ldarg_0),
                 new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher")),
-                new(OpCodes.Stloc, patcher)
+                new(OpCodes.Stloc, patcher),
+                new(OpCodes.Ldloca, gotoFinishLabel),
+                new(OpCodes.Initobj, typeof(Label?)),
+                new(OpCodes.Ldarg_0),
+                originalArg0,
+                new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "il")),
+                originalArg0,
+                new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
+                originalArg0,
+                new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "emitter")),
+                new(OpCodes.Ldloca, gotoFinishLabel),
+                new(OpCodes.Call, ((Delegate) InitOverride).Method)
             ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             int state = 0;
             FieldInfo replace = SimpleReflect.Field(typeof(JAMethodPatcher), "replace");
-            CodeInstruction originalArg0 = new(OpCodes.Ldloc, patcher);
             Label removeLabel = generator.DefineLabel();
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
@@ -324,6 +389,36 @@ class JAMethodPatcher {
                             enumerator.MoveNext();
                             code = enumerator.Current;
                             code.labels.Add(removeLabel);
+                            state++;
+                        }
+                        break;
+                    case 5:
+                        if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo { Name: "Ret" }) {
+                            int loc = list.Count - 2;
+                            List<Label> labels = list[loc].labels;
+                            Label skipFinish = generator.DefineLabel();
+                            list[loc--].labels = [skipFinish];
+                            Label skip = (Label) list[loc--].operand;
+                            Label run = generator.DefineLabel();
+                            labels.Add(run);
+                            list.RemoveRange(loc, 2);
+                            list.InsertRange(loc, [
+                                new CodeInstruction(OpCodes.Brtrue, run),
+                                new CodeInstruction(OpCodes.Ldloca, gotoFinishLabel),
+                                new CodeInstruction(OpCodes.Call, typeof(Label?).Method("get_HasValue")),
+                                new CodeInstruction(OpCodes.Brfalse, skip),
+                                new CodeInstruction(OpCodes.Ldloca, gotoFinishLabel) {
+                                    labels = labels
+                                },
+                                new CodeInstruction(OpCodes.Call, typeof(Label?).Method("get_HasValue")),
+                                new CodeInstruction(OpCodes.Brfalse, skipFinish),
+                                originalArg0,
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "emitter")),
+                                new CodeInstruction(OpCodes.Ldloca, gotoFinishLabel),
+                                new CodeInstruction(OpCodes.Call, typeof(Label?).Method("get_Value")),
+                                new CodeInstruction(OpCodes.Call, typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method("MarkLabel", typeof(Label))),
+                            ]);
+                            state++;
                         }
                         break;
                 }
