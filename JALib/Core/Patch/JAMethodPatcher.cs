@@ -581,12 +581,7 @@ class JAMethodPatcher {
         return result;
     }
 
-    private static bool AddPostfixes_old(object _, Dictionary<string, LocalBuilder> variables, bool passthroughPatches, JAMethodPatcher patcher) {
-        bool result = false;
-        foreach(HarmonyLib.Patch patch in patcher.postfixes) if(passthroughPatches == (patch.PatchMethod.ReturnType != typeof (void)))
-            AddPostfixes_b__0(patcher, patch, variables, null, passthroughPatches, ref result);
-        return result;
-    }
+    private static bool AddPostfixes_old(object _, Dictionary<string, LocalBuilder> variables, bool passthroughPatches, JAMethodPatcher patcher) => AddPostfixes(_, variables, null, passthroughPatches, patcher);
 
     private static void AddPostfixes_b__0(JAMethodPatcher patcher, HarmonyLib.Patch patch, Dictionary<string, LocalBuilder> variables, LocalBuilder runOriginalVariable, bool passthroughPatches, ref bool result) {
         _ = Transpiler(null, null);
