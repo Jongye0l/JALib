@@ -558,7 +558,6 @@
         <Compile Include="Tools\ByteTool\IncludeClassAttribute.cs"/>
         <Compile Include="Tools\ByteTool\StreamTool.cs"/>
         <Compile Include="Tools\ByteTool\VersionAttribute.cs"/>
-        <Compile Include="Tools\ClassOverride.cs"/>
         <Compile Include="Tools\ForceApplyMod.cs"/>
         <Compile Include="Tools\SettingGUI.cs"/>
         <Compile Include="Tools\JAction.cs"/>
