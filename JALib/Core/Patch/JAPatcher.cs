@@ -351,7 +351,7 @@ public class JAPatcher : IDisposable {
     private static void OverridePatch(MethodBase original, MethodInfo patchMethod, JAOverridePatchAttribute attribute) {
         PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
         JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
-        attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.GetType() : Type.GetType(attribute.targetTypeName);
+        attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.DeclaringType : Type.GetType(attribute.targetTypeName);
         OverridePatchData data = new() {
             patchMethod = patchMethod,
             debug = attribute.Debug,
