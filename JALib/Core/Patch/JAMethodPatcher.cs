@@ -928,7 +928,7 @@ class JAMethodPatcher {
                         new CodeInstruction(OpCodes.Brtrue, skipLabel),
                         new CodeInstruction(OpCodes.Ldloc, instanceId),
                         new CodeInstruction(OpCodes.Ldc_I4_M1),
-                        new CodeInstruction(OpCodes.Beq, (Label) code.operand),
+                        new CodeInstruction(OpCodes.Bne_Un, (Label) code.operand),
                         enumerator.Current.WithLabels(skipLabel)
                     ]);
                     continue;
