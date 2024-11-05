@@ -987,7 +987,7 @@ class JAMethodPatcher {
     }
 
     private static int GetArgIndex(int index, MethodBase source, MethodBase original) {
-        if(source == null) return index;
+        if(source == null || index == -1) return index;
         if(!source.IsStatic) index--;
         ParameterInfo curParam = source.GetParameters()[index];
         foreach(ParameterInfo parameter in original.GetParameters()) if(parameter.Name == curParam.Name) return parameter.Position + (original.IsStatic ? 0 : 1);
