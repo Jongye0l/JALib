@@ -24,7 +24,7 @@ class JApi {
     private const string Domain2 = "jalib2.jongyeol.kr";
     private string domain;
     private TaskCompletionSource<bool> completeLoadTask = new();
-    private int retryCount = 0;
+    private int retryCount;
     private Task retryTask;
 
     public static void Initialize() {
@@ -60,6 +60,7 @@ class JApi {
 
     private void Connect(Task<HttpResponseMessage> t) {
         try {
+            if(t.Exception != null) throw t.Exception.InnerException ?? t.Exception;
             if(t.Result.IsSuccessStatusCode) {
                 OnConnect();
                 return;
@@ -125,6 +126,7 @@ class JApi {
 
         private void Response(Task<HttpResponseMessage> t) {
             try {
+                if(t.Exception != null) throw t.Exception.InnerException ?? t.Exception;
                 response = t.Result;
                 if(response.IsSuccessStatusCode) {
                     Task.Run(Run).GetAwaiter().OnCompleted(Complete);
@@ -165,7 +167,8 @@ class JApi {
     }
 
     internal void Restart() {
-        retryTask = Task.Delay(1000 * ++retryCount);
+        domain = null;
+        retryTask = Task.Delay(10000 * ++retryCount);
         retryTask.GetAwaiter().OnCompleted(Connect);
     }
 

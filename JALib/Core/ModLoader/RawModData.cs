@@ -35,12 +35,11 @@ class RawModData {
 
     public void CheckUpdate() {
         try {
-            if(!modInfoTask.IsCompletedSuccessfully) {
-                info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception);
-                return;
+            if(!modInfoTask.IsCompletedSuccessfully) info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception);
+            else {
+                GetModInfo apiInfo = modInfoTask.Result;
+                if(apiInfo.Success && apiInfo.ForceUpdate && apiInfo.LatestVersion > info.ModEntry.Version) data.DownloadRequest(apiInfo.LatestVersion);
             }
-            GetModInfo apiInfo = modInfoTask.Result;
-            if(apiInfo.Success && apiInfo.ForceUpdate && apiInfo.LatestVersion > info.ModEntry.Version) data.DownloadRequest(apiInfo.LatestVersion);
             checkUpdated = true;
             CheckFinishInit();
         } catch (Exception e) {
