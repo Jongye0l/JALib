@@ -887,29 +887,99 @@ class JAMethodPatcher {
 
     internal static IEnumerable<CodeInstruction> EmitCallParameterFix(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
         LocalBuilder method = generator.DeclareLocal(typeof(MethodBase));
+        LocalBuilder instanceId = generator.DeclareLocal(typeof(int));
         Label skip = generator.DefineLabel();
         Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
+        FieldInfo source = SimpleReflect.Field(methodPatcher, "source");
+        FieldInfo original = SimpleReflect.Field(methodPatcher, "original");
         List<CodeInstruction> list = [
             new(OpCodes.Ldarg_0),
-            new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "source")),
+            new(OpCodes.Ldfld, source),
             new(OpCodes.Dup),
             new(OpCodes.Brtrue, skip),
             new(OpCodes.Pop),
             new(OpCodes.Ldarg_0),
-            new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
-            new CodeInstruction(OpCodes.Stloc, method).WithLabels(skip)
+            new(OpCodes.Ldfld, original),
+            new CodeInstruction(OpCodes.Stloc, method).WithLabels(skip),
+            new(OpCodes.Ldarg_0),
+            new(OpCodes.Ldfld, source),
+            new(OpCodes.Ldarg_0),
+            new(OpCodes.Ldfld, original),
+            new(OpCodes.Call, ((Delegate) GetInstanceIndex).Method),
+            new(OpCodes.Stloc, instanceId),
         ];
-        foreach(CodeInstruction code in instructions) {
-            if(code.operand is FieldInfo { Name: "original" }) list[^1] = new CodeInstruction(OpCodes.Ldloc, method);
-            else list.Add(code);
+        using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
+        FieldInfo ldarg = SimpleReflect.Field(typeof(OpCodes), "Ldarg");
+        MethodInfo emit = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method("Emit", typeof(OpCode), typeof(int));
+        while(enumerator.MoveNext()) {
+            CodeInstruction code = enumerator.Current;
+            if(code.operand is FieldInfo { Name: "original" }) {
+                list[^1] = new CodeInstruction(OpCodes.Ldloc, method);
+                continue;
+            }
+            if(code.operand is MethodInfo { Name: "get_IsStatic" }) {
+                list.Add(code);
+                enumerator.MoveNext();
+                code = enumerator.Current;
+                if(code.opcode == OpCodes.Brfalse || code.opcode == OpCodes.Brfalse_S) {
+                    Label skipLabel = generator.DefineLabel();
+                    enumerator.MoveNext();
+                    list.AddRange([
+                        new CodeInstruction(OpCodes.Brtrue, skipLabel),
+                        new CodeInstruction(OpCodes.Ldloc, instanceId),
+                        new CodeInstruction(OpCodes.Ldc_I4_M1),
+                        new CodeInstruction(OpCodes.Beq, (Label) code.operand),
+                        enumerator.Current.WithLabels(skipLabel)
+                    ]);
+                    continue;
+                }
+            } else if(code.operand is FieldInfo { Name: "Ldarg_0" }) {
+                enumerator.MoveNext();
+                list.AddRange([
+                    new CodeInstruction(OpCodes.Ldsfld, ldarg),
+                    new CodeInstruction(OpCodes.Ldloc, instanceId),
+                    new CodeInstruction(OpCodes.Call, emit),
+                ]);
+                continue;
+            } else if(code.operand is FieldInfo { Name: "Ldarga" }) {
+                list.Add(code);
+                enumerator.MoveNext();
+                code = enumerator.Current;
+                if(code.opcode == OpCodes.Ldc_I4_0) code = new CodeInstruction(OpCodes.Ldloc, instanceId);
+            } else if(code.operand is MethodInfo { Name: "GetArgumentIndex" }) {
+                list.AddRange([
+                    code,
+                    new CodeInstruction(OpCodes.Ldarg_0),
+                    new CodeInstruction(OpCodes.Ldfld, source),
+                    new CodeInstruction(OpCodes.Ldarg_0),
+                    new CodeInstruction(OpCodes.Ldfld, original),
+                    new CodeInstruction(OpCodes.Call, ((Delegate) GetArgIndex).Method),
+                ]);
+                continue;
+            }
+            list.Add(code);
         }
         return list;
+    }
+
+    private static int GetInstanceIndex(MethodBase source, MethodBase original) {
+        if(source == null) return 0;
+        if(source.IsStatic) return -1;
+        foreach(ParameterInfo parameter in original.GetParameters()) if(parameter.Name == "__instance") return parameter.Position + (original.IsStatic ? 0 : 1);
+        return -1;
+    }
+
+    private static int GetArgIndex(int index, MethodBase source, MethodBase original) {
+        if(source == null) return index;
+        if(!source.IsStatic) index--;
+        ParameterInfo curParam = source.GetParameters()[index];
+        foreach(ParameterInfo parameter in original.GetParameters()) if(parameter.Name == curParam.Name) return parameter.Position + (original.IsStatic ? 0 : 1);
+        return -1;
     }
 
     #endregion
 
     private static void SetupParameter(MethodBase replace, MethodBase original, bool customReverse) {
-        JALib.Instance.Log($"SetupParameter: {replace} -> {original} ({customReverse})");
         ParameterInfo[] replaceParameter = replace.GetParameters();
         ParameterInfo[] originalParameter = original.GetParameters();
         _parameterMap.Clear();
@@ -917,21 +987,18 @@ class JAMethodPatcher {
         foreach(ParameterInfo parameterInfo in replaceParameter) {
             if(parameterInfo.Name.ToLower() == "__instance" && !original.IsStatic) {
                 _parameterMap[parameterInfo.Position] = 0;
-                JALib.Instance.Log(parameterInfo.Position + " -> 0");
                 continue;
             }
             if(parameterInfo.Name.StartsWith("___")) {
                 FieldInfo field = SimpleReflect.Field(original.DeclaringType, parameterInfo.Name[3..]);
                 if(field != null) {
                     _parameterFields[parameterInfo.Position] = field;
-                    JALib.Instance.Log(parameterInfo.Position + " -> " + field);
                     continue;
                 }
             }
             if(parameterInfo.Name.StartsWith("__")) {
                 if(int.TryParse(parameterInfo.Name[2..], out int index)) {
                     _parameterMap[parameterInfo.Position] = index;
-                    JALib.Instance.Log(parameterInfo.Position + " -> " + index);
                     continue;
                 }
             }
@@ -940,7 +1007,6 @@ class JAMethodPatcher {
             if(parameter != null) {
                 if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
                 _parameterMap[parameterInfo.Position] = parameter.Position + isNonStatic;
-                JALib.Instance.Log(parameterInfo.Position + " -> " + (parameter.Position + isNonStatic));
                 continue;
             }
             if(!customReverse) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
@@ -948,7 +1014,6 @@ class JAMethodPatcher {
     }
 
     private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
-        JALib.Instance.Log("ChangeParameter");
         List<CodeInstruction> list = instructions.ToList();
         for(int i = 0; i < list.Count; i++) {
             int index = GetParameterIndex(list[i], out bool set, out bool loc);
