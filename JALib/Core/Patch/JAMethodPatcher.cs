@@ -126,7 +126,7 @@ class JAMethodPatcher {
         replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
         if(replace == null || customReverse) return;
         MethodInfo method = ((Delegate) ChangeParameter).Method;
-        HarmonyLib.Patch[] newTranspilers = new HarmonyLib.Patch[transpilers.Length];
+        HarmonyLib.Patch[] newTranspilers = new HarmonyLib.Patch[transpilers.Length + 1];
         transpilers.CopyTo(newTranspilers, 0);
         newTranspilers[^1] = CreateEmptyPatch(method);
         transpiler.Add(method);
