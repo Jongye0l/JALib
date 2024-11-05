@@ -461,7 +461,9 @@ class JAMethodPatcher {
     private static FieldInfo[] AddPostfixesSubArguments;
 
     internal static void LoadAddPrePostMethod(Harmony harmony) {
-        MethodInfo methodInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").Method("AddPrefixes");
+        Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
+        harmony.Patch(methodPatcher.Method("EmitCallParameter"), transpiler: new HarmonyMethod(((Delegate) EmitCallParameterFix).Method));
+        MethodInfo methodInfo = methodPatcher.Method("AddPrefixes");
         List<CodeInstruction> instructions = PatchProcessor.GetCurrentInstructions(methodInfo);
         MethodInfo subMethod = null;
         AddPrefixesSubArguments = new FieldInfo[3];
@@ -487,7 +489,7 @@ class JAMethodPatcher {
             }
         }
         harmony.CreateReversePatcher(subMethod, new HarmonyMethod(((Delegate) AddPrefixes_b__0).Method)).Patch();
-        methodInfo = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").Method("AddPostfixes");
+        methodInfo = methodPatcher.Method("AddPostfixes");
         instructions = PatchProcessor.GetCurrentInstructions(methodInfo);
         AddPostfixesSubArguments = new FieldInfo[5];
         using(IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator()) {
@@ -873,6 +875,27 @@ class JAMethodPatcher {
     private static bool CheckArgs(ParameterInfo[] parameters) {
         foreach(ParameterInfo p in parameters) if(p.Name == "__args") return true;
         return false;
+    }
+
+    internal static IEnumerable<CodeInstruction> EmitCallParameterFix(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+        LocalBuilder method = generator.DeclareLocal(typeof(MethodBase));
+        Label skip = generator.DefineLabel();
+        Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
+        List<CodeInstruction> list = [
+            new(OpCodes.Ldarg_0),
+            new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "source")),
+            new(OpCodes.Dup),
+            new(OpCodes.Brtrue, skip),
+            new(OpCodes.Pop),
+            new(OpCodes.Ldarg_0),
+            new(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
+            new CodeInstruction(OpCodes.Stloc, method).WithLabels(skip)
+        ];
+        foreach(CodeInstruction code in instructions) {
+            if(code.operand is FieldInfo { Name: "original" }) list[^1] = new CodeInstruction(OpCodes.Ldloc, method);
+            else list.Add(code);
+        }
+        return list;
     }
 
     #endregion
