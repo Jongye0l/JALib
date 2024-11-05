@@ -186,18 +186,18 @@ public abstract class JAMod {
             if(modEntry == null) ModEntry.SetValue("mActive", true);
             SetupEvent();
             SetupEventMain();
-            Patcher.Patch();
             OnEnable();
             Task.Run(OnEnableAsync).ContinueWith(OnEnableAsyncAfter);
+            Patcher.Patch();
             Initialized = true;
             foreach(Feature feature in Features) if(feature.Enabled) feature.Enable();
             foreach(JAMod mod in usedMods) mod.OnToggle(null, true);
         } else {
             foreach(Feature feature in Features) if(feature.Enabled) feature.Disable();
             Initialized = false;
-            Task.Run(OnDisableAsync).ContinueWith(OnDisableAsyncAfter);
-            OnDisable();
             Patcher.Unpatch();
+            OnDisable();
+            Task.Run(OnDisableAsync).ContinueWith(OnDisableAsyncAfter);
             foreach(JAMod mod in usedMods) {
                 if(mod.Initialized) {
                     mod.Error("Dependency Mod " + Name + " is Disabled");
