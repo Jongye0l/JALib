@@ -8,7 +8,6 @@ using JALib.API.Packets;
 using JALib.Bootstrap;
 using JALib.Core;
 using JALib.Core.ModLoader;
-using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
 using Microsoft.Win32;
@@ -23,7 +22,6 @@ class JALib : JAMod {
     internal new JALibSetting Setting;
     private static Dictionary<string, Task> loadTasks = new();
     private static Dictionary<string, Version> updateQueue = new();
-    internal static JAPatcher Patcher;
     private static bool enableInit;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
@@ -37,8 +35,6 @@ class JALib : JAMod {
 
     private void Init() {
         LoadInfo();
-        Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
-        Patcher = new JAPatcher(this);
         Patcher.Patch();
         try {
             JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");

@@ -518,11 +518,14 @@
         <Compile Include="Core\ModReloadCache.cs"/>
         <Compile Include="Core\Patch\JAEmitter.cs"/>
         <Compile Include="Core\Patch\JAMethodPatcher.cs"/>
+        <Compile Include="Core\Patch\JAOverridePatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatchBaseAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatchInfo.cs"/>
         <Compile Include="Core\Patch\JAPatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatcher.cs"/>
         <Compile Include="Core\Patch\JAReversePatchAttribute.cs"/>
+        <Compile Include="Core\Patch\OverridePatchData.cs"/>
+        <Compile Include="Core\Patch\PatchBinding.cs"/>
         <Compile Include="Core\Patch\PatchType.cs"/>
         <Compile Include="Core\Patch\ReversePatchData.cs"/>
         <Compile Include="Core\Patch\ReversePatchType.cs"/>
@@ -556,7 +559,6 @@
         <Compile Include="Tools\ByteTool\IncludeClassAttribute.cs"/>
         <Compile Include="Tools\ByteTool\StreamTool.cs"/>
         <Compile Include="Tools\ByteTool\VersionAttribute.cs"/>
-        <Compile Include="Tools\ClassOverride.cs"/>
         <Compile Include="Tools\ForceApplyMod.cs"/>
         <Compile Include="Tools\SettingGUI.cs"/>
         <Compile Include="Tools\JAction.cs"/>

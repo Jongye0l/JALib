@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Linq;
+using System.Reflection;
 using HarmonyLib;
 using JetBrains.Annotations;
 
@@ -20,6 +21,8 @@ public static class SimpleReflect {
     public static MethodInfo Method(this Type type, [NotNull] string name, [NotNull] params Type[] types) => type.GetMethod(name, AccessTools.all, null, types, null);
 
     public static MethodInfo[] Methods(this Type type) => type.GetMethods(AccessTools.all);
+
+    public static MethodInfo[] Methods(this Type type, [NotNull] string name) => type.GetMethods(AccessTools.all).Where(m => m.Name == name).ToArray();
 
     public static object Invoke(this MethodInfo methodInfo, object o = null) => methodInfo.Invoke(o, Array.Empty<object>());
 
@@ -72,6 +75,8 @@ public static class SimpleReflect {
     public static ConstructorInfo Constructor(this Type type, [NotNull] params Type[] types) => type.GetConstructor(AccessTools.all, null, types, null);
 
     public static ConstructorInfo GetConstructor(this Type type) => type.Constructor();
+
+    public static ConstructorInfo[] Constructors(this Type type) => type.GetConstructors(AccessTools.all);
 
     public static object New(this Type type) => Activator.CreateInstance(type, true);
 
