@@ -928,6 +928,13 @@ class JAMethodPatcher {
                     continue;
                 }
             }
+            if(parameterInfo.Name.StartsWith("__")) {
+                if(int.TryParse(parameterInfo.Name[2..], out int index)) {
+                    _parameterMap[parameterInfo.Position] = index;
+                    JALib.Instance.Log(parameterInfo.Position + " -> " + index);
+                    continue;
+                }
+            }
             ParameterInfo parameter = originalParameter.FirstOrDefault(info => info.Name == parameterInfo.Name);
             int isNonStatic = original.IsStatic ? 0 : 1;
             if(parameter != null) {
