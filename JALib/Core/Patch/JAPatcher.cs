@@ -445,7 +445,7 @@ public class JAPatcher : IDisposable {
 
     public JAPatcher AddPatch(Type type, PatchBinding binding) {
         foreach(MethodInfo method in type.Methods())
-            foreach(JAPatchBaseAttribute attribute in method.GetCustomAttributes<JAPatchBaseAttribute>())
+            foreach(JAPatchBaseAttribute attribute in method.GetCustomAttributes<JAPatchBaseAttribute>()) {
                 switch(attribute) {
                     case JAReversePatchAttribute when !binding.HasFlag(PatchBinding.Reverse):
                     case JAOverridePatchAttribute when !binding.HasFlag(PatchBinding.Override):
@@ -458,14 +458,13 @@ public class JAPatcher : IDisposable {
                             case PatchType.Finalizer when !binding.HasFlag(PatchBinding.Finalizer):
                             case PatchType.Replace when !binding.HasFlag(PatchBinding.Replace):
                                 continue;
-                            default:
-                                goto default;
                         }
-                    default:
-                        attribute.Method = method;
-                        AddPatch(attribute);
                         break;
                 }
+                attribute.Method = method;
+                AddPatch(attribute);
+            }
+
         return this;
     }
 
