@@ -195,7 +195,7 @@ class JAMethodPatcher {
         }
     }
 
-    internal static IEnumerable<CodeInstruction> AddOverridePatch(IEnumerable<CodeInstruction> transpiler, ILGenerator generator) {
+    internal static IEnumerable<CodeInstruction> EmitterPatch(IEnumerable<CodeInstruction> transpiler, ILGenerator generator) {
         CodeInstruction[] list = transpiler.ToArray();
         Type emitterType = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter");
         foreach(CodeInstruction instruction in list)
@@ -470,6 +470,7 @@ class JAMethodPatcher {
 
     internal static void LoadAddPrePostMethod(Harmony harmony) {
         Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
+        harmony.Patch(((Delegate) EmitArg).Method, transpiler: new HarmonyMethod(((Delegate) EmitterPatch).Method));
         harmony.Patch(methodPatcher.Method("EmitCallParameter"), transpiler: new HarmonyMethod(((Delegate) EmitCallParameterFix).Method));
         MethodInfo methodInfo = methodPatcher.Method("AddPrefixes");
         List<CodeInstruction> instructions = PatchProcessor.GetCurrentInstructions(methodInfo);
@@ -909,8 +910,6 @@ class JAMethodPatcher {
             new(OpCodes.Stloc, instanceId),
         ];
         using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-        FieldInfo ldarg = SimpleReflect.Field(typeof(OpCodes), "Ldarg");
-        MethodInfo emit = typeof(Harmony).Assembly.GetType("HarmonyLib.Emitter").Method("Emit", typeof(OpCode), typeof(int));
         while(enumerator.MoveNext()) {
             CodeInstruction code = enumerator.Current;
             if(code.operand is FieldInfo { Name: "original" }) {
@@ -936,9 +935,8 @@ class JAMethodPatcher {
             } else if(code.operand is FieldInfo { Name: "Ldarg_0" }) {
                 enumerator.MoveNext();
                 list.AddRange([
-                    new CodeInstruction(OpCodes.Ldsfld, ldarg),
                     new CodeInstruction(OpCodes.Ldloc, instanceId),
-                    new CodeInstruction(OpCodes.Call, emit),
+                    new CodeInstruction(OpCodes.Call, ((Delegate) EmitArg).Method),
                 ]);
                 continue;
             } else if(code.operand is FieldInfo { Name: "Ldarga" }) {
@@ -960,6 +958,25 @@ class JAMethodPatcher {
             list.Add(code);
         }
         return list;
+    }
+
+    private static void EmitArg(JAEmitter emitter, int index) {
+        switch(index) {
+            case >= 0 and < 4:
+                emitter.Emit(index switch {
+                    0 => OpCodes.Ldarg_0,
+                    1 => OpCodes.Ldarg_1,
+                    2 => OpCodes.Ldarg_2,
+                    3 => OpCodes.Ldarg_3
+                });
+                break;
+            case < 256:
+                emitter.Emit(OpCodes.Ldarg_S, (byte) index);
+                break;
+            default:
+                emitter.Emit(OpCodes.Ldarg, index);
+                break;
+        }
     }
 
     private static int GetInstanceIndex(MethodBase source, MethodBase original) {
