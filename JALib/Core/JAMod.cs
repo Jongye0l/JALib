@@ -52,6 +52,7 @@ public abstract class JAMod {
     internal bool Initialized;
     internal List<JAMod> usedMods = [];
     internal List<JAMod> usingMods = [];
+    protected JAPatcher Patcher { get; private set; }
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -74,6 +75,8 @@ public abstract class JAMod {
             Gid = gid;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
+            Patcher = new JAPatcher(this);
+            Patcher.OnFailPatch += OnFailPatch;
             mods[Name] = this;
             SaveSetting();
             SetupStaticField();
@@ -84,6 +87,12 @@ public abstract class JAMod {
             LogException(e);
             throw;
         }
+    }
+
+    private void OnFailPatch(string name, bool disabled) {
+        if(!disabled || !Enabled) return;
+        Disable();
+        ModEntry.Enabled = true;
     }
 
     internal void SetupEvent() {
@@ -177,6 +186,7 @@ public abstract class JAMod {
             if(modEntry == null) ModEntry.SetValue("mActive", true);
             SetupEvent();
             SetupEventMain();
+            Patcher.Patch();
             OnEnable();
             Task.Run(OnEnableAsync).ContinueWith(OnEnableAsyncAfter);
             Initialized = true;
@@ -187,6 +197,7 @@ public abstract class JAMod {
             Initialized = false;
             Task.Run(OnDisableAsync).ContinueWith(OnDisableAsyncAfter);
             OnDisable();
+            Patcher.Unpatch();
             foreach(JAMod mod in usedMods) {
                 if(mod.Initialized) {
                     mod.Error("Dependency Mod " + Name + " is Disabled");
@@ -222,6 +233,8 @@ public abstract class JAMod {
         modEntry.SetValue("OnSessionStop", null);
         ModSetting.Dispose();
         ModSetting = null;
+        Patcher.Dispose();
+        Patcher = null;
         foreach(Feature feature in Features) feature.Unload();
         if(mods[Name] == this) mods.Remove(Name);
         try {
@@ -494,7 +507,7 @@ public abstract class JAMod {
         fieldBuilder.SetConstant(cache);
         MethodInfo dataChangeMethod = typeof(ModReloadCache).Method("GetCachedObject", typeof(object));
         Dictionary<string, JAPatchAttribute> patchAttributes = new();
-        JAPatcher patcher = JALib.Patcher;
+        JAPatcher patcher = JALib.Instance.Patcher;
         foreach(Type type in oldAssembly.GetTypes()) {
             try {
                 Type newType = newAssembly.GetType(type.FullName);
