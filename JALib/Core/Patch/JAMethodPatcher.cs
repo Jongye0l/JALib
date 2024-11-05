@@ -470,8 +470,6 @@ class JAMethodPatcher {
 
     internal static void LoadAddPrePostMethod(Harmony harmony) {
         Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
-        harmony.Patch(((Delegate) EmitArg).Method, transpiler: new HarmonyMethod(((Delegate) EmitterPatch).Method));
-        harmony.Patch(methodPatcher.Method("EmitCallParameter"), transpiler: new HarmonyMethod(((Delegate) EmitCallParameterFix).Method));
         MethodInfo methodInfo = methodPatcher.Method("AddPrefixes");
         List<CodeInstruction> instructions = PatchProcessor.GetCurrentInstructions(methodInfo);
         MethodInfo subMethod = null;
@@ -533,6 +531,8 @@ class JAMethodPatcher {
             }
         }
         harmony.CreateReversePatcher(subMethod, new HarmonyMethod(((Delegate) AddPostfixes_b__0).Method)).Patch();
+        harmony.Patch(((Delegate) EmitArg).Method, transpiler: new HarmonyMethod(((Delegate) EmitterPatch).Method));
+        harmony.Patch(methodPatcher.Method("EmitCallParameter"), transpiler: new HarmonyMethod(((Delegate) EmitCallParameterFix).Method));
     }
 
     private static void AddPrefixes(object _, Dictionary<string, LocalBuilder> variables, LocalBuilder runOriginalVariable, JAMethodPatcher patcher) {
