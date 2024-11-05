@@ -71,7 +71,7 @@ class JAMethodPatcher {
         JAReversePatchAttribute attribute = data.attribute;
         JAMod mod = data.mod;
         string customPatchMethodName = "<" + original.Name + ">";
-        MethodInfo[] customPatchMethods = mod.GetType().GetMethods().Where(m => m.Name.Contains(customPatchMethodName)).ToArray();
+        MethodInfo[] customPatchMethods = original.DeclaringType.Methods().Where(m => m.Name.Contains(customPatchMethodName)).ToArray();
         Func<MethodInfo, HarmonyLib.Patch> changeFunc = attribute.TryCatchChildren ? method => CreateEmptyTryPatch(method, mod) : CreateEmptyPatch;
         HarmonyLib.Patch[] children = customPatchMethods.Where(method => method.Name.Contains("Prefix")).Select(changeFunc).ToArray();
         if(attribute.PatchType.HasFlag(ReversePatchType.PrefixCombine)) {
