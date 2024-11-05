@@ -35,7 +35,6 @@ class JALib : JAMod {
 
     private void Init() {
         LoadInfo();
-        Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony(ModEntry.Info.Id);
         Patcher.Patch();
         try {
             JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");

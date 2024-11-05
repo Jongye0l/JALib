@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JALib.Bootstrap;
 using JALib.Tools;
 
 namespace JALib.Core.Patch;
@@ -19,7 +20,7 @@ public class JAPatcher : IDisposable {
     private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
 
     static JAPatcher() {
-        Harmony harmony = JALib.Harmony;
+        Harmony harmony = JALib.Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony("JALib");
         Assembly assembly = typeof(Harmony).Assembly;
         Type patchFunctions = assembly.GetType("HarmonyLib.PatchFunctions");
         _isOldHarmony = assembly.GetName().Version < new Version(2, 0, 3, 0);
