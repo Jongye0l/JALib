@@ -439,6 +439,53 @@ public class JAPatcher : IDisposable {
         return this;
     }
 
+    public JAPatcher AddPatch(Type type, PatchBinding binding) {
+        foreach(MethodInfo method in type.Methods())
+            foreach(JAPatchBaseAttribute attribute in method.GetCustomAttributes<JAPatchBaseAttribute>())
+                switch(attribute) {
+                    case JAReversePatchAttribute when !binding.HasFlag(PatchBinding.Reverse):
+                    case JAOverridePatchAttribute when !binding.HasFlag(PatchBinding.Override):
+                        continue;
+                    case JAPatchAttribute patch:
+                        switch(patch.PatchType) {
+                            case PatchType.Prefix when !binding.HasFlag(PatchBinding.Prefix):
+                            case PatchType.Postfix when !binding.HasFlag(PatchBinding.Postfix):
+                            case PatchType.Transpiler when !binding.HasFlag(PatchBinding.Transpiler):
+                            case PatchType.Finalizer when !binding.HasFlag(PatchBinding.Finalizer):
+                            case PatchType.Replace when !binding.HasFlag(PatchBinding.Replace):
+                                continue;
+                            default:
+                                goto default;
+                        }
+                    default:
+                        attribute.Method = method;
+                        AddPatch(attribute);
+                        break;
+                }
+        return this;
+    }
+
+    public JAPatcher AddAllPatch(PatchBinding binding) => AddAllPatch(mod.GetType().Assembly, binding);
+
+    public JAPatcher AddAllPatch(Assembly assembly, PatchBinding binding) {
+        foreach(Type type in assembly.GetTypes()) AddPatch(type, binding);
+        return this;
+    }
+
+    public JAPatcher AddPatch(string nameSpace) => AddPatch(mod.GetType().Assembly, nameSpace);
+
+    public JAPatcher AddPatch(string nameSpace, PatchBinding binding) => AddPatch(mod.GetType().Assembly, nameSpace, binding);
+
+    public JAPatcher AddPatch(Assembly assembly, string nameSpace) {
+        foreach(Type type in assembly.GetTypes().Where(t => t.Namespace == nameSpace)) AddPatch(type);
+        return this;
+    }
+
+    public JAPatcher AddPatch(Assembly assembly, string nameSpace, PatchBinding binding) {
+        foreach(Type type in assembly.GetTypes().Where(t => t.Namespace == nameSpace)) AddPatch(type, binding);
+        return this;
+    }
+
     public JAPatcher AddPatch(MethodInfo method) {
         foreach(JAPatchBaseAttribute attribute in method.GetCustomAttributes<JAPatchBaseAttribute>()) {
             attribute.Method = method;

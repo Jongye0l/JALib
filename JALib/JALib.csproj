@@ -525,6 +525,7 @@
         <Compile Include="Core\Patch\JAPatcher.cs"/>
         <Compile Include="Core\Patch\JAReversePatchAttribute.cs"/>
         <Compile Include="Core\Patch\OverridePatchData.cs"/>
+        <Compile Include="Core\Patch\PatchBinding.cs"/>
         <Compile Include="Core\Patch\PatchType.cs"/>
         <Compile Include="Core\Patch\ReversePatchData.cs"/>
         <Compile Include="Core\Patch\ReversePatchType.cs"/>
