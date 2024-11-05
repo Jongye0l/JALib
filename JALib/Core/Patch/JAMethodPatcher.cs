@@ -160,26 +160,16 @@ class JAMethodPatcher {
             if(patch.IgnoreBasePatch != ignore) continue;
             label ??= il.DefineLabel();
             Label endLabel = il.DefineLabel();
+            if(patch.tryCatch) emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock), out _);
             emitter.Emit(OpCodes.Ldarg_0);
             emitter.Emit(OpCodes.Isinst, patch.targetType);
             emitter.Emit(OpCodes.Brfalse, endLabel);
             emitter.Emit(OpCodes.Ldarg_0);
             foreach(ParameterInfo parameter in patch.patchMethod.GetParameters()) {
                 ParameterInfo originalParameter = original.GetParameters().FirstOrDefault(p => p.Name == parameter.Name);
-                if(originalParameter != null) {
-                    CodeInstruction code = GetParameterInstruction(originalParameter.Position + (original.IsStatic ? 0 : 1), false, false);
-                    switch(code.operand) {
-                        case null:
-                            emitter.Emit(code.opcode);
-                            break;
-                        case byte b:
-                            emitter.Emit(code.opcode, b);
-                            break;
-                        default:
-                            emitter.Emit(code.opcode, (int) code.operand);
-                            break;
-                    }
-                } else if(parameter.Name.StartsWith("___")) {
+                if(originalParameter == null && parameter.Name.StartsWith("__") && int.TryParse(parameter.Name[2..], out int i)) originalParameter = original.GetParameters()[i];
+                if(originalParameter != null) EmitArg(emitter, originalParameter.Position + (original.IsStatic ? 0 : 1));
+                else if(parameter.Name.StartsWith("___")) {
                     FieldInfo field = patch.targetType.GetField(parameter.Name[3..]);
                     if(field == null) throw new Exception("Field Not Found: " + parameter.Name);
                     if(field.IsStatic) emitter.Emit(parameter.ParameterType.IsByRef ? OpCodes.Ldsflda : OpCodes.Ldsfld, field);
@@ -187,11 +177,19 @@ class JAMethodPatcher {
                         emitter.Emit(OpCodes.Ldarg_0);
                         emitter.Emit(parameter.ParameterType.IsByRef ? OpCodes.Ldflda : OpCodes.Ldfld, field);
                     }
-                }
+                } else emitter.Emit(OpCodes.Ldnull);
             }
             emitter.Emit(OpCodes.Call, patch.patchMethod);
             emitter.Emit(OpCodes.Br, label.Value);
             emitter.MarkLabel(endLabel);
+            if(patch.tryCatch) {
+                emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock), out _);
+                emitter.Emit(OpCodes.Ldsfld, patch.mod.staticField);
+                emitter.Emit(OpCodes.Ldstr, patch.id);
+                emitter.Emit(OpCodes.Ldc_I4_2);
+                emitter.Emit(OpCodes.Call, ((Delegate) JAMod.LogPatchException).Method);
+                emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
+            }
         }
     }
 
@@ -689,7 +687,7 @@ class JAMethodPatcher {
                                     instruction.operand = notUsingLocal;
                                 }
                                 if(instruction.opcode == OpCodes.Ldarg_0) list.Add(new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels));
-                                else if(instruction.opcode == OpCodes.Ldarg_2) list.Add(new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(OpCodes), "Ldc_I4_1")));
+                                else if(instruction.opcode == OpCodes.Ldarg_2) list.Add(new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(OpCodes), "Ldc_I4_0")));
                                 else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                     instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                     list.Add(instruction);
@@ -849,7 +847,7 @@ class JAMethodPatcher {
                                 instruction.operand = notUsingLocal;
                             }
                             if(instruction.opcode == OpCodes.Ldarg_0) list.Add(new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(instruction.labels));
-                            else if(instruction.opcode == OpCodes.Ldarg_2) list.Add(new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(OpCodes), "Ldc_I4_0")));
+                            else if(instruction.opcode == OpCodes.Ldarg_2) list.Add(new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(OpCodes), "Ldc_I4_1")));
                             else if(instruction.operand is MethodInfo info && info.DeclaringType == typeof(JAEmitter)) {
                                 instruction.operand = harmonyAssembly.GetType("HarmonyLib.Emitter").Method(info.Name, info.GetParameters().Select(parameter => parameter.ParameterType).ToArray());
                                 list.Add(instruction);

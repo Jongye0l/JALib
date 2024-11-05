@@ -7,4 +7,7 @@ public class OverridePatchData {
     public MethodInfo patchMethod;
     public bool IgnoreBasePatch;
     public bool debug;
+    public bool tryCatch;
+    public string id;
+    public JAMod mod;
 }

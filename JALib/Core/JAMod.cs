@@ -371,7 +371,11 @@ public abstract class JAMod {
 
     public void LogException(Exception e) => Logger.LogException(e);
 
-    internal static void LogPatchException(Exception e, JAMod mod, string id, bool prefix) => mod.LogException("An error occurred while invoking a " + (prefix ? "Pre" : "Post") + "fix Patch " + id, e);
+    internal static void LogPatchException(Exception e, JAMod mod, string id, int patchId) => mod.LogException("An error occurred while invoking a " + patchId switch {
+        0 => "Prefix",
+        1 => "Postfix",
+        2 => "Override",
+    } + " Patch " + id, e);
 
     public void SaveSetting() => ModSetting?.Save();
 

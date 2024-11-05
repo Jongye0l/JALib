@@ -289,7 +289,7 @@ public class JAPatcher : IDisposable {
             if(attribute is JAPatchAttribute patchAttribute) CustomPatch(attribute.MethodBase,
                 new HarmonyMethod(attribute.Method, patchAttribute.Priority, patchAttribute.Before, patchAttribute.After, attribute.Debug), patchAttribute, attribute.TryingCatch ? mod : null);
             else if(attribute is JAReversePatchAttribute reversePatchAttribute) CustomReversePatch(attribute.MethodBase, attribute.Method, reversePatchAttribute, mod);
-            else if(attribute is JAOverridePatchAttribute overridePatchAttribute) OverridePatch(attribute.MethodBase, attribute.Method, overridePatchAttribute);
+            else if(attribute is JAOverridePatchAttribute overridePatchAttribute) OverridePatch(attribute.MethodBase, attribute.Method, overridePatchAttribute, mod);
             else throw new NotSupportedException("Unsupported Patch Type");
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
@@ -353,7 +353,7 @@ public class JAPatcher : IDisposable {
         if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.AddReversePatches(attribute.Data);
     }
 
-    private static void OverridePatch(MethodBase original, MethodInfo patchMethod, JAOverridePatchAttribute attribute) {
+    private static void OverridePatch(MethodBase original, MethodInfo patchMethod, JAOverridePatchAttribute attribute, JAMod mod) {
         if(patchMethod.IsStatic) throw new NotSupportedException("Static Method Override");
         Type originalType;
         if(original.IsStatic) {
@@ -370,7 +370,10 @@ public class JAPatcher : IDisposable {
             patchMethod = patchMethod,
             debug = attribute.Debug,
             IgnoreBasePatch = attribute.IgnoreBasePatch,
-            targetType = attribute.targetType
+            targetType = attribute.targetType,
+            tryCatch = attribute.TryingCatch,
+            id = attribute.PatchId,
+            mod = mod
         };
         jaPatchInfo.AddOverridePatches(data);
         PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
