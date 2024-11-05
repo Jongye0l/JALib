@@ -54,6 +54,7 @@ class JAMethodPatcher {
         Patches patchInfo = Harmony.GetPatchInfo(source);
         debug = standin.debug.GetValueOrDefault() || Harmony.DEBUG;
         prefixes = postfixes = finalizers = removes = tryPrefixes = tryPostfixes = [];
+        overridePatches = [];
         List<MethodInfo> none = [];
         List<MethodInfo> transpiler = SortPatchMethods(original, patchInfo.Transpilers.ToArray(), debug, out transpilers);
         if(postTranspiler != null) {
@@ -100,8 +101,11 @@ class JAMethodPatcher {
             SortPatchMethods(original, patchInfo.finalizers.ToArray(), debug, out finalizers);
             finalizers = finalizers.Concat(children).ToArray();
         } else finalizers = children;
-        if(removes.Length > 0) transpilers = [];
-        else {
+        overridePatches = attribute.PatchType.HasFlag(ReversePatchType.OverrideCombine) ? jaPatchInfo.overridePatches : [];
+        if(removes.Length > 0) {
+            transpilers = [];
+            overridePatches = overridePatches.Where(patch => patch.IgnoreBasePatch).ToArray();
+        } else {
             children = customPatchMethods.Where(method => method.Name.Contains("Transpiler")).Select(CreateEmptyPatch).ToArray();
             if(attribute.PatchType.HasFlag(ReversePatchType.TranspilerCombine)) {
                 SortPatchMethods(original, patchInfo.transpilers.ToArray(), debug, out transpilers);

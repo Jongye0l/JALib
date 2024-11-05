@@ -8,6 +8,7 @@ public enum ReversePatchType {
     TranspilerCombine = 4,
     FinalizerCombine = 8,
     ReplaceCombine = 16,
-    AllCombine = 31,
-    DontUpdate = 32
+    OverrideCombine = 32,
+    AllCombine = PrefixCombine | PostfixCombine | TranspilerCombine | FinalizerCombine | ReplaceCombine | OverrideCombine,
+    DontUpdate = 0x40000000
 }
