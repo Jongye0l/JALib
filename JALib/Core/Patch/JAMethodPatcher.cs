@@ -66,6 +66,7 @@ class JAMethodPatcher {
     }
 
     public JAMethodPatcher(ReversePatchData data, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+        customReverse = true;
         MethodBase original = data.patchMethod;
         debug = data.debug || Harmony.DEBUG;
         JAReversePatchAttribute attribute = data.attribute;
@@ -106,7 +107,7 @@ class JAMethodPatcher {
             transpilers = [];
             overridePatches = overridePatches.Where(patch => patch.IgnoreBasePatch).ToArray();
         } else {
-            children = customPatchMethods.Where(method => method.Name.Contains("Transpiler")).Select(CreateEmptyPatch).ToArray();
+            children = new[] {((Delegate) ChangeParameter).Method}.Concat(customPatchMethods.Where(method => method.Name.Contains("Transpiler"))).Select(CreateEmptyPatch).ToArray();
             if(attribute.PatchType.HasFlag(ReversePatchType.TranspilerCombine)) {
                 SortPatchMethods(original, patchInfo.transpilers.ToArray(), debug, out transpilers);
                 transpilers = transpilers.Concat(children).ToArray();
@@ -118,16 +119,17 @@ class JAMethodPatcher {
             postfixes.Select(patch => patch.PatchMethod).ToList(),
             transpilers.Select(patch => patch.PatchMethod).ToList(),
             finalizers.Select(patch => patch.PatchMethod).ToList(), debug);
-        customReverse = true;
     }
 
     private void SetupReplace(MethodBase original, JAPatchInfo jaPatchInfo, List<MethodInfo> transpiler) {
         SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
         replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
-        if(replace == null) return;
+        if(replace == null || customReverse) return;
         MethodInfo method = ((Delegate) ChangeParameter).Method;
-        transpilers = new[] { CreateEmptyPatch(method) }.Concat(transpilers).ToArray();
-        transpiler?.Insert(0, method);
+        HarmonyLib.Patch[] newTranspilers = new HarmonyLib.Patch[transpilers.Length];
+        transpilers.CopyTo(newTranspilers, 0);
+        newTranspilers[^1] = CreateEmptyPatch(method);
+        transpiler.Add(method);
     }
 
     private HarmonyLib.Patch CreateEmptyPatch(MethodInfo method) => new(method, 0, "", 0, [], [], debug);
@@ -346,6 +348,7 @@ class JAMethodPatcher {
                             Label notIf = generator.DefineLabel();
                             LocalBuilder locking = generator.DeclareLocal(typeof(bool).MakeByRefType());
                             Label replaceIsSet = generator.DefineLabel();
+                            Label sourceIsSet = generator.DefineLabel();
                             list.AddRange([
                                 code,
                                 enumerator.Current,
@@ -366,12 +369,17 @@ class JAMethodPatcher {
                                 new CodeInstruction(OpCodes.Brtrue, replaceIsSet),
                                 new CodeInstruction(OpCodes.Pop),
                                 originalArg0,
-                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "source")),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
                                 originalArg0.Clone().WithLabels(replaceIsSet),
-                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher"), "original")),
-                                new CodeInstruction(OpCodes.Ldarg_0),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "source")),
+                                new CodeInstruction(OpCodes.Dup),
+                                new CodeInstruction(OpCodes.Brtrue, sourceIsSet),
+                                new CodeInstruction(OpCodes.Pop),
+                                originalArg0,
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
+                                new CodeInstruction(OpCodes.Ldarg_0).WithLabels(sourceIsSet),
                                 new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "customReverse")),
-                                new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("SetupParameter"))
+                                new CodeInstruction(OpCodes.Call, ((Delegate) SetupParameter).Method)
                             ]);
                             List<CodeInstruction> finalInstructions = [];
                             while(enumerator.MoveNext()) {
@@ -901,6 +909,7 @@ class JAMethodPatcher {
     #endregion
 
     private static void SetupParameter(MethodBase replace, MethodBase original, bool customReverse) {
+        JALib.Instance.Log($"SetupParameter: {replace} -> {original} ({customReverse})");
         ParameterInfo[] replaceParameter = replace.GetParameters();
         ParameterInfo[] originalParameter = original.GetParameters();
         _parameterMap.Clear();
@@ -908,12 +917,14 @@ class JAMethodPatcher {
         foreach(ParameterInfo parameterInfo in replaceParameter) {
             if(parameterInfo.Name.ToLower() == "__instance" && !original.IsStatic) {
                 _parameterMap[parameterInfo.Position] = 0;
+                JALib.Instance.Log(parameterInfo.Position + " -> 0");
                 continue;
             }
             if(parameterInfo.Name.StartsWith("___")) {
                 FieldInfo field = SimpleReflect.Field(original.DeclaringType, parameterInfo.Name[3..]);
                 if(field != null) {
                     _parameterFields[parameterInfo.Position] = field;
+                    JALib.Instance.Log(parameterInfo.Position + " -> " + field);
                     continue;
                 }
             }
@@ -922,6 +933,7 @@ class JAMethodPatcher {
             if(parameter != null) {
                 if(parameter.ParameterType != parameterInfo.ParameterType) throw new PatchParameterException("Parameter type mismatch: " + parameterInfo.Name);
                 _parameterMap[parameterInfo.Position] = parameter.Position + isNonStatic;
+                JALib.Instance.Log(parameterInfo.Position + " -> " + (parameter.Position + isNonStatic));
                 continue;
             }
             if(!customReverse) throw new PatchParameterException("Unknown Parameter: " + parameterInfo.Name);
@@ -929,6 +941,7 @@ class JAMethodPatcher {
     }
 
     private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
+        JALib.Instance.Log("ChangeParameter");
         List<CodeInstruction> list = instructions.ToList();
         for(int i = 0; i < list.Count; i++) {
             int index = GetParameterIndex(list[i], out bool set, out bool loc);
