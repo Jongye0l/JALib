@@ -153,7 +153,11 @@ public class JAPatcher : IDisposable {
                 break;
             }
             list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement")));
-            while(enumerator.MoveNext()) list.Add(enumerator.Current);
+            while(enumerator.MoveNext()) {
+                CodeInstruction code = enumerator.Current;
+                if(code.operand is FieldInfo { Name: "method" }) code.operand = SimpleReflect.Field(typeof(ReversePatchData), "patchMethod");
+                list.Add(code);
+            }
             return list;
         }
     }
@@ -378,10 +382,6 @@ public class JAPatcher : IDisposable {
         IEnumerator<CodeInstruction> enumerator = code.Where(c => c.opcode != OpCodes.Nop).GetEnumerator();
         return enumerator.MoveNext() && enumerator.Current.opcode == OpCodes.Ldc_I4_0 &&
                enumerator.MoveNext() && enumerator.Current.opcode == OpCodes.Ret;
-    }
-
-    private void OnPatchException(Exception exception) {
-        mod.LogException(exception);
     }
 
     public void Unpatch() {
