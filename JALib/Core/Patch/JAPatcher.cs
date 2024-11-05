@@ -186,7 +186,7 @@ public class JAPatcher : IDisposable {
     public void Patch() {
         if(patched) return;
         patched = true;
-        foreach(JAPatchAttribute attribute in patchData) {
+        foreach(JAPatchBaseAttribute attribute in patchData) {
             try {
                 Patch(attribute);
             } catch (Exception) {
