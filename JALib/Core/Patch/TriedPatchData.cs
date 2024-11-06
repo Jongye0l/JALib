@@ -3,7 +3,7 @@ using HarmonyLib;
 
 namespace JALib.Core.Patch;
 
-public class TriedPatchData : HarmonyLib.Patch {
+class TriedPatchData : HarmonyLib.Patch {
     public JAMod mod;
 
     public TriedPatchData(MethodInfo patch, int index, string owner, int priority, string[] before, string[] after, bool debug, JAMod mod) : base(patch, index, owner, priority, before, after, debug) {
