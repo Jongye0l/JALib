@@ -10,7 +10,7 @@ namespace JALib.Core.Patch;
 
 public class JAPatcher : IDisposable {
 
-    internal static bool _isOldHarmony;
+    private static bool _isOldHarmony;
     private List<JAPatchBaseAttribute> patchData;
     private JAMod mod;
     public event FailPatch OnFailPatch;

@@ -13,6 +13,7 @@ namespace JALib.Core.Patch;
 class JAMethodPatcher {
     private static Dictionary<int, int> _parameterMap = new();
     private static Dictionary<int, FieldInfo> _parameterFields = new();
+    private static bool _isOldHarmony = typeof(Harmony).Assembly.GetName().Version < new Version(2, 3, 0, 0);
     private readonly bool debug;
     private HarmonyLib.Patch[] prefixes;
     private HarmonyLib.Patch[] postfixes;
@@ -434,7 +435,7 @@ class JAMethodPatcher {
                             Label skip = (Label) list[loc].operand;
                             Label run = generator.DefineLabel();
                             labels.Add(run);
-                            if(JAPatcher._isOldHarmony) list.RemoveAt(loc);
+                            if(_isOldHarmony) list.RemoveAt(loc);
                             else list.RemoveRange(--loc, 2);
                             list.InsertRange(loc, [
                                 new CodeInstruction(OpCodes.Brtrue, run),
