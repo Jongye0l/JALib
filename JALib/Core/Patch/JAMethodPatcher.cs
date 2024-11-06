@@ -912,7 +912,8 @@ class JAMethodPatcher {
         while(enumerator.MoveNext()) {
             CodeInstruction code = enumerator.Current;
             if(code.operand is FieldInfo { Name: "original" }) {
-                list[^1] = new CodeInstruction(OpCodes.Ldloc, method);
+                code = list[^1];
+                list[^1] = new CodeInstruction(OpCodes.Ldloc, method).WithLabels(code.labels);
                 continue;
             }
             if(code.operand is MethodInfo { Name: "get_IsStatic" }) {
