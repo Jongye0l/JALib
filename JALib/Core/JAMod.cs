@@ -371,11 +371,13 @@ public abstract class JAMod {
 
     public void LogException(Exception e) => Logger.LogException(e);
 
+#pragma warning disable CS8509
     internal static void LogPatchException(Exception e, JAMod mod, string id, int patchId) => mod.LogException("An error occurred while invoking a " + patchId switch {
         0 => "Prefix",
         1 => "Postfix",
         2 => "Override",
     } + " Patch " + id, e);
+#pragma warning restore CS8509
 
     public void SaveSetting() => ModSetting?.Save();
 

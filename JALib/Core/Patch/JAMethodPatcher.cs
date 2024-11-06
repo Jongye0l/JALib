@@ -964,12 +964,14 @@ class JAMethodPatcher {
     private static void EmitArg(JAEmitter emitter, int index) {
         switch(index) {
             case >= 0 and < 4:
+#pragma warning disable CS8509
                 emitter.Emit(index switch {
                     0 => OpCodes.Ldarg_0,
                     1 => OpCodes.Ldarg_1,
                     2 => OpCodes.Ldarg_2,
                     3 => OpCodes.Ldarg_3
                 });
+#pragma warning restore CS8509
                 break;
             case < 256:
                 emitter.Emit(OpCodes.Ldarg_S, (byte) index);
