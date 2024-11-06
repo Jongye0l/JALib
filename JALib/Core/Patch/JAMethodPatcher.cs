@@ -431,10 +431,11 @@ class JAMethodPatcher {
                             List<Label> labels = list[loc].labels;
                             Label skipFinish = generator.DefineLabel();
                             list[loc--].labels = [skipFinish];
-                            Label skip = (Label) list[loc--].operand;
+                            Label skip = (Label) list[loc].operand;
                             Label run = generator.DefineLabel();
                             labels.Add(run);
-                            list.RemoveRange(loc, 2);
+                            if(JAPatcher._isOldHarmony) list.RemoveAt(loc);
+                            else list.RemoveRange(--loc, 2);
                             list.InsertRange(loc, [
                                 new CodeInstruction(OpCodes.Brtrue, run),
                                 new CodeInstruction(OpCodes.Ldloca, gotoFinishLabel),
