@@ -18,6 +18,7 @@ public class JAPatcher : IDisposable {
 
     #region CustomPatchPatching
     private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
+    private static object locker = typeof(PatchProcessor).GetValue("locker");
 
     static JAPatcher() {
         Harmony harmony = JALib.Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony("JALib");
@@ -305,7 +306,7 @@ public class JAPatcher : IDisposable {
 
 #pragma warning disable CS0618
     private static void CustomPatch(MethodBase original, HarmonyMethod patchMethod, JAPatchAttribute attribute, JAMod mod) {
-        lock (typeof(PatchProcessor).GetValue("locker")) {
+        lock(locker) {
             PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
             JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
             string id = attribute.PatchId;
@@ -341,16 +342,18 @@ public class JAPatcher : IDisposable {
 #pragma warning restore CS0618
 
     private static void CustomReversePatch(MethodBase original, MethodInfo patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
-        PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
-        JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
-        UpdateReversePatch(attribute.Data ??= new ReversePatchData {
-            original = original,
-            patchMethod = patchMethod,
-            debug = attribute.Debug,
-            attribute = attribute,
-            mod = mod
-        }, patchInfo, jaPatchInfo);
-        if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.AddReversePatches(attribute.Data);
+        lock(locker) {
+            PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
+            JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
+            UpdateReversePatch(attribute.Data ??= new ReversePatchData {
+                original = original,
+                patchMethod = patchMethod,
+                debug = attribute.Debug,
+                attribute = attribute,
+                mod = mod
+            }, patchInfo, jaPatchInfo);
+            if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.AddReversePatches(attribute.Data);
+        }
     }
 
     private static void OverridePatch(MethodBase original, MethodInfo patchMethod, JAOverridePatchAttribute attribute, JAMod mod) {
@@ -363,20 +366,22 @@ public class JAPatcher : IDisposable {
         Type patchType = patchMethod.DeclaringType;
         if(originalType == patchType) throw new NotSupportedException("Same Type Override");
         if(!originalType.IsAssignableFrom(patchType) && !patchType.IsAssignableFrom(originalType) && !patchType.IsInterface && !originalType.IsInterface) throw new NotSupportedException("Incompatible Types");
-        PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
-        JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
-        attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.DeclaringType : Type.GetType(attribute.targetTypeName);
-        OverridePatchData data = new() {
-            patchMethod = patchMethod,
-            debug = attribute.Debug,
-            IgnoreBasePatch = attribute.IgnoreBasePatch,
-            targetType = attribute.targetType,
-            tryCatch = attribute.TryingCatch,
-            id = attribute.PatchId,
-            mod = mod
-        };
-        jaPatchInfo.AddOverridePatches(data);
-        PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+        lock(locker) {
+            PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
+            JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
+            attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.DeclaringType : Type.GetType(attribute.targetTypeName);
+            OverridePatchData data = new() {
+                patchMethod = patchMethod,
+                debug = attribute.Debug,
+                IgnoreBasePatch = attribute.IgnoreBasePatch,
+                targetType = attribute.targetType,
+                tryCatch = attribute.TryingCatch,
+                id = attribute.PatchId,
+                mod = mod
+            };
+            jaPatchInfo.AddOverridePatches(data);
+            PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+        }
     }
 
     private static bool CheckRemove(MethodInfo method) {
