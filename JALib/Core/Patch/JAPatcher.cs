@@ -362,7 +362,7 @@ public class JAPatcher : IDisposable {
         } else originalType = original.DeclaringType;
         Type patchType = patchMethod.DeclaringType;
         if(originalType == patchType) throw new NotSupportedException("Same Type Override");
-        if(!originalType.IsAssignableFrom(patchType) && !patchType.IsAssignableFrom(originalType) && !patchType.IsInterface && !originalType.IsInterface) throw new NotSupportedException("Incompatible Types");
+        if(attribute.checkType && !originalType.IsAssignableFrom(patchType) && !patchType.IsAssignableFrom(originalType) && !patchType.IsInterface && !originalType.IsInterface) throw new NotSupportedException("Incompatible Types");
         PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
         JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
         attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.DeclaringType : Type.GetType(attribute.targetTypeName);

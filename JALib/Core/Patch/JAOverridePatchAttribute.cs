@@ -5,6 +5,7 @@ public class JAOverridePatchAttribute : JAPatchBaseAttribute {
     public bool IgnoreBasePatch = true;
     public Type targetType;
     public string targetTypeName;
+    public bool checkType = true;
 
     public JAOverridePatchAttribute(string @class, string methodName) {
         Class = @class;
