@@ -266,7 +266,7 @@ public class JAPatcher : IDisposable {
                     foreach(ParameterInfo parameter in overridePatch2.Method.GetParameters()) {
                         foreach(MethodBase @base in list) {
                             if(@base.GetParameters().Any(p => p.Name == parameter.Name)) dictionary[@base]--;
-                            else if(!parameter.Name.StartsWith("___")) {
+                            else if(!parameter.Name.StartsWith("__")) {
                                 dictionary.Remove(@base);
                                 break;
                             }
@@ -274,11 +274,11 @@ public class JAPatcher : IDisposable {
                     }
                     if(dictionary.Count == 1) attribute.MethodBase = dictionary.First().Key;
                     else if(dictionary.Count == 0) throw new MissingMethodException();
-                    else if(dictionary.Values.All(v => v == 0)) {
-                        (MethodBase, int) min = (null, int.MaxValue);
-                        foreach((MethodBase key, int value) in dictionary) if(value < min.Item2) min = (key, value);
-                        attribute.MethodBase = min.Item1;
-                    } else throw new AmbiguousMatchException();
+                    else {
+                        KeyValuePair<MethodBase, int> min = new(null, int.MaxValue);
+                        foreach(KeyValuePair<MethodBase, int> value in dictionary) if(value.Value < min.Value) min = value;
+                        attribute.MethodBase = min.Key;
+                    }
                 } else throw new AmbiguousMatchException();
                 if(attribute.GenericType == null && attribute.GenericName != null) attribute.GenericType = new Type[attribute.GenericName.Length];
                 if(attribute.GenericType != null) {
