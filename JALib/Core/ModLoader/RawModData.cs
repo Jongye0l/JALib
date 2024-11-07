@@ -38,7 +38,11 @@ class RawModData {
             if(!modInfoTask.IsCompletedSuccessfully) info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception);
             else {
                 GetModInfo apiInfo = modInfoTask.Result;
-                if(apiInfo.Success && apiInfo.ForceUpdate && apiInfo.LatestVersion > info.ModEntry.Version) data.DownloadRequest(apiInfo.LatestVersion);
+                if(apiInfo.Success) {
+                    bool notLatest = apiInfo.LatestVersion > info.ModEntry.Version;
+                    modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
+                    if(notLatest && apiInfo.ForceUpdate) data.DownloadRequest(apiInfo.LatestVersion);
+                }
             }
             checkUpdated = true;
             CheckFinishInit();

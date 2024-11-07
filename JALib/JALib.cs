@@ -105,7 +105,16 @@ class JALib : JAMod {
         }
     }
 
-    private void ModInfo(Task<GetModInfo> task) => ModInfo(task.Result);
+    private void ModInfo(Task<GetModInfo> task) {
+        try {
+            if(task.Exception != null) throw task.Exception.InnerException ?? task.Exception;
+            GetModInfo apiInfo = task.Result;
+            ModInfo(apiInfo);
+            ModEntry.Info.Version = (apiInfo.LatestVersion > ModEntry.Version ? "<color=red>" : "<color=cyan>") + ModEntry.Info.Version + "</color>";
+        } catch (Exception e) {
+            LogException(e);
+        }
+    }
 
     protected override void OnEnable() {
         if(enableInit) return;
