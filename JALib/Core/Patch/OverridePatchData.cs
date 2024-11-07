@@ -2,7 +2,7 @@
 
 namespace JALib.Core.Patch;
 
-public class OverridePatchData {
+class OverridePatchData {
     public Type targetType;
     public MethodInfo patchMethod;
     public bool IgnoreBasePatch;

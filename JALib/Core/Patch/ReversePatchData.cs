@@ -2,7 +2,7 @@
 
 namespace JALib.Core.Patch;
 
-public class ReversePatchData {
+class ReversePatchData {
     public MethodBase original;
     public MethodInfo patchMethod;
     public bool debug;
