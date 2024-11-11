@@ -2,9 +2,11 @@
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using HarmonyLib;
 using JALib.API;
 using JALib.API.Packets;
 using JALib.Bootstrap;
+using JALib.Core.Setting;
 using JALib.Tools;
 using UnityModManagerNet;
 
@@ -15,6 +17,7 @@ class RawModData {
     public JAModLoader data;
     public string name;
     public JAModInfo info;
+    public JAModSetting setting;
     public UnityModManager.ModInfo modInfo;
     public Task<GetModInfo> modInfoTask;
     public bool checkUpdated;
@@ -28,20 +31,22 @@ class RawModData {
         modInfo = info.ModEntry.Info;
         name = modInfo.Id;
         modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
-        modInfoTask = JApi.Send(new GetModInfo(info), false);
+        setting = new JAModSetting(Path.Combine(info.ModEntry.Path, "Settings.json"));
+        if(info.IsBetaBranch) setting.UnlockBeta = setting.Beta = true;
+        modInfoTask = JApi.Send(new GetModInfo(info, setting.Beta), false);
         modInfoTask.GetAwaiter().UnsafeOnCompleted(CheckUpdate);
         LoadDependencies();
     }
 
     public void CheckUpdate() {
         try {
-            if(!modInfoTask.IsCompletedSuccessfully) info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception);
+            if(!modInfoTask.IsCompletedSuccessfully) info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception.InnerException ?? modInfoTask.Exception);
             else {
                 GetModInfo apiInfo = modInfoTask.Result;
                 if(apiInfo.Success) {
                     bool notLatest = apiInfo.LatestVersion > info.ModEntry.Version;
                     modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
-                    if(notLatest && apiInfo.ForceUpdate) data.DownloadRequest(apiInfo.LatestVersion);
+                    if(apiInfo.RequestedVersion != null) data.DownloadRequest(apiInfo.RequestedVersion);
                 }
             }
             checkUpdated = true;
@@ -138,7 +143,6 @@ class RawModData {
             return;
         }
         MainThread.Run(data.mod, Enable);
-        if(modInfoTask.IsCompletedSuccessfully) data.mod.ModInfo(modInfoTask.Result);
         data.LoadState = ModLoadState.Loaded;
         info.ModEntry.SetValue("mErrorOnLoading", false);
         info.ModEntry.SetValue("mActive", true);
@@ -180,7 +184,9 @@ class RawModData {
         Assembly modAssembly = domain.Load(File.ReadAllBytes(info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath));
         Type modType = modAssembly.GetType(info.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
-        data.mod = modType.New<JAMod>(info.ModEntry);
+        ConstructorInfo constructor = modType.Constructor([]) ?? modType.Constructor(typeof(UnityModManager.ModEntry));
+        data.mod = (JAMod) constructor.Invoke(constructor.GetParameters().Length == 0 ? [] : [info.ModEntry]);
+        data.mod.Setup(info.ModEntry, info, modInfoTask.IsCompletedSuccessfully ? modInfoTask.Result : null, setting);
     }
 
     public void InstallFinish() {

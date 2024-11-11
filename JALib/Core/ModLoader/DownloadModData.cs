@@ -53,7 +53,6 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             modEntry.SetValue("Info", modInfo);
             bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [modEntry]);
             data.RawModData.info = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modEntry, beta);
-            JAMod.SetupModInfo(data.RawModData.info);
             if(CheckReDownload()) return;
             data.RawModData.InstallFinish();
         }

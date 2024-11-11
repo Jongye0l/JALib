@@ -5,25 +5,28 @@ using UnityEngine;
 
 namespace JALib.Core.Setting;
 
-class JAModSetting : JASetting {
-    private string path;
+class JAModSetting(string path) : JASetting(null, LoadJson(path)) {
     public Version LatestVersion;
+    public Version LatestBetaVersion;
+    public bool ForceUpdate;
+    public bool ForceBetaUpdate;
     public SystemLanguage[] AvailableLanguages;
     public string Homepage;
     public string Discord;
     public SystemLanguage? CustomLanguage;
+    public bool UnlockBeta;
+    public bool Beta;
     internal JASetting Setting;
 
-    public JAModSetting(JAMod mod, string path = null, Type type = null) : base(mod, LoadJson(mod, ref path)) {
-        this.path = path;
+    internal void SetupType(Type type, JAMod mod) {
+        Mod = mod;
         if(type != null && !JsonObject.ContainsKey(nameof(Setting))) JsonObject[nameof(Setting)] = new JObject();
         Setting = type?.New<JASetting>(Mod, JsonObject[nameof(Setting)] as JObject);
         if(!JsonObject.ContainsKey(nameof(Feature))) JsonObject[nameof(Feature)] = new JObject();
     }
 
-    private static JObject LoadJson(JAMod mod, ref string path) {
+    private static JObject LoadJson(string path) {
         try {
-            path ??= Path.Combine(mod.Path, "Settings.json");
             return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
         } catch (Exception e) {
             JALib.Instance.Error("Failed to load settings.");
@@ -37,6 +40,11 @@ class JAModSetting : JASetting {
                 return new JObject();
             }
         }
+    }
+
+    internal void Combine(JAModSetting setting) {
+        UnlockBeta = setting.UnlockBeta;
+        Beta = setting.Beta;
     }
 
     public override void PutFieldData() {

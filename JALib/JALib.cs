@@ -24,7 +24,14 @@ class JALib : JAMod {
     private static Dictionary<string, Version> updateQueue = new();
     private static bool enableInit;
 
-    private JALib(UnityModManager.ModEntry modEntry) : base(modEntry, true, typeof(JALibSetting), gid: 1716850936) {
+    private JALib(UnityModManager.ModEntry modEntry) : base(typeof(JALibSetting)) {
+        try {
+            JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
+        } catch (Exception) {
+            // ignored
+        }
+        Setup(modEntry, JaModInfo, null, new JAModSetting(System.IO.Path.Combine(modEntry.Path, "Settings.json")));
+        if(JaModInfo.IsBetaBranch) ModSetting.UnlockBeta = ModSetting.Beta = true;
         Setting = (JALibSetting) base.Setting;
         JApi.Initialize();
         JATask.Run(Instance, Init);
@@ -36,11 +43,6 @@ class JALib : JAMod {
     private void Init() {
         LoadInfo();
         Patcher.Patch();
-        try {
-            JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
-        } catch (Exception) {
-            // ignored
-        }
         SetupModApplicator();
     }
 
@@ -80,7 +82,6 @@ class JALib : JAMod {
 
     private static void LoadModInfo(JAModInfo modInfo) {
         try {
-            SetupModInfo(modInfo);
             JAModLoader.AddMod(modInfo);
         } catch (Exception e) {
             modInfo.ModEntry.Logger.LogException(e);
@@ -99,7 +100,7 @@ class JALib : JAMod {
                 Task.Yield().GetAwaiter().OnCompleted(LoadInfo);
                 return;
             }
-            JApi.Send(new GetModInfo(JaModInfo), false).ContinueWith(ModInfo);
+            JApi.Send(new GetModInfo(JaModInfo, ModSetting.Beta), false).ContinueWith(ModInfo);
         } catch (Exception e) {
             LogException(e);
         }
@@ -111,6 +112,7 @@ class JALib : JAMod {
             GetModInfo apiInfo = task.Result;
             ModInfo(apiInfo);
             ModEntry.Info.Version = (apiInfo.LatestVersion > ModEntry.Version ? "<color=red>" : "<color=cyan>") + ModEntry.Info.Version + "</color>";
+            SaveSetting();
         } catch (Exception e) {
             LogException(e);
         }

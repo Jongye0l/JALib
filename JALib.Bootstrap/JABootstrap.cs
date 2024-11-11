@@ -19,15 +19,19 @@ public class JABootstrap {
 
     private static void Setup(UnityModManager.ModEntry modEntry) {
         _task = Task.Run(async () => {
-            domain ??= AppDomain.CurrentDomain;
-            Task<bool> checkMod = Installer.CheckMod(modEntry);
-            bool beta = InitializeVersion(modEntry);
-            JAModInfo modInfo = LoadModInfo(modEntry, beta);
-            if(await checkMod) {
-                beta = InitializeVersion(modEntry);
-                modInfo = LoadModInfo(modEntry, beta);
+            try {
+                domain ??= AppDomain.CurrentDomain;
+                Task<bool> checkMod = Installer.CheckMod(modEntry);
+                bool beta = InitializeVersion(modEntry);
+                JAModInfo modInfo = LoadModInfo(modEntry, beta);
+                if(await checkMod) {
+                    beta = InitializeVersion(modEntry);
+                    modInfo = LoadModInfo(modEntry, beta);
+                }
+                SetupJALib(modInfo);
+            } catch (Exception e) {
+                modEntry.Logger.LogException(e);
             }
-            SetupJALib(modInfo);
         });
     }
 

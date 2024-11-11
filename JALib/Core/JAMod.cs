@@ -37,7 +37,7 @@ public abstract class JAMod {
     public string Name { get; private set; }
     public Version Version => ModEntry.Version;
     public string Path => ModEntry.Path;
-    protected Version LatestVersion => ModSetting.LatestVersion;
+    protected Version LatestVersion => ModSetting.Beta ? ModSetting.LatestBetaVersion : ModSetting.LatestVersion;
     public bool IsLatest => LatestVersion <= Version;
     protected internal List<Feature> Features { get; private set; }
     protected SystemLanguage[] AvailableLanguages => ModSetting.AvailableLanguages;
@@ -46,13 +46,14 @@ public abstract class JAMod {
     protected string Discord = "https://discord.jongyeol.kr/";
     public bool Enabled => ModEntry.Enabled;
     public bool Active => ModEntry.Active;
-    internal int Gid;
+    internal int Gid = -1;
     internal JAModInfo JaModInfo; // TODO : Move JALib When Beta end
     internal FieldInfo staticField;
     internal bool Initialized;
     internal List<JAMod> usedMods = [];
     internal List<JAMod> usingMods = [];
     protected JAPatcher Patcher { get; private set; }
+    private readonly Type SettingType;
 
     protected internal SystemLanguage? CustomLanguage {
         get => ModSetting.CustomLanguage;
@@ -64,29 +65,52 @@ public abstract class JAMod {
 
     public JALocalization Localization { get; private set; }
 
-    protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null, int gid = -1) {
+    [Obsolete]
+    protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null, int gid = -1) : this(settingType) {
+        Discord = discord ?? Discord;
+        Gid = gid;
+        ModSetting = new JAModSetting(settingPath ?? System.IO.Path.Combine(modEntry.Path, "Settings.json"));
+        ModSetting.SetupType(settingType, this);
+    }
+
+    protected JAMod() {
+        Features = [];
+        Patcher = new JAPatcher(this);
+        Patcher.OnFailPatch += OnFailPatch;
+    }
+
+    protected JAMod(Type settingType) : this() {
+        SettingType = settingType;
+    }
+
+    internal void Setup(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
         try {
             ModEntry = modEntry;
             Name = ModEntry.Info.Id;
-            ModSetting = new JAModSetting(this, settingPath, settingType);
-            Features = [];
-            Localization = localization ? new JALocalization(this) : null;
-            Discord = ModSetting.Discord ?? discord ?? Discord;
-            Gid = gid;
+            if(ModSetting == null) {
+                ModSetting = setting;
+                setting.SetupType(SettingType, this);
+            } else ModSetting.Combine(setting);
+            Gid = modInfo.Gid;
+            Localization = Gid != -1 ? new JALocalization(this) : null;
+            Discord = ModSetting.Discord ?? modInfo.Discord ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
-            Patcher = new JAPatcher(this);
-            Patcher.OnFailPatch += OnFailPatch;
             mods[Name] = this;
-            SaveSetting();
             SetupStaticField();
+            if(apiInfo != null) ModInfo(apiInfo);
+            SaveSetting();
+            OnSetup();
             Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {
-            ModEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
+            modEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
             Error("Failed to Initialize JAMod " + Name);
             LogException(e);
             throw;
         }
+    }
+
+    protected virtual void OnSetup() {
     }
 
     private void OnFailPatch(string name, bool disabled) {
@@ -156,11 +180,13 @@ public abstract class JAMod {
     internal void ModInfo(GetModInfo getModInfo) {
         if(ModEntry == null || !getModInfo.Success) return;
         ModSetting.LatestVersion = getModInfo.LatestVersion;
+        ModSetting.LatestBetaVersion = getModInfo.LatestBetaVersion;
+        ModSetting.ForceUpdate = getModInfo.ForceUpdate;
+        ModSetting.ForceBetaUpdate = getModInfo.ForceBetaUpdate;
         ModSetting.AvailableLanguages = getModInfo.AvailableLanguages;
         ModSetting.Homepage = getModInfo.Homepage;
         ModSetting.Discord = getModInfo.Discord;
         Gid = getModInfo.Gid;
-        SaveSetting();
         if(IsLatest) return;
         ModEntry.NewestVersion = LatestVersion;
         Log($"JAMod {Name} is Outdated (current: {Version}, latest: {LatestVersion})");
@@ -393,15 +419,15 @@ public abstract class JAMod {
             ModEntry.SetValue("Info", info);
             bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [ModEntry]);
             JAModInfo modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", ModEntry, beta);
-            SetupModInfo(modInfo);
+            modInfo.ModEntry.Info.DisplayName = modInfo.ModEntry.Info.Id + " <color=gray>[Waiting...]</color>";
             GetModInfo getModInfo = null;
             try {
                 if(JApi.Instance != null) {
                     modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Loading Info...]</color>";
                     Log("Force Reload: Loading Info...");
-                    getModInfo = await JApi.Send(new GetModInfo(modInfo), false);
-                    if(getModInfo.Success && getModInfo.ForceUpdate && getModInfo.LatestVersion > modInfo.ModEntry.Version) {
-                        _ = JApi.Send(new DownloadMod(modName, getModInfo.LatestVersion), false);
+                    getModInfo = await JApi.Send(new GetModInfo(modInfo, ModSetting.Beta), false);
+                    if(getModInfo.Success && getModInfo.RequestedVersion != null) {
+                        _ = JApi.Send(new DownloadMod(modName, getModInfo.RequestedVersion), false);
                         return;
                     }
                 }
@@ -472,7 +498,7 @@ public abstract class JAMod {
                         ADOBase.LoadScene(loadScene);
                         loadScene = null;
                     }
-                    if(getModInfo != null) mod.ModInfo(getModInfo);
+                    //if(getModInfo != null) mod.ModInfo(getModInfo);
                     // TODO : Fix this
                     // modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reloading...]</color>";
                     // modInfo.ModEntry.Logger.Log("Force Reload: Force Reloading...");
@@ -492,17 +518,6 @@ public abstract class JAMod {
 
     private static void LoadScenePatch(string sceneName) {
         loadScene = sceneName;
-    }
-
-    internal static void SetupModInfo(JAModInfo modInfo) {
-        string modName = modInfo.ModEntry.Info.Id;
-        JALib lib = JALib.Instance;
-        bool beta = lib.Setting.Beta[modName]?.ToObject<bool>() ?? false;
-        if(beta != modInfo.IsBetaBranch) {
-            lib.Setting.Beta[modName] = modInfo.IsBetaBranch;
-            lib.SaveSetting();
-        }
-        modInfo.ModEntry.Info.DisplayName = modName + " <color=gray>[Waiting...]</color>";
     }
 
     internal void ForceReloadMod(Assembly newAssembly) {
