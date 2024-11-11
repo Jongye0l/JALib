@@ -45,6 +45,44 @@ public class JALibController extends CustomController {
         return output.toByteArray();
     }
 
+    @GetMapping("/modInfoV2/{name}/{version}")
+    public byte[] modInfoV2(HttpServletRequest request, @PathVariable String name, @PathVariable String version) {
+        info(request, "GetModInfo(V2): " + name + " " + version + ", beta: null");
+        ModData modData = ModData.getModData(name);
+        Version curVer = new Version(version);
+        boolean beta = modData != null && modData.getBetaMap().containsKey(curVer);
+        return modInfoV2(modData, curVer, beta);
+    }
+
+    @GetMapping("/modInfoV2/{name}/{version}/{beta}")
+    public byte[] modInfoV2(HttpServletRequest request, @PathVariable String name, @PathVariable String version, @PathVariable int beta) {
+        info(request, "GetModInfo(V2): " + name + " " + version + ", beta: " + (beta == 1));
+        ModData modData = ModData.getModData(name);
+        return modInfoV2(modData, new Version(version), beta != 0);
+    }
+
+    private byte[] modInfoV2(ModData modData, Version version, boolean beta) {
+        @Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
+        boolean success = modData != null && modData.getBetaVersion() != null;
+        output.writeBoolean(success);
+        if(!success) return output.toByteArray();
+        Version ver = modData.getVersion();
+        output.writeUTF(ver == null ? null : ver.toString());
+        output.writeUTF(modData.getBetaVersion().toString());
+        output.writeBoolean(modData.isForceUpdate());
+        output.writeBoolean(modData.isForceUpdateBeta());
+        output.writeUTF((beta ? modData.isForceUpdateBeta() : modData.isForceUpdate()) || modData.checkForceUpdate(version) ?
+            (beta ? modData.getBetaVersion() : modData.getVersion()).toString()
+            : null);
+        Language[] languages = modData.getAvailableLanguages();
+        output.writeByte((byte) languages.length);
+        for(Language language : languages) output.writeByte((byte) language.ordinal());
+        output.writeUTF(modData.getHomepage());
+        output.writeUTF(modData.getDiscord());
+        output.writeInt(modData.getGid());
+        return output.toByteArray();
+    }
+
     @GetMapping("/downloadMod/{name}/{version}")
     public ResponseEntity<?> downloadMod(HttpServletRequest request, @PathVariable String name, @PathVariable String version) {
         try {
