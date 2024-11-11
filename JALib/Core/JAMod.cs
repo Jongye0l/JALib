@@ -91,7 +91,7 @@ public abstract class JAMod {
                 ModSetting = setting;
                 setting.SetupType(SettingType, this);
             } else ModSetting.Combine(setting);
-            Gid = modInfo.Gid;
+            Gid = apiInfo?.Gid ?? modInfo.Gid;
             Localization = Gid != -1 ? new JALocalization(this) : null;
             Discord = ModSetting.Discord ?? modInfo.Discord ?? Discord;
             modEntry.OnToggle = OnToggle;
