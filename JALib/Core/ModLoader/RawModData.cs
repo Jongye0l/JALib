@@ -175,6 +175,7 @@ class RawModData {
         if(info.DependencyPath != null) {
             string dependencyPath = info.DependencyRequireModPath ? Path.Combine(info.ModEntry.Path, info.DependencyPath) : info.DependencyPath;
             string cacheDependencyPath = Path.Combine(cachePath, "dependency");
+            if(!Directory.Exists(cacheDependencyPath)) Directory.CreateDirectory(cacheDependencyPath);
             List<string> cacheFiles = [];
             foreach(string file in Directory.GetFiles(dependencyPath)) {
                 try {
@@ -195,6 +196,7 @@ class RawModData {
                 }
             }
         }
+        if(!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
         string assemblyPath = info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath;
         string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileName(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + ".dll");
         if(!File.Exists(cacheAssemblyPath)) File.Copy(assemblyPath, cacheAssemblyPath);
