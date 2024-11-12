@@ -67,6 +67,7 @@ public abstract class JAMod {
 
     [Obsolete]
     protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null, int gid = -1) : this(settingType) {
+        ModEntry = modEntry;
         Discord = discord ?? Discord;
         Gid = gid;
         ModSetting = new JAModSetting(settingPath ?? System.IO.Path.Combine(modEntry.Path, "Settings.json"));
