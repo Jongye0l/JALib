@@ -77,9 +77,9 @@ class Installer {
             entry.Open().CopyTo(fileStream);
             int left = (int) (fileStream.Length - fileStream.Position);
             if(left <= 0) return;
-            byte[] buffer = new byte[Math.Max(0, left)];
-            for(int i = 0; i < buffer.Length; i++) buffer[i] = 32;
-            fileStream.Write(buffer, 0, buffer.Length);
+            byte[] buffer = new byte[left];
+            for(int i = 0; i < left; i++) buffer[i] = 32;
+            fileStream.Write(buffer, 0, left);
         } finally {
             fileStream?.Close();
         }
