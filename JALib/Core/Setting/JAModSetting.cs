@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace JALib.Core.Setting;
 
-class JAModSetting(string path) : JASetting(null, LoadJson(path)) {
+class JAModSetting : JASetting {
+    public string path;
     public Version LatestVersion;
     public Version LatestBetaVersion;
     public bool ForceUpdate;
@@ -18,11 +19,15 @@ class JAModSetting(string path) : JASetting(null, LoadJson(path)) {
     public bool Beta;
     internal JASetting Setting;
 
+    public JAModSetting(string path) : base(null, LoadJson(path)) {
+        this.path = path;
+        if(!JsonObject.ContainsKey(nameof(Feature))) JsonObject[nameof(Feature)] = new JObject();
+    }
+
     internal void SetupType(Type type, JAMod mod) {
         Mod = mod;
         if(type != null && !JsonObject.ContainsKey(nameof(Setting))) JsonObject[nameof(Setting)] = new JObject();
         Setting = type?.New<JASetting>(Mod, JsonObject[nameof(Setting)] as JObject);
-        if(!JsonObject.ContainsKey(nameof(Feature))) JsonObject[nameof(Feature)] = new JObject();
     }
 
     private static JObject LoadJson(string path) {
