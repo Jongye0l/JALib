@@ -179,7 +179,7 @@ class RawModData {
             List<string> cacheFiles = [];
             foreach(string file in Directory.GetFiles(dependencyPath)) {
                 try {
-                    string cacheFile = Path.Combine(cacheDependencyPath, Path.GetFileName(file) + "-" + new FileInfo(file).LastWriteTimeUtc.GetHashCode() + ".dll");
+                    string cacheFile = Path.Combine(cacheDependencyPath, Path.GetFileNameWithoutExtension(file) + "-" + new FileInfo(file).LastWriteTimeUtc.GetHashCode() + ".dll");
                     if(!File.Exists(cacheFile)) File.Copy(file, cacheFile);
                     domain.Load(cacheFile);
                     cacheFiles.Add(cacheFile);
@@ -198,9 +198,8 @@ class RawModData {
         }
         if(!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
         string assemblyPath = info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath;
-        string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileName(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + ".dll");
+        string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileNameWithoutExtension(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + ".dll");
         if(!File.Exists(cacheAssemblyPath)) File.Copy(assemblyPath, cacheAssemblyPath);
-        Assembly modAssembly = domain.Load(cacheAssemblyPath);
         foreach(string file in Directory.GetFiles(cachePath)) {
             if(file == cacheAssemblyPath || !file.EndsWith(".dll")) continue;
             try {
@@ -209,6 +208,7 @@ class RawModData {
                 // ignored
             }
         }
+        Assembly modAssembly = Assembly.LoadFile(cacheAssemblyPath);
         Type modType = modAssembly.GetType(info.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
         ConstructorInfo constructor = modType.Constructor([]) ?? modType.Constructor(typeof(UnityModManager.ModEntry));
