@@ -67,8 +67,22 @@ class Installer {
     private static void CopyFile(string entryPath, ZipArchiveEntry entry) {
         string directory = Path.GetDirectoryName(entryPath);
         if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-        using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
-        entry.Open().CopyTo(fileStream);
+        FileStream fileStream = null;
+        try {
+            try {
+                fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
+            } catch (IOException) {
+                fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
+            }
+            entry.Open().CopyTo(fileStream);
+            int left = (int) (fileStream.Length - fileStream.Position);
+            if(left <= 0) return;
+            byte[] buffer = new byte[Math.Max(0, left)];
+            for(int i = 0; i < buffer.Length; i++) buffer[i] = 32;
+            fileStream.Write(buffer, 0, buffer.Length);
+        } finally {
+            fileStream?.Close();
+        }
     }
 
     private static IEnumerable<CodeInstruction> CookieDomainPatch(IEnumerable<CodeInstruction> instructions) {

@@ -202,7 +202,7 @@ End:
         FileStream fileStream = null;
         try {
             try {
-                fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
+                fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
             } catch (IOException) {
                 fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
             }
