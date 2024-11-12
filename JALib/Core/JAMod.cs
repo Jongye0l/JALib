@@ -72,6 +72,7 @@ public abstract class JAMod {
         Gid = gid;
         ModSetting = new JAModSetting(settingPath ?? System.IO.Path.Combine(modEntry.Path, "Settings.json"));
         ModSetting.SetupType(settingType, this);
+        SetupStaticField();
     }
 
     protected JAMod() {
