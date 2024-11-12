@@ -93,6 +93,7 @@ public class JABootstrap {
 
     public static void Load(UnityModManager.ModEntry modEntry) {
         LoadCount++;
+        modEntry.Info.DisplayName = modEntry.Info.Id + " <color=gray>[Waiting JALib...]</color>";
         Task.Run(async () => {
             bool beta = InitializeVersion(modEntry);
             JAModInfo modInfo = LoadModInfo(modEntry, beta);
