@@ -78,13 +78,13 @@ public class JABootstrap {
             string dependencyPath = modInfo.DependencyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.DependencyPath) : modInfo.DependencyPath;
             foreach(string file in Directory.GetFiles(dependencyPath)) {
                 try {
-                    domain.Load(File.ReadAllBytes(file));
+                    Assembly.LoadFrom(file);
                 } catch (Exception e) {
                     modInfo.ModEntry.Logger.LogException(e);
                 }
             }
         }
-        Assembly modAssembly = domain.Load(File.ReadAllBytes(modInfo.AssemblyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.AssemblyPath) : modInfo.AssemblyPath));
+        Assembly modAssembly = Assembly.LoadFrom(modInfo.AssemblyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.AssemblyPath) : modInfo.AssemblyPath);
         Type modType = modAssembly.GetType(modInfo.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
         Activator.CreateInstance(modType, (BindingFlags) 15420, null, [modInfo.ModEntry], null, null);

@@ -2,7 +2,6 @@
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
-using HarmonyLib;
 using JALib.API;
 using JALib.API.Packets;
 using JALib.Bootstrap;
@@ -199,7 +198,7 @@ class RawModData {
         if(!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
         string assemblyPath = info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath;
         string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileNameWithoutExtension(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + ".dll");
-        if(!File.Exists(cacheAssemblyPath)) File.Copy(assemblyPath, cacheAssemblyPath);
+        if(!File.Exists(cacheAssemblyPath)) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath);
         foreach(string file in Directory.GetFiles(cachePath)) {
             if(file == cacheAssemblyPath || !file.EndsWith(".dll")) continue;
             try {
@@ -208,7 +207,7 @@ class RawModData {
                 // ignored
             }
         }
-        Assembly modAssembly = Assembly.LoadFile(cacheAssemblyPath);
+        Assembly modAssembly = AssemblyLoader.LoadAssembly(cacheAssemblyPath);
         Type modType = modAssembly.GetType(info.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
         ConstructorInfo constructor = modType.Constructor([]) ?? modType.Constructor(typeof(UnityModManager.ModEntry));
