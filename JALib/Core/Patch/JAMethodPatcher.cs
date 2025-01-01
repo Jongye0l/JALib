@@ -1034,30 +1034,36 @@ class JAMethodPatcher {
     }
 
     private static IEnumerable<CodeInstruction> ChangeParameter(IEnumerable<CodeInstruction> instructions, ILGenerator generator) {
-        List<CodeInstruction> list = instructions.ToList();
+        List<CodeInstruction> list = instructions as List<CodeInstruction> ?? instructions.ToList();
         for(int i = 0; i < list.Count; i++) {
             int index = GetParameterIndex(list[i], out bool set, out bool loc);
             if(index <= -1) continue;
+            CodeInstruction code = list[i];
             if(_parameterMap.TryGetValue(index, out int newIndex)) {
                 list[i] = GetParameterInstruction(newIndex, set, loc);
+                list[i].labels = code.labels;
+                list[i].blocks = code.blocks;
             } else if(_parameterFields.TryGetValue(index, out FieldInfo info)) {
                 if(info.IsStatic) list[i] = new CodeInstruction(set ? OpCodes.Stsfld : loc ? OpCodes.Ldsflda : OpCodes.Ldsfld, info);
                 else if(!set) {
-                    list[i++] = new CodeInstruction(OpCodes.Ldarg_0);
+                    list[i++] = new CodeInstruction(OpCodes.Ldarg_0) { labels = code.labels, blocks = code.blocks};
                     list.Insert(i, new CodeInstruction(loc ? OpCodes.Ldflda : OpCodes.Ldfld, info));
                 } else {
                     if(i > 0 && IsNonPopLdCode(list[i - 1].opcode)) {
-                        list.Insert(i++ - 1, new CodeInstruction(OpCodes.Ldarg_0));
-                        list[i] = new CodeInstruction(OpCodes.Stfld, info);
+                        CodeInstruction code2 = list[i - 1];
+                        list.Insert(i++ - 1, new CodeInstruction(OpCodes.Ldarg_0) { labels = code2.labels, blocks = code2.blocks });
+                        code2.labels = [];
+                        code2.blocks = [];
+                        list[i] = new CodeInstruction(OpCodes.Stfld, info) { labels = code.labels, blocks = code.blocks };
                     } else {
                         LocalBuilder local = generator.DeclareLocal(info.FieldType);
-                        list[i++] = new CodeInstruction(OpCodes.Stloc, local);
+                        list[i++] = new CodeInstruction(OpCodes.Stloc, local) { labels = code.labels, blocks = code.blocks };
                         list.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
                         list.Insert(i++, new CodeInstruction(OpCodes.Ldloc, local));
                         list.Insert(i, new CodeInstruction(OpCodes.Stfld, info));
                     }
                 }
-            } else list[i] = new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2);
+            } else list[i] = new CodeInstruction(set ? OpCodes.Starg : OpCodes.Ldarg, index * -1 - 2) { labels = code.labels, blocks = code.blocks };
         }
         return list;
     }
