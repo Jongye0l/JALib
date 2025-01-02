@@ -71,7 +71,9 @@ public class JALibController extends CustomController {
         output.writeUTF(modData.getBetaVersion().toString());
         output.writeBoolean(modData.isForceUpdate());
         output.writeBoolean(modData.isForceUpdateBeta());
-        output.writeUTF((beta ? modData.isForceUpdateBeta() : modData.isForceUpdate()) || modData.checkForceUpdate(version) ?
+        boolean needUpdate = version.isUpper(beta ? modData.getBetaVersion() : modData.getVersion())
+            && (beta ? modData.isForceUpdateBeta() : modData.isForceUpdate()) || modData.checkForceUpdate(version);
+        output.writeUTF(needUpdate ?
             (beta ? modData.getBetaVersion() : modData.getVersion()).toString()
             : null);
         Language[] languages = modData.getAvailableLanguages();
