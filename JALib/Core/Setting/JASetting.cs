@@ -58,11 +58,16 @@ public class JASetting : IDisposable {
     }
 
     private Version ToVersion(JToken token) {
-        int major = token["Major"].Value<int>();
-        int minor = token["Minor"].Value<int>();
-        int build = token["Build"].Value<int>();
-        int revision = token["Revision"].Value<int>();
-        return build == -1 ? new Version(major, minor) : revision == -1 ? new Version(major, minor, build) : new Version(major, minor, build, revision);
+        try {
+            return token.ToObject<Version>();
+        } catch (Exception) {
+            JObject obj = token as JObject;
+            int major = obj["Major"].Value<int>();
+            int minor = obj["Minor"].Value<int>();
+            int build = obj["Build"].Value<int>();
+            int revision = obj["Revision"].Value<int>();
+            return build == -1 ? new Version(major, minor) : revision == -1 ? new Version(major, minor, build) : new Version(major, minor, build, revision);
+        }
     }
 
     private bool IsSettingType(Type type) {
