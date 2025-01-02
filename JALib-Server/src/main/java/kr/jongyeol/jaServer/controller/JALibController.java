@@ -72,7 +72,7 @@ public class JALibController extends CustomController {
         output.writeBoolean(modData.isForceUpdate());
         output.writeBoolean(modData.isForceUpdateBeta());
         boolean needUpdate = version.isUpper(beta ? modData.getBetaVersion() : modData.getVersion())
-            && (beta ? modData.isForceUpdateBeta() : modData.isForceUpdate()) || modData.checkForceUpdate(version);
+            && ((beta ? modData.isForceUpdateBeta() : modData.isForceUpdate()) || modData.checkForceUpdate(version));
         output.writeUTF(needUpdate ?
             (beta ? modData.getBetaVersion() : modData.getVersion()).toString()
             : null);
