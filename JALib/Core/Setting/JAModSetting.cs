@@ -6,7 +6,7 @@ using UnityEngine;
 namespace JALib.Core.Setting;
 
 class JAModSetting : JASetting {
-    public string path;
+    private string path;
     public Version LatestVersion;
     public Version LatestBetaVersion;
     public bool ForceUpdate;
