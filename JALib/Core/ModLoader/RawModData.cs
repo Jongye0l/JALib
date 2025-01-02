@@ -43,7 +43,7 @@ class RawModData {
             else {
                 GetModInfo apiInfo = modInfoTask.Result;
                 if(apiInfo.Success) {
-                    bool notLatest = apiInfo.LatestVersion > info.ModEntry.Version;
+                    bool notLatest = (setting.Beta ? apiInfo.LatestBetaVersion : apiInfo.LatestVersion) > info.ModEntry.Version;
                     modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
                     if(apiInfo.RequestedVersion != null) data.DownloadRequest(apiInfo.RequestedVersion);
                 }
@@ -219,6 +219,11 @@ class RawModData {
         loadDependencies = false;
         data.LoadState = ModLoadState.Initializing;
         modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
+        GetModInfo apiInfo = modInfoTask.IsCompletedSuccessfully ? modInfoTask.Result : null;
+        if(apiInfo != null) {
+            bool notLatest = (setting.Beta ? apiInfo.LatestBetaVersion : apiInfo.LatestVersion) > info.ModEntry.Version;
+            modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
+        }
         LoadDependencies();
     }
 }
