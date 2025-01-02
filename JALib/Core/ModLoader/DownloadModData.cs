@@ -21,6 +21,7 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
 
     public void Download() {
         if(data.LoadState == ModLoadState.Downloading) return;
+        JALib.Instance.Log("Downloading " + data.name + " V" + targetVersion);
         data.LoadState = ModLoadState.Downloading;
         downloadTask = JApi.Send(new DownloadMod(data.name, targetVersion, data.RawModData?.info.ModEntry.Path), data.RawModData == null);
         downloadTask.GetAwaiter().UnsafeOnCompleted(DownloadComplete);
