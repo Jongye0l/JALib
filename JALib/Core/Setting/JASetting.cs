@@ -38,13 +38,22 @@ public class JASetting : IDisposable {
                 SettingNameAttribute nameAttribute = field.GetCustomAttribute<SettingNameAttribute>();
                 string name = nameAttribute?.Name ?? field.Name;
                 if(JsonObject.TryGetValue(name, out JToken token)) {
-                    field.SetValue(this, IsSettingType(field.FieldType) ? SetupJASetting(field.FieldType, token) : token.ToObject(field.FieldType));
+                    field.SetValue(this, IsSettingType(field.FieldType) ? SetupJASetting(field.FieldType, token) :
+                                         field.FieldType == typeof(Version) ? ToVersion(token) : token.ToObject(field.FieldType));
                     JsonObject.Remove(name);
                 } else if(IsSettingType(field.FieldType)) field.SetValue(this, SetupJASetting(field.FieldType, null));
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
         }
+    }
+
+    private Version ToVersion(JToken token) {
+        int major = token["Major"].Value<int>();
+        int minor = token["Minor"].Value<int>();
+        int build = token["Build"].Value<int>();
+        int revision = token["Revision"].Value<int>();
+        return build == -1 ? new Version(major, minor) : revision == -1 ? new Version(major, minor, build) : new Version(major, minor, build, revision);
     }
 
     private bool IsSettingType(Type type) {

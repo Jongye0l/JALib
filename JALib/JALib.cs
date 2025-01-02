@@ -68,7 +68,10 @@ class JALib : JAMod {
             }
             key.SetValue("Port", portTask.Result);
         }
-        if(File.Exists(applicationPath)) return;
+        if(File.Exists(applicationPath)) {
+            FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(applicationPath);
+            if(Version.Parse(versionInfo.FileVersion) >= new Version(1, 0, 0, 1)) return;
+        }
         Directory.CreateDirectory(applicationFolderPath);
         Process[] processes = Process.GetProcessesByName("JALib ModApplicator.exe");
         if(processes.Length > 0) {
