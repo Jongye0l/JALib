@@ -5,6 +5,7 @@ using JALib.Tools;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using UnityModManagerNet;
 
 namespace JALib.Core.Setting;
 
@@ -37,14 +38,22 @@ public class JASetting : IDisposable {
             foreach(FieldInfo field in jsonFields) {
                 SettingNameAttribute nameAttribute = field.GetCustomAttribute<SettingNameAttribute>();
                 string name = nameAttribute?.Name ?? field.Name;
-                if(JsonObject.TryGetValue(name, out JToken token)) {
-                    field.SetValue(this, IsSettingType(field.FieldType) ? SetupJASetting(field.FieldType, token) :
-                                         field.FieldType == typeof(Version) ? ToVersion(token) : token.ToObject(field.FieldType));
-                    JsonObject.Remove(name);
-                } else if(IsSettingType(field.FieldType)) field.SetValue(this, SetupJASetting(field.FieldType, null));
+                try {
+                    if(JsonObject.TryGetValue(name, out JToken token)) {
+                        field.SetValue(this, IsSettingType(field.FieldType)     ? SetupJASetting(field.FieldType, token) :
+                                             field.FieldType == typeof(Version) ? ToVersion(token) : token.ToObject(field.FieldType));
+                        JsonObject.Remove(name);
+                    } else if(IsSettingType(field.FieldType)) field.SetValue(this, SetupJASetting(field.FieldType, null));
+                } catch (Exception e) {
+                    JAMod mod = Mod ?? JALib.Instance;
+                    if(mod != null) mod.LogException("Failed To Load Field: " + name, e);
+                    else UnityModManager.Logger.LogException("Failed To Load Field: " + name, e);
+                }
             }
         } catch (Exception e) {
-            JALib.Instance.LogException(e);
+            JAMod mod = Mod ?? JALib.Instance;
+            if(mod != null) mod.LogException(e);
+            else UnityModManager.Logger.LogException(e);
         }
     }
 
