@@ -88,6 +88,11 @@ public abstract class JAMod {
     }
 
     internal void Setup(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
+        if(typeof(JABootstrap).Assembly.GetName().Version == new Version(1, 0, 0, 0)) SetupOldBootstrap(modEntry, modInfo, apiInfo, setting);
+        else SetupCurBootstrap(modEntry, modInfo, apiInfo, setting);
+    }
+
+    internal void SetupCurBootstrap(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
         try {
             ModEntry = modEntry;
             Name = ModEntry.Info.Id;
@@ -98,6 +103,33 @@ public abstract class JAMod {
             Gid = apiInfo?.Gid ?? modInfo.Gid;
             Localization = Gid != -1 ? new JALocalization(this) : null;
             Discord = ModSetting.Discord ?? modInfo.Discord ?? Discord;
+            modEntry.OnToggle = OnToggle;
+            modEntry.OnUnload = OnUnload0;
+            mods[Name] = this;
+            SetupStaticField();
+            if(apiInfo != null) ModInfo(apiInfo);
+            SaveSetting();
+            OnSetup();
+            Log("JAMod " + Name + " is Initialized");
+        } catch (Exception e) {
+            modEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
+            Error("Failed to Initialize JAMod " + Name);
+            LogException(e);
+            throw;
+        }
+    }
+
+    internal void SetupOldBootstrap(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
+        try {
+            ModEntry = modEntry;
+            Name = ModEntry.Info.Id;
+            if(ModSetting == null) {
+                ModSetting = setting;
+                setting.SetupType(SettingType, this);
+            } else ModSetting.Combine(setting);
+            Gid = apiInfo?.Gid ?? 0;
+            Localization = Gid != -1 ? new JALocalization(this) : null;
+            Discord = ModSetting.Discord ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
             mods[Name] = this;
