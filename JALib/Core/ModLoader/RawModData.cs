@@ -218,6 +218,7 @@ class RawModData {
         if(modType == null) throw new TypeLoadException("Type not found.");
         ConstructorInfo constructor = modType.Constructor([]) ?? modType.Constructor(typeof(UnityModManager.ModEntry));
         data.mod = (JAMod) constructor.Invoke(constructor.GetParameters().Length == 0 ? [] : [info.ModEntry]);
+        data.mod.reloadCount = repeatCount;
         data.mod.Setup(info.ModEntry, info, modInfoTask.IsCompletedSuccessfully ? modInfoTask.Result : null, setting);
     }
 
