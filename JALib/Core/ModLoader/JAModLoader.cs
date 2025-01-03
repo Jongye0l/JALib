@@ -22,10 +22,10 @@ class JAModLoader {
         modLoadData.LoadState = ModLoadState.Loaded;
     }
 
-    public static void AddMod(JAModInfo modInfo) {
+    public static void AddMod(JAModInfo modInfo, int repeatCount) {
         JAModLoader modLoadData = GetModLoadData(modInfo.ModEntry.Info.Id);
         count++;
-        modLoadData.RawModData = new RawModData(modLoadData, modInfo);
+        modLoadData.RawModData = new RawModData(modLoadData, modInfo, repeatCount);
     }
 
     public static void CheckDependenciesLoadComplete() {

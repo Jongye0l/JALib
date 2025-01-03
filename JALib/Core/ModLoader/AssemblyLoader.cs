@@ -15,7 +15,7 @@ class AssemblyLoader {
 
     public static Assembly LoadAssembly(string path) {
         Assembly assembly = Assembly.LoadFrom(path);
-        LoadedAssemblies.Add(assembly.GetName().Name[..^6], assembly);
+        LoadedAssemblies[assembly.GetName().Name[..^6]] = assembly;
         return assembly;
     }
 
@@ -42,9 +42,9 @@ class AssemblyLoader {
 
     private static bool CheckType(ITypeDefOrRef type) {
         while(true) {
+            if(type == null) return false;
             if(type.FullName == "UnityEngine.MonoBehaviour") return true;
             type = type.GetBaseType();
-            if(type == null) return false;
         }
     }
 }

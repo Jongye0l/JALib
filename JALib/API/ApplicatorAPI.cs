@@ -71,6 +71,6 @@ Setup:
     public static void LoadMod(string modName) {
         JAMod mod = JAMod.GetMods(modName);
         if(mod == null) ForceApplyMod.ApplyMod(Path.Combine(UnityModManager.modsPath, modName));
-        else _ = mod.ForceReloadMod();
+        else mod.ForceReloadMod();
     }
 }

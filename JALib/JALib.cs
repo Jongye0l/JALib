@@ -85,7 +85,7 @@ class JALib : JAMod {
 
     private static void LoadModInfo(JAModInfo modInfo) {
         try {
-            JAModLoader.AddMod(modInfo);
+            JAModLoader.AddMod(modInfo, 0);
         } catch (Exception e) {
             modInfo.ModEntry.Logger.LogException(e);
         }

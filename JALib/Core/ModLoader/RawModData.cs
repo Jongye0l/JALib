@@ -22,11 +22,13 @@ class RawModData {
     public bool checkUpdated;
     public bool loadDependencies;
     public List<JAModLoader> waitingLoad;
+    public int repeatCount;
 
-    public RawModData(JAModLoader data, JAModInfo info) {
+    public RawModData(JAModLoader data, JAModInfo info, int repeatCount) {
         data.LoadState = ModLoadState.Initializing;
         this.data = data;
         this.info = info;
+        this.repeatCount = repeatCount;
         modInfo = info.ModEntry.Info;
         name = modInfo.Id;
         modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
@@ -39,15 +41,16 @@ class RawModData {
 
     public void CheckUpdate() {
         try {
-            if(!modInfoTask.IsCompletedSuccessfully) info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception.InnerException ?? modInfoTask.Exception);
-            else {
-                GetModInfo apiInfo = modInfoTask.Result;
-                if(apiInfo.Success) {
-                    bool notLatest = (setting.Beta ? apiInfo.LatestBetaVersion : apiInfo.LatestVersion) > info.ModEntry.Version;
-                    modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
-                    if(apiInfo.RequestedVersion != null) data.DownloadRequest(apiInfo.RequestedVersion);
+            if(repeatCount == 0)
+                if(!modInfoTask.IsCompletedSuccessfully) info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception.InnerException ?? modInfoTask.Exception);
+                else {
+                    GetModInfo apiInfo = modInfoTask.Result;
+                    if(apiInfo.Success) {
+                        bool notLatest = (setting.Beta ? apiInfo.LatestBetaVersion : apiInfo.LatestVersion) > info.ModEntry.Version;
+                        modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
+                        if(apiInfo.RequestedVersion != null) data.DownloadRequest(apiInfo.RequestedVersion);
+                    }
                 }
-            }
             checkUpdated = true;
             CheckFinishInit();
         } catch (Exception e) {
@@ -198,7 +201,10 @@ class RawModData {
         if(!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
         string assemblyPath = info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath;
         string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileNameWithoutExtension(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + ".dll");
-        if(!File.Exists(cacheAssemblyPath)) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath);
+        if(!File.Exists(cacheAssemblyPath)) {
+            if(repeatCount == 0) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath);
+            else AssemblyLoader.CreateCacheReloadAssembly(assemblyPath, cacheAssemblyPath, repeatCount);
+        }
         foreach(string file in Directory.GetFiles(cachePath)) {
             if(file == cacheAssemblyPath || !file.EndsWith(".dll")) continue;
             try {
