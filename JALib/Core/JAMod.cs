@@ -21,7 +21,6 @@ public abstract class JAMod {
     private static Dictionary<string, JAMod> mods = new();
     private static ModuleBuilder _moduleBuilder;
     internal static AssemblyBuilder assemblyBuilder;
-    private static string loadScene;
 
     internal static ModuleBuilder ModuleBuilder {
         get {
