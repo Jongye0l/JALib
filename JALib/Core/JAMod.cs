@@ -345,14 +345,15 @@ public abstract class JAMod {
     protected virtual Task OnDisableAsync() => Task.CompletedTask;
 
     internal void OnGUI0(UnityModManager.ModEntry modEntry) {
+        JALocalization localization = JALib.Instance.Localization;
         if(ModSetting.UnlockBeta && ModSetting.LatestVersion != null) {
             GUILayout.BeginHorizontal();
             GUILayout.Label("Mod Branch: ");
-            if(GUILayout.Button(Bold("Default", !ModSetting.Beta), GUILayout.Width(60)) && ModSetting.Beta) {
+            if(GUILayout.Button(Bold(localization["Default"], !ModSetting.Beta), GUILayout.Width(60)) && ModSetting.Beta) {
                 ModSetting.Beta = false;
                 ChangeBranch();
             }
-            if(GUILayout.Button(Bold("Beta", ModSetting.Beta), GUILayout.Width(60)) && !ModSetting.Beta) {
+            if(GUILayout.Button(Bold(localization["Beta"], ModSetting.Beta), GUILayout.Width(60)) && !ModSetting.Beta) {
                 ModSetting.Beta = true;
                 ChangeBranch();
             }
@@ -361,12 +362,12 @@ public abstract class JAMod {
         }
         if(!IsLatest && downloadTask == null) {
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Mod Is Outdated! Latest Version: " + LatestVersion);
-            if(GUILayout.Button("Update", GUILayout.Width(120))) DownloadLatest();
+            GUILayout.Label(localization["Outdated"]);
+            if(GUILayout.Button(localization["Update"], GUILayout.Width(120))) DownloadLatest();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
-        if(downloadTask != null) GUILayout.Label("<color=cyan>Updating...</color>");
+        if(downloadTask != null) GUILayout.Label($"<color=cyan>{localization["Updating"]}</color>");
         else {
             OnGUI();
             foreach(Feature feature in Features) feature.OnGUI0();
