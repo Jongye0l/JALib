@@ -132,7 +132,7 @@ public class JALocalization {
     }
 
     internal void Dispose() {
-        GC.SuppressFinalize(_localizations);
+        if(_localizations != null) GC.SuppressFinalize(_localizations);
         GC.SuppressFinalize(this);
     }
 }
