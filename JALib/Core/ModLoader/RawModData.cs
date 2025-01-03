@@ -32,7 +32,7 @@ class RawModData {
         modInfo = info.ModEntry.Info;
         name = modInfo.Id;
         modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
-        setting = new JAModSetting((typeof(JABootstrap).Assembly.GetName().Version == new Version(1, 0,0, 0) ? GetSettingPath() : null) ?? Path.Combine(info.ModEntry.Path, "Settings.json"));
+        setting = new JAModSetting((typeof(JABootstrap).Assembly.GetName().Version != new Version(1, 0,0, 0) ? GetSettingPath() : null) ?? Path.Combine(info.ModEntry.Path, "Settings.json"));
         if(info.IsBetaBranch) setting.UnlockBeta = setting.Beta = true;
         modInfoTask = JApi.Send(new GetModInfo(info, setting.Beta), false);
         modInfoTask.GetAwaiter().UnsafeOnCompleted(CheckUpdate);
