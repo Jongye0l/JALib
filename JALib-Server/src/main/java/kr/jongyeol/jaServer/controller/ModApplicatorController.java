@@ -21,7 +21,19 @@ public class ModApplicatorController extends CustomController {
         String lang = (isKorean ? "ko" : "en");
         ModData modData = ModData.getModData(name);
         boolean forceUpdate = false;
-        Version ver = new Version(version);
+        Version ver;
+        switch(version.toLowerCase()) {
+            case "latest":
+                ver = modData.getVersion();
+                version = modData.getVersion().toString();
+                break;
+            case "betalatest":
+                ver = modData.getBetaVersion();
+                version = modData.getBetaVersion().toString();
+                break;
+            default:
+                ver = new Version(version);
+        }
         if(!ver.equals(modData.getVersion()) && !ver.equals(modData.getBetaVersion())) {
             boolean isBeta = modData.getBetaMap().get(ver);
             forceUpdate = true;
