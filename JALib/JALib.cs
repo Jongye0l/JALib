@@ -25,6 +25,7 @@ class JALib : JAMod {
     private static bool enableInit;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(typeof(JALibSetting)) {
+        Instance = this;
         try {
             JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
         } catch (Exception) {
