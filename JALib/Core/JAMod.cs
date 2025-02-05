@@ -88,6 +88,7 @@ public abstract class JAMod {
     }
 
     internal void Setup(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
+        modEntry.SetValue("mAssembly", GetType().Assembly);
         if(typeof(JABootstrap).Assembly.GetName().Version == new Version(1, 0, 0, 0)) SetupOldBootstrap(modEntry, modInfo, apiInfo, setting);
         else SetupCurBootstrap(modEntry, modInfo, apiInfo, setting);
     }
