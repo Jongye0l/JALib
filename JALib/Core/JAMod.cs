@@ -38,7 +38,7 @@ public abstract class JAMod {
     public Version Version => ModEntry.Version;
     public string Path => ModEntry.Path;
     protected Version LatestVersion => ModSetting.Beta ? ModSetting.LatestBetaVersion : ModSetting.LatestVersion;
-    public bool IsLatest => LatestVersion == null && LatestVersion <= Version;
+    public bool IsLatest => LatestVersion == null || LatestVersion <= Version;
     protected internal List<Feature> Features { get; private set; }
     protected SystemLanguage[] AvailableLanguages => ModSetting.AvailableLanguages;
     internal JAModSetting ModSetting;
