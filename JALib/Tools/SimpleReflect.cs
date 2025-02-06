@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using JALib.Core.ModLoader;
 using JetBrains.Annotations;
 
 namespace JALib.Tools;
@@ -179,4 +180,16 @@ public static class SimpleReflect {
                                                     || type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong);
 
     public static bool IsFloat(this Type type) => type == typeof(float) || type == typeof(double) || type == typeof(decimal);
+
+    public static Type GetType(string typeName) {
+        Assembly adofaiAssembly = typeof(ADOBase).Assembly;
+        Type type = adofaiAssembly.GetType(typeName);
+        if(type != null) return type;
+        foreach(Assembly assembly in AssemblyLoader.LoadedAssemblies.Values.Concat(AppDomain.CurrentDomain.GetAssemblies())) {
+            if(assembly == adofaiAssembly) continue;
+            type = assembly.GetType(typeName);
+            if(type != null) return type;
+        }
+        return null;
+    }
 }

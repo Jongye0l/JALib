@@ -248,25 +248,15 @@ public class JAPatcher : IDisposable {
         else list.Add(type.Method(name, argumentTypes));
     }
 
-    private Type FindType(string name) {
-        Type type = Type.GetType(name);
-        if(type != null) return type;
-        foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-            type = assembly.GetType(name);
-            if(type != null) return type;
-        }
-        throw new TypeLoadException();
-    }
-
     private void Patch(JAPatchBaseAttribute attribute) {
         try {
             if(attribute.MinVersion > JAPatchBaseAttribute.GetCurrentVersion || attribute.MaxVersion < JAPatchBaseAttribute.GetCurrentVersion) return;
             if(attribute.MethodBase == null) {
                 if(attribute is JAOverridePatchAttribute overridePatch) {
                     attribute.MethodName ??= overridePatch.Method.Name;
-                    if(attribute.Class != null) attribute.ClassType ??= FindType(attribute.Class);
+                    if(attribute.Class != null) attribute.ClassType ??= SimpleReflect.GetType(attribute.Class);
                     attribute.ClassType ??= overridePatch.Method.DeclaringType.BaseType;
-                } else attribute.ClassType ??= FindType(attribute.Class);
+                } else attribute.ClassType ??= SimpleReflect.GetType(attribute.Class);
                 if(attribute.ArgumentTypesType == null && attribute.ArgumentTypes != null) attribute.ArgumentTypesType = new Type[attribute.ArgumentTypes.Length];
                 if(attribute.ArgumentTypesType != null && attribute.ArgumentTypes != null) for(int i = 0; i < attribute.ArgumentTypes.Length; i++) attribute.ArgumentTypesType[i] ??= Type.GetType(attribute.ArgumentTypes[i]);
                 List<MethodBase> list = [];
