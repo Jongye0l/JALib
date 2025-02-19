@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using JALib.Core.ModLoader;
@@ -191,5 +192,15 @@ public static class SimpleReflect {
             if(type != null) return type;
         }
         return null;
+    }
+
+    public static MethodInfo[] GetDynamicMethods(string methodName) {
+        List<MethodInfo> methods = [];
+        foreach(Assembly assembly in AssemblyLoader.LoadedAssemblies.Values.Concat(AppDomain.CurrentDomain.GetAssemblies())) {
+            Type type = assembly.GetType("MonoMod.Utils.DynamicMethodDefinition");
+            if(type == null) continue;
+            foreach(MethodInfo method in type.Methods()) if(method.Name == methodName) methods.Add(method);
+        }
+        return methods.ToArray();
     }
 }
