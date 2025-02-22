@@ -4,6 +4,7 @@ using System.Reflection;
 using HarmonyLib;
 using JALib.Core.ModLoader;
 using JetBrains.Annotations;
+using UnityModManagerNet;
 
 namespace JALib.Tools;
 
@@ -192,6 +193,24 @@ public static class SimpleReflect {
             if(assembly == adofaiAssembly) continue;
             type = assembly.GetType(typeName);
             if(type != null) return type;
+        }
+        List<Assembly> loadedAssemblies = AssemblyLoader.LoadedAssemblies.Values.Concat(AppDomain.CurrentDomain.GetAssemblies()).ToList();
+        foreach(UnityModManager.ModEntry modEntry in UnityModManager.modEntries) {
+            for(int i = 0; i < 6; i++) {
+                Assembly assembly = i switch {
+                    0 => modEntry.Assembly,
+                    1 => modEntry.OnToggle?.Method.DeclaringType?.Assembly,
+                    2 => modEntry.OnGUI?.Method.DeclaringType?.Assembly,
+                    3 => modEntry.OnUpdate?.Method.DeclaringType?.Assembly,
+                    4 => modEntry.OnFixedUpdate?.Method.DeclaringType?.Assembly,
+                    5 => modEntry.OnLateUpdate?.Method.DeclaringType?.Assembly,
+                    _ => null
+                };
+                if(assembly == null || loadedAssemblies.Contains(assembly)) continue;
+                type = assembly.GetType(typeName);
+                if(type != null) return type;
+                loadedAssemblies.Add(assembly);
+            }
         }
         return null;
     }
