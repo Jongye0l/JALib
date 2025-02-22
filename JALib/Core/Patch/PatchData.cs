@@ -11,7 +11,6 @@ public class PatchData {
     public MethodBase[] Finalizers;
     public MethodBase[] Replaces;
     public MethodBase[] Removes;
-    public MethodBase ReversePatch;
 
     internal PatchData() {}
 }
