@@ -186,7 +186,7 @@ public static class SimpleReflect {
 
     public static Type GetType(string typeName) {
         Assembly adofaiAssembly = typeof(ADOBase).Assembly;
-        type = adofaiAssembly.GetType(typeName);
+        Type type = adofaiAssembly.GetType(typeName);
         if(type != null) return type;
         foreach(Assembly assembly in AssemblyLoader.LoadedAssemblies.Values.Concat(AppDomain.CurrentDomain.GetAssemblies())) {
             if(assembly == adofaiAssembly) continue;
