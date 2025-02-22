@@ -185,8 +185,6 @@ public static class SimpleReflect {
     public static bool IsFloat(this Type type) => type == typeof(float) || type == typeof(double) || type == typeof(decimal);
 
     public static Type GetType(string typeName) {
-        Type type = Type.GetType(typeName);
-        if(type != null) return type;
         Assembly adofaiAssembly = typeof(ADOBase).Assembly;
         type = adofaiAssembly.GetType(typeName);
         if(type != null) return type;
