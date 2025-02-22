@@ -183,8 +183,10 @@ public static class SimpleReflect {
     public static bool IsFloat(this Type type) => type == typeof(float) || type == typeof(double) || type == typeof(decimal);
 
     public static Type GetType(string typeName) {
+        Type type = Type.GetType(typeName);
+        if(type != null) return type;
         Assembly adofaiAssembly = typeof(ADOBase).Assembly;
-        Type type = adofaiAssembly.GetType(typeName);
+        type = adofaiAssembly.GetType(typeName);
         if(type != null) return type;
         foreach(Assembly assembly in AssemblyLoader.LoadedAssemblies.Values.Concat(AppDomain.CurrentDomain.GetAssemblies())) {
             if(assembly == adofaiAssembly) continue;
@@ -192,15 +194,5 @@ public static class SimpleReflect {
             if(type != null) return type;
         }
         return null;
-    }
-
-    public static MethodInfo[] GetDynamicMethods(string methodName) {
-        List<MethodInfo> methods = [];
-        foreach(Assembly assembly in AssemblyLoader.LoadedAssemblies.Values.Concat(AppDomain.CurrentDomain.GetAssemblies())) {
-            Type type = assembly.GetType("MonoMod.Utils.DynamicMethodDefinition");
-            if(type == null) continue;
-            foreach(MethodInfo method in type.Methods()) if(method.Name == methodName) methods.Add(method);
-        }
-        return methods.ToArray();
     }
 }
