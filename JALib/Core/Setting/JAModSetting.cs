@@ -59,6 +59,7 @@ class JAModSetting : JASetting {
             base.PutFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e, [Mod, JALib.Instance]);
         }
     }
 
@@ -69,6 +70,7 @@ class JAModSetting : JASetting {
             base.RemoveFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e, [Mod, JALib.Instance]);
         }
     }
 
@@ -80,6 +82,7 @@ class JAModSetting : JASetting {
             RemoveFieldData();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e, [Mod, JALib.Instance]);
         }
     }
 
@@ -89,6 +92,7 @@ class JAModSetting : JASetting {
             base.Dispose0();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
         }
     }
 }

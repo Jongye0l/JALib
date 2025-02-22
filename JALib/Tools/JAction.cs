@@ -16,9 +16,11 @@ public class JAction(JAMod mod, Action action) {
             if(mod == null) {
                 JALib.Instance.Log("An error occurred while invoking an action " + action.Method.Name);
                 JALib.Instance.LogException(e);
+                JALib.Instance.ReportException(e);
             } else {
                 mod.Error("An error occurred while invoking an action.");
                 mod.LogException(e);
+                mod.ReportException(e);
             }
         }
     }

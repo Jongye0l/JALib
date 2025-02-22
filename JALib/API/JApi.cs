@@ -53,6 +53,7 @@ class JApi {
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
             _instance.completeLoadTask.TrySetResult(false);
             Restart();
         }
@@ -72,6 +73,7 @@ class JApi {
         } catch (Exception e) {
             JALib.Instance.Log("Failed to connect to the server: " + domain);
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
             _instance.completeLoadTask.TrySetResult(false);
             Restart();
         }

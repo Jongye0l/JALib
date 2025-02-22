@@ -31,6 +31,7 @@ public class JATask {
         } catch (Exception e) {
             mod.Error("An error occurred while running a task.");
             mod.LogException(e);
+            mod.ReportException(e);
         }
     }
 
@@ -63,6 +64,7 @@ public class JATask {
             } catch (Exception e) {
                 mod.Error("An error occurred while running a task.");
                 mod.LogException(e);
+                mod.ReportException(e);
             }
             builder.SetResult();
         }
@@ -86,6 +88,7 @@ public class JATask {
             } catch (Exception e) {
                 mod.Error("An error occurred while running a task.");
                 mod.LogException(e);
+                mod.ReportException(e);
                 return default;
             }
         }
@@ -120,6 +123,7 @@ public class JATask {
             } catch (Exception e) {
                 mod.Error("An error occurred while running a task.");
                 mod.LogException(e);
+                mod.ReportException(e);
             }
             builder.SetResult(default);
         }

@@ -52,8 +52,10 @@ public class JASetting : IDisposable {
             }
         } catch (Exception e) {
             JAMod mod = Mod ?? JALib.Instance;
-            if(mod != null) mod.LogException(e);
-            else UnityModManager.Logger.LogException(e);
+            if(mod != null) {
+                mod.LogException(e);
+                mod.ReportException(e);
+            } else UnityModManager.Logger.LogException(e);
         }
     }
 
@@ -125,6 +127,7 @@ public class JASetting : IDisposable {
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e, [Mod, JALib.Instance]);
         }
     }
 
@@ -147,6 +150,7 @@ public class JASetting : IDisposable {
             }
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e, [Mod, JALib.Instance]);
         }
     }
 
@@ -161,6 +165,7 @@ public class JASetting : IDisposable {
             GC.SuppressFinalize(this);
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e, [Mod, JALib.Instance]);
         }
     }
 
@@ -169,6 +174,7 @@ public class JASetting : IDisposable {
             Dispose0();
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
         }
     }
 }

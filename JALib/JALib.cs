@@ -107,6 +107,7 @@ class JALib : JAMod {
             JApi.Send(new GetModInfo(JaModInfo, ModSetting.Beta), false).ContinueWith(ModInfo);
         } catch (Exception e) {
             LogException(e);
+            ReportException(e);
         }
     }
 
@@ -119,6 +120,7 @@ class JALib : JAMod {
             SaveSetting();
         } catch (Exception e) {
             LogException(e);
+            ReportException(e);
         }
     }
 

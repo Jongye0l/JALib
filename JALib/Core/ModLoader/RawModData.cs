@@ -170,6 +170,7 @@ class RawModData {
             active = mod.OnToggle(info.ModEntry, true);
         } catch (Exception e) {
             mod.LogException(e);
+            mod.ReportException(e);
         }
         if(!active) mod.ModEntry.SetValue("mActive", false);
     }

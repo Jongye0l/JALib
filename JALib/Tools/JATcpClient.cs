@@ -83,6 +83,7 @@ public class JATcpClient : TcpClient {
         } catch (Exception e) {
             if(port == -1) throw;
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
         }
         Connect(host, port);
     }

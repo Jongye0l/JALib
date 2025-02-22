@@ -59,6 +59,7 @@ public abstract class Feature {
             Active = true;
         } catch (Exception e) {
             Mod.LogException(e);
+            Mod.ReportException(e);
         }
     }
 
@@ -70,6 +71,7 @@ public abstract class Feature {
             Active = false;
         } catch (Exception e) {
             Mod.LogException(e);
+            Mod.ReportException(e);
         }
     }
 
@@ -81,6 +83,7 @@ public abstract class Feature {
             OnUnload();
         } catch (Exception e) {
             Mod.LogException(e);
+            Mod.ReportException(e);
         }
         Patcher = null;
         Mod = null;
@@ -164,6 +167,7 @@ public abstract class Feature {
         } catch (Exception e) {
             Mod.Error("Error OnShowGUI in " + Name);
             Mod.LogException(e);
+            Mod.ReportException(e);
             _expanded = false;
         }
     }
@@ -177,6 +181,7 @@ public abstract class Feature {
         } catch (Exception e) {
             Mod.Error("Error OnHideGUI in " + Name);
             Mod.LogException(e);
+            Mod.ReportException(e);
         }
     }
 

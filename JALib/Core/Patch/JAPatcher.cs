@@ -55,6 +55,7 @@ public class JAPatcher : IDisposable {
             return false;
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
             return true;
         }
     }
@@ -102,6 +103,7 @@ public class JAPatcher : IDisposable {
             return false;
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
             return true;
         }
     }
@@ -172,6 +174,7 @@ public class JAPatcher : IDisposable {
             return false;
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
             return true;
         }
     }
@@ -333,6 +336,7 @@ public class JAPatcher : IDisposable {
         } catch (Exception e) {
             mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
             mod.LogException(e);
+            mod.ReportException(e);
             bool disabled = attribute is JAPatchAttribute { Disable: true };
             OnFailPatch?.Invoke(attribute.PatchId, disabled);
             if(!disabled) return;

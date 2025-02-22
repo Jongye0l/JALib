@@ -49,6 +49,7 @@ public class JALocalization {
         } catch (Exception e) {
             _jaMod.Error("Failed to load localization data.");
             _jaMod.LogException(e);
+            _jaMod.ReportException(e, [_jaMod, JALib.Instance]);
         }
     }
 
@@ -98,6 +99,7 @@ public class JALocalization {
             } catch (Exception e) {
                 mod.Error("Failed to load localization data.");
                 mod.LogException(e);
+                mod.ReportException(e);
             } finally {
                 httpClient.Dispose();
             }

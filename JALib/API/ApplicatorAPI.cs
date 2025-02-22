@@ -53,6 +53,7 @@ Setup:
             JATask.Run(JALib.Instance, new ApplicatorAPI(client).Run);
         } catch (Exception e) {
             JALib.Instance.LogException(e);
+            JALib.Instance.ReportException(e);
         }
     }
 
