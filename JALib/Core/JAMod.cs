@@ -96,6 +96,7 @@ public abstract class JAMod {
     internal void SetupCurBootstrap(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
         try {
             ModEntry = modEntry;
+            modEntry.SetValue("mAssembly", GetType().Assembly);
             Name = ModEntry.Info.Id;
             if(ModSetting == null) {
                 ModSetting = setting;
@@ -123,6 +124,7 @@ public abstract class JAMod {
     internal void SetupOldBootstrap(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
         try {
             ModEntry = modEntry;
+            modEntry.SetValue("mAssembly", GetType().Assembly);
             Name = ModEntry.Info.Id;
             if(ModSetting == null) {
                 ModSetting = setting;
