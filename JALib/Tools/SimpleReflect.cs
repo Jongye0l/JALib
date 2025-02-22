@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using JALib.Core;
 using JALib.Core.ModLoader;
 using JetBrains.Annotations;
 using UnityModManagerNet;
@@ -214,4 +215,26 @@ public static class SimpleReflect {
         }
         return null;
     }
+
+    public static UnityModManager.ModEntry GetMod(this Assembly assembly) {
+        if(assembly == typeof(JALib).Assembly) return JALib.Instance.ModEntry;
+        foreach(UnityModManager.ModEntry modEntry in UnityModManager.modEntries) {
+            if(modEntry.Assembly == assembly) return modEntry;
+            if(modEntry.OnToggle?.Method.DeclaringType?.Assembly == assembly) return modEntry;
+            if(modEntry.OnGUI?.Method.DeclaringType?.Assembly == assembly) return modEntry;
+            if(modEntry.OnUpdate?.Method.DeclaringType?.Assembly == assembly) return modEntry;
+            if(modEntry.OnFixedUpdate?.Method.DeclaringType?.Assembly == assembly) return modEntry;
+            if(modEntry.OnLateUpdate?.Method.DeclaringType?.Assembly == assembly) return modEntry;
+        }
+        return null;
+    }
+
+    public static UnityModManager.ModEntry GetMod(this Type type) => type.Assembly.GetMod();
+
+    public static JAMod GetJAMod(this Assembly assembly) {
+        foreach(JAMod jaMod in JAMod.GetMods()) if(jaMod.ModEntry.Assembly == assembly) return jaMod;
+        return null;
+    }
+
+    public static JAMod GetJAMod(this Type type) => type.Assembly.GetJAMod();
 }
