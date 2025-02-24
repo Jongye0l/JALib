@@ -214,6 +214,26 @@ public static class SimpleReflect {
         return null;
     }
 
+    public static Assembly[] GetAssemblies() {
+        HashSet<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Concat(AssemblyLoader.LoadedAssemblies.Values).ToHashSet();
+        foreach(UnityModManager.ModEntry modEntry in UnityModManager.modEntries) {
+            for(int i = 0; i < 6; i++) {
+                Assembly assembly = i switch {
+                    0 => modEntry.Assembly,
+                    1 => modEntry.OnToggle?.Method.DeclaringType?.Assembly,
+                    2 => modEntry.OnGUI?.Method.DeclaringType?.Assembly,
+                    3 => modEntry.OnUpdate?.Method.DeclaringType?.Assembly,
+                    4 => modEntry.OnFixedUpdate?.Method.DeclaringType?.Assembly,
+                    5 => modEntry.OnLateUpdate?.Method.DeclaringType?.Assembly,
+                    _ => null
+                };
+                if(assembly == null) continue;
+                assemblies.Add(assembly);
+            }
+        }
+        return assemblies.ToArray();
+    }
+
     public static UnityModManager.ModEntry GetMod(this Assembly assembly) {
         if(assembly == typeof(JALib).Assembly) return JALib.Instance.ModEntry;
         foreach(UnityModManager.ModEntry modEntry in UnityModManager.modEntries) {
