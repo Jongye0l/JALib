@@ -81,6 +81,7 @@ public abstract class JAMod {
         Features = [];
         Patcher = new JAPatcher(this);
         Patcher.OnFailPatch += OnFailPatch;
+        SetupStaticField();
     }
 
     protected JAMod(Type settingType) : this() {
@@ -108,7 +109,6 @@ public abstract class JAMod {
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
             mods[Name] = this;
-            SetupStaticField();
             if(apiInfo != null) ModInfo(apiInfo);
             SaveSetting();
             OnSetup();
@@ -137,7 +137,6 @@ public abstract class JAMod {
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
             mods[Name] = this;
-            SetupStaticField();
             if(apiInfo != null) ModInfo(apiInfo);
             SaveSetting();
             OnSetup();
