@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
 using HarmonyLib;
 using JALib.Bootstrap;
 using JALib.Tools;
@@ -54,8 +55,9 @@ public class JAPatcher : IDisposable {
             __result = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
             return false;
         } catch (Exception e) {
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e);
+            string key = "Fail Patch Method '" + original.FullDescription() + '\'';
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e);
             return true;
         }
     }
@@ -102,8 +104,9 @@ public class JAPatcher : IDisposable {
             __result = PatchReversePatchReverse(standin, original, postTranspiler, jaPatchInfo);
             return false;
         } catch (Exception e) {
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e);
+            string key = "Fail Reverse Patch Method '" + original.FullDescription() + "' to '" + standin.method.FullDescription() + '\'';
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e);
             return true;
         }
     }
@@ -173,8 +176,9 @@ public class JAPatcher : IDisposable {
             __result = JAMethodPatcher.GetInstructions(generator, method, maxTranspilers, jaPatchInfo);
             return false;
         } catch (Exception e) {
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e);
+            string key = "Fail to Get Instructions '" + method.FullDescription() + '\'';
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e);
             return true;
         }
     }
@@ -334,9 +338,16 @@ public class JAPatcher : IDisposable {
             else if(attribute is JAOverridePatchAttribute overridePatchAttribute) OverridePatch(attribute.MethodBase, attribute.Method, overridePatchAttribute, mod);
             else throw new NotSupportedException("Unsupported Patch Type");
         } catch (Exception e) {
-            mod.Error($"Mod {mod.Name} Id {attribute.PatchId} Patch Failed");
-            mod.LogException(e);
-            mod.ReportException(e);
+            StringBuilder keyBuilder = new();
+            if(attribute is JAPatchAttribute patchAttribute) keyBuilder.Append(patchAttribute.PatchType);
+            else if(attribute is JAReversePatchAttribute) keyBuilder.Append("Reverse");
+            else if(attribute is JAOverridePatchAttribute overridePatchAttribute)
+                keyBuilder.Append("Override ").Append(overridePatchAttribute.targetType?.FullName ?? overridePatchAttribute.targetTypeName).Append(" Type");
+            else keyBuilder.Append("Unknown");
+            keyBuilder.Append(" Patch ").Append(attribute.PatchId).Append(" to ").Append(attribute.MethodBase.DeclaringType.FullName).Append('.').Append(attribute.MethodBase.Name).Append(" Failed");
+            string key = keyBuilder.ToString();
+            mod.LogException(key, e);
+            mod.ReportException(key, e);
             bool disabled = attribute is JAPatchAttribute { Disable: true };
             OnFailPatch?.Invoke(attribute.PatchId, disabled);
             if(!disabled) return;

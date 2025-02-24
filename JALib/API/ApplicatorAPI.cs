@@ -52,8 +52,9 @@ Setup:
             Listen();
             JATask.Run(JALib.Instance, new ApplicatorAPI(client).Run);
         } catch (Exception e) {
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e);
+            string key = "Fail To Generate TCP Server";
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e);
         }
     }
 

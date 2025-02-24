@@ -32,7 +32,7 @@ public abstract class JAMod {
         }
     }
 
-    protected internal UnityModManager.ModEntry ModEntry { get; private set; }
+    public UnityModManager.ModEntry ModEntry { get; private set; }
     public UnityModManager.ModEntry.ModLogger Logger => ModEntry.Logger;
     public string Name { get; private set; }
     public Version Version => ModEntry.Version;
@@ -115,9 +115,9 @@ public abstract class JAMod {
             Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {
             modEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
-            Error("Failed to Initialize JAMod " + Name);
-            LogException(e);
-            ReportException(e);
+            string key = "Failed to Initialize JAMod " + Name;
+            LogException(key, e);
+            ReportException(key, e);
             throw;
         }
     }
@@ -144,9 +144,9 @@ public abstract class JAMod {
             Log("JAMod " + Name + " is Initialized");
         } catch (Exception e) {
             modEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
-            Error("Failed to Initialize JAMod " + Name);
-            LogException(e);
-            ReportException(e);
+            string key = "Failed to Initialize JAMod " + Name;
+            LogException(key, e);
+            ReportException(key, e);
             throw;
         }
     }
@@ -279,17 +279,17 @@ public abstract class JAMod {
 
     private void OnEnableAsyncAfter(Task task) {
         if(task.IsCompletedSuccessfully) return;
-        Error("Failed to Enable JAMod " + Name);
-        LogException(task.Exception.InnerException ?? task.Exception);
-        ReportException(task.Exception.InnerException ?? task.Exception);
+        string key = "Failed to Async Enable JAMod " + Name;
+        LogException(key, task.Exception.InnerException ?? task.Exception);
+        ReportException(key, task.Exception.InnerException ?? task.Exception);
         if(Enabled) ModEntry.SetValue("mActive", false);
     }
 
     private void OnDisableAsyncAfter(Task task) {
         if(task.IsCompletedSuccessfully) return;
-        Error("Failed to Disable JAMod " + Name);
-        LogException(task.Exception.InnerException ?? task.Exception);
-        ReportException(task.Exception.InnerException ?? task.Exception);
+        string key = "Failed to Async Disable JAMod " + Name;
+        LogException(key, task.Exception.InnerException ?? task.Exception);
+        ReportException(key, task.Exception.InnerException ?? task.Exception);
         if(!Enabled) ModEntry.SetValue("mActive", true);
     }
 
@@ -323,16 +323,18 @@ public abstract class JAMod {
         try {
             OnDisable();
         } catch (Exception e) {
-            LogException(e);
-            ReportException(e);
+            string key = "Failed to Disable JAMod " + Name;
+            LogException(key, e);
+            ReportException(key, e);
         }
         Log("OnDisable Completed");
         try {
             Task task = OnDisableAsync();
             if(!task.IsCompleted) task.RunSynchronously();
         } catch (Exception e) {
-            LogException(e);
-            ReportException(e);
+            string key = "Failed to Async Disable JAMod " + Name;
+            LogException(key, e);
+            ReportException(key, e);
         }
         Log("OnDisableAsync Completed");
         foreach(JAMod mod in usedMods) {
@@ -345,8 +347,9 @@ public abstract class JAMod {
         try {
             OnUnload();
         } catch (Exception e) {
-            LogException(e);
-            ReportException(e);
+            string key = "Failed to Unload JAMod " + Name;
+            LogException(key, e);
+            ReportException(key, e);
         }
         Log("OnUnload Completed");
         ModEntry = null;
@@ -451,8 +454,9 @@ public abstract class JAMod {
             OnShowGUI();
             foreach(Feature feature in Features.Where(feature => feature.Enabled && feature._expanded)) feature.OnShowGUI0();
         } catch (Exception e) {
-            LogException(e);
-            ReportException(e);
+            string key = "Failed to Show GUI";
+            LogException(key, e);
+            ReportException(key, e);
         }
     }
 
@@ -464,8 +468,9 @@ public abstract class JAMod {
             OnHideGUI();
             foreach(Feature feature in Features.Where(feature => feature.Enabled && feature._expanded)) feature.OnHideGUI0();
         } catch (Exception e) {
-            LogException(e);
-            ReportException(e);
+            string key = "Failed to Hide GUI";
+            LogException(key, e);
+            ReportException(key, e);
         }
     }
 
@@ -516,16 +521,22 @@ public abstract class JAMod {
 
     public void ReportException(Exception e) => ReportException(e, [this]);
 
-    public void ReportException(Exception e, JAMod[] mod) {
+    public void ReportException(string key, Exception e) => ReportException(key, e, [this]);
+
+    public void ReportException(Exception e, JAMod[] mod) => ReportException(null, e, mod);
+
+    public void ReportException(string key, Exception e, JAMod[] mod) {
         // Report Exception is will be generated by BugReporter
     }
 
 #pragma warning disable CS8509
-    internal static void LogPatchException(Exception e, JAMod mod, string id, int patchId) => mod.LogException("An error occurred while invoking a " + patchId switch {
-        0 => "Prefix",
-        1 => "Postfix",
-        2 => "Override",
-    } + " Patch " + id, e);
+    internal static void LogPatchException(Exception e, JAMod mod, string id, int patchId) {
+        mod.LogException("An error occurred while invoking a " + patchId switch {
+            0 => "Prefix",
+            1 => "Postfix",
+            2 => "Override",
+        } + " Patch " + id, e);
+    }
 #pragma warning restore CS8509
 
     public void SaveSetting() => ModSetting?.Save();
@@ -545,9 +556,9 @@ public abstract class JAMod {
             JAModInfo modInfo = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modEntry, beta);
             JAModLoader.AddMod(modInfo, reloadCount + 1);
         } catch (Exception e) {
-            JALib.Instance.Error("Failed to Force Reload Mod " + Name);
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e, [JALib.Instance, this]);
+            string key = "Failed to Force Reload Mod " + Name;
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e, [JALib.Instance, this]);
         }
     }
 }

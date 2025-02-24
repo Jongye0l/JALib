@@ -106,8 +106,9 @@ class JALib : JAMod {
             }
             JApi.Send(new GetModInfo(JaModInfo, ModSetting.Beta), false).ContinueWith(ModInfo);
         } catch (Exception e) {
-            LogException(e);
-            ReportException(e);
+            string key = "Fail to load mod info.";
+            LogException(key, e);
+            ReportException(key, e);
         }
     }
 
@@ -119,8 +120,9 @@ class JALib : JAMod {
             ModEntry.Info.Version = (apiInfo.LatestVersion > ModEntry.Version ? "<color=red>" : "<color=cyan>") + ModEntry.Info.Version + "</color>";
             SaveSetting();
         } catch (Exception e) {
-            LogException(e);
-            ReportException(e);
+            string key = "Fail to load mod info.";
+            LogException(key, e);
+            ReportException(key, e);
         }
     }
 

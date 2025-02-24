@@ -47,9 +47,9 @@ public class JALocalization {
             _localizations = JsonConvert.DeserializeObject<SortedDictionary<string, string>>(t.Result);
             _jaMod.OnLocalizationUpdate0();
         } catch (Exception e) {
-            _jaMod.Error("Failed to load localization data.");
-            _jaMod.LogException(e);
-            _jaMod.ReportException(e, [_jaMod, JALib.Instance]);
+            string key = "Failed to load localization data.";
+            _jaMod.LogException(key, e);
+            _jaMod.ReportException(key, e, [_jaMod, JALib.Instance]);
         }
     }
 
@@ -97,9 +97,9 @@ public class JALocalization {
                     File.WriteAllTextAsync(path, JsonConvert.SerializeObject(allLocalizations[i], Formatting.Indented));
                 }
             } catch (Exception e) {
-                mod.Error("Failed to load localization data.");
-                mod.LogException(e);
-                mod.ReportException(e);
+                string key = "Failed to load localization data.";
+                mod.LogException(key, e);
+                mod.ReportException(key, e);
             } finally {
                 httpClient.Dispose();
             }

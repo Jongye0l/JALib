@@ -28,16 +28,16 @@ public class ModReloadCache {
                 try {
                     newValue.SetValue(field.Name, GetCachedObject(field.GetValue(oldValue)));
                 } catch (Exception e) {
-                    JALib.Instance.Log("Failed to reload field " + field.Name + " of type " + oldType.FullName);
-                    JALib.Instance.LogException(e);
-                    JALib.Instance.ReportException(e);
+                    string key = "Failed to reload field " + field.Name + " of type " + oldType.FullName;
+                    JALib.Instance.LogException(key, e);
+                    JALib.Instance.ReportException(key, e);
                 }
             }
             return newValue;
         } catch (Exception e) {
-            JALib.Instance.Log("Failed to reload object of type " + oldType.FullName);
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e);
+            string key = "Failed to reload object of type " + oldType.FullName;
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e);
         }
         return null;
     }

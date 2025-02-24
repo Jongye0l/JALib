@@ -13,15 +13,10 @@ public class JAction(JAMod mod, Action action) {
         try {
             action();
         } catch (Exception e) {
-            if(mod == null) {
-                JALib.Instance.Log("An error occurred while invoking an action " + action.Method.Name);
-                JALib.Instance.LogException(e);
-                JALib.Instance.ReportException(e);
-            } else {
-                mod.Error("An error occurred while invoking an action.");
-                mod.LogException(e);
-                mod.ReportException(e);
-            }
+            string key = "An error occurred while invoking an action " + action.Method.Name;
+            JAMod mod1 = mod ?? JALib.Instance;
+            mod1.LogException(key, e);
+            mod1.ReportException(key, e);
         }
     }
 

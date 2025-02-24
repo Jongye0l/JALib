@@ -51,9 +51,9 @@ class JApi {
             };
             HttpClient.GetAsync($"https://{domain}/ping").ContinueWith(Connect);
         } catch (Exception e) {
-            JALib.Instance.Log("Failed to connect to the server: " + domain);
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e);
+            string key = "Failed to connect to the server: " + domain;
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e);
             _instance.completeLoadTask.TrySetResult(false);
             Restart();
         }
@@ -71,9 +71,9 @@ class JApi {
             JALib.Instance.LogException(e);
             Connect();
         } catch (Exception e) {
-            JALib.Instance.Log("Failed to connect to the server: " + domain);
-            JALib.Instance.LogException(e);
-            JALib.Instance.ReportException(e);
+            string key = "Failed to connect to the server: " + domain;
+            JALib.Instance.LogException(key, e);
+            JALib.Instance.ReportException(key, e);
             _instance.completeLoadTask.TrySetResult(false);
             Restart();
         }

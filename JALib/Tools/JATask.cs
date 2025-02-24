@@ -29,9 +29,9 @@ public class JATask {
         try {
             action();
         } catch (Exception e) {
-            mod.Error("An error occurred while running a task.");
-            mod.LogException(e);
-            mod.ReportException(e);
+            string key = "An error occurred while running a task.";
+            mod.LogException(key, e);
+            mod.ReportException(key, e);
         }
     }
 
@@ -62,9 +62,9 @@ public class JATask {
             try {
                 task.GetAwaiter().GetResult();
             } catch (Exception e) {
-                mod.Error("An error occurred while running a task.");
-                mod.LogException(e);
-                mod.ReportException(e);
+                string key = "An error occurred while running a task.";
+                mod.LogException(key, e);
+                mod.ReportException(key, e);
             }
             builder.SetResult();
         }
@@ -86,9 +86,9 @@ public class JATask {
             try {
                 return action();
             } catch (Exception e) {
-                mod.Error("An error occurred while running a task.");
-                mod.LogException(e);
-                mod.ReportException(e);
+                string key = "An error occurred while running a task.";
+                mod.LogException(key, e);
+                mod.ReportException(key, e);
                 return default;
             }
         }
@@ -121,9 +121,9 @@ public class JATask {
             try {
                 builder.SetResult(task.GetAwaiter().GetResult());
             } catch (Exception e) {
-                mod.Error("An error occurred while running a task.");
-                mod.LogException(e);
-                mod.ReportException(e);
+                string key = "An error occurred while running a task.";
+                mod.LogException(key, e);
+                mod.ReportException(key, e);
             }
             builder.SetResult(default);
         }
