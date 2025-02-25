@@ -520,6 +520,7 @@
         <Compile Include="Core\ModLoader\ModLoadState.cs"/>
         <Compile Include="Core\ModLoader\RawModData.cs"/>
         <Compile Include="Core\ModReloadCache.cs"/>
+        <Compile Include="Core\Patch\AllPatchType.cs" />
         <Compile Include="Core\Patch\JAEmitter.cs"/>
         <Compile Include="Core\Patch\JAMethodPatcher.cs"/>
         <Compile Include="Core\Patch\JAOverridePatchAttribute.cs"/>

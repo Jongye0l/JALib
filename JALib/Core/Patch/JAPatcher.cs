@@ -42,6 +42,14 @@ public class JAPatcher : IDisposable {
             harmony.Patch(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
             harmony.Patch(assembly.GetType("HarmonyLib.MethodCopier").Method("GetInstructions"), new HarmonyMethod(((Delegate) GetInstructions).Method));
         }
+        JAPatchAttribute attribute = new(typeof(PatchProcessor).Method("Unpatch", typeof(MethodInfo)), PatchType.Replace, false) {
+            Method = ((Delegate) UnpatchPatch1).Method
+        };
+        CustomPatch(attribute.MethodBase, new HarmonyMethod(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug), attribute, null);
+        attribute = new JAPatchAttribute(typeof(PatchProcessor).Method("Unpatch", typeof(HarmonyPatchType), typeof(string)), PatchType.Replace, false) {
+            Method = ((Delegate) UnpatchPatch2).Method
+        };
+        CustomPatch(attribute.MethodBase, new HarmonyMethod(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug), attribute, null);
     }
 
     private static void FixPatchCtorNull(ref string[] before, ref string[] after) {
@@ -185,6 +193,24 @@ public class JAPatcher : IDisposable {
 
     private static PatchInfo GetPatchInfo(MethodBase method) => throw new NotImplementedException();
 
+    private static PatchProcessor UnpatchPatch1(PatchProcessor __instance, MethodInfo patch, MethodBase ___original) {
+        Unpatch(___original, patch);
+        return __instance;
+    }
+
+    private static PatchProcessor UnpatchPatch2(PatchProcessor __instance, HarmonyPatchType type, string harmonyID, MethodBase ___original) {
+        Unpatch(___original, type switch {
+            HarmonyPatchType.Prefix => AllPatchType.AllPrefix,
+            HarmonyPatchType.Postfix => AllPatchType.AllPostfix,
+            HarmonyPatchType.Transpiler => AllPatchType.AllTranspiler,
+            HarmonyPatchType.Finalizer => AllPatchType.Finalizer,
+            HarmonyPatchType.ReversePatch => AllPatchType.Reverse,
+            HarmonyPatchType.All => AllPatchType.All,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        }, harmonyID);
+        return __instance;
+    }
+
     #endregion
 
     public static PatchData GetPatchData(MethodBase method) {
@@ -221,6 +247,37 @@ public class JAPatcher : IDisposable {
             } else patchData.TryPrefixes = patchData.TryPostfixes = patchData.Replaces = patchData.Removes = [];
         }
         return patchData;
+    }
+
+    public static void Unpatch(MethodBase original, MethodInfo patch) {
+        lock(locker) {
+            PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
+            JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
+            patchInfo.RemovePatch(patch);
+            jaPatchInfo.RemovePatch(patch);
+            MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+            MethodInfo updateMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Method("UpdatePatchInfo");
+            updateMethod.Invoke(null, updateMethod.GetParameters().Length == 2 ? [original, patchInfo] : [original, replacement, patchInfo]);
+        }
+    }
+
+    public static void Unpatch(MethodBase original, AllPatchType type, string id) {
+        lock(locker) {
+            PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
+            JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
+            if(type.HasFlag(AllPatchType.Prefix)) patchInfo.RemovePrefix(id);
+            if(type.HasFlag(AllPatchType.Postfix)) patchInfo.RemovePostfix(id);
+            if(type.HasFlag(AllPatchType.Transpiler)) patchInfo.RemoveTranspiler(id);
+            if(type.HasFlag(AllPatchType.Finalizer)) patchInfo.RemoveFinalizer(id);
+            if(type.HasFlag(AllPatchType.TryPrefix)) jaPatchInfo.RemoveTryPrefix(id);
+            if(type.HasFlag(AllPatchType.TryPostfix)) jaPatchInfo.RemoveTryPostfix(id);
+            if(type.HasFlag(AllPatchType.Replace)) jaPatchInfo.RemoveReplace(id);
+            if(type.HasFlag(AllPatchType.Remove)) jaPatchInfo.RemoveRemove(id);
+            if(type.HasFlag(AllPatchType.Override)) jaPatchInfo.RemoveOverridePatch(id);
+            MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+            MethodInfo updateMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Method("UpdatePatchInfo");
+            updateMethod.Invoke(null, updateMethod.GetParameters().Length == 2 ? [original, patchInfo] : [original, replacement, patchInfo]);
+        }
     }
 
     public delegate void FailPatch(string patchId, bool disabled);

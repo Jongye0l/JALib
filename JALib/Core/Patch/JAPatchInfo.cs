@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Reflection;
 using HarmonyLib;
 
 namespace JALib.Core.Patch;
@@ -26,6 +27,35 @@ class JAPatchInfo {
         current.CopyTo(result, 0);
         result[current.Length] = add;
         return result;
+    }
+
+    public void RemoveTryPrefix(string id) {
+        tryPrefixes = id == "*" ? [] : tryPrefixes.Where(p => p.owner != id).ToArray();
+    }
+
+    public void RemoveTryPostfix(string id) {
+        tryPostfixes = id == "*" ? [] : tryPostfixes.Where(p => p.owner != id).ToArray();
+    }
+
+    public void RemoveReplace(string id) {
+        replaces = id == "*" ? [] : replaces.Where(p => p.owner != id).ToArray();
+    }
+
+    public void RemoveRemove(string id) {
+        removes = id == "*" ? [] : removes.Where(p => p.owner != id).ToArray();
+    }
+
+    public void RemoveOverridePatch(string id) {
+        overridePatches = id == "*" ? [] : overridePatches.Where(p => p.id != id).ToArray();
+    }
+
+    public void RemovePatch(MethodInfo patch) {
+        replaces = replaces.Where(p => p.PatchMethod != patch).ToArray();
+        removes = removes.Where(p => p.PatchMethod != patch).ToArray();
+        tryPrefixes = tryPrefixes.Where(p => p.PatchMethod != patch).ToArray();
+        tryPostfixes = tryPostfixes.Where(p => p.PatchMethod != patch).ToArray();
+        reversePatches = reversePatches.Where(p => p.patchMethod != patch).ToArray();
+        overridePatches = overridePatches.Where(p => p.patchMethod != patch).ToArray();
     }
 
     public bool IsDebug() => tryPrefixes.Any(IsDebug) || tryPostfixes.Any(IsDebug) || replaces.Any(IsDebug) || removes.Any(IsDebug) || reversePatches.Any(patch => patch.debug) || overridePatches.Any(patch => patch.debug);
