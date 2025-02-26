@@ -169,9 +169,7 @@ class RawModData {
         try {
             active = mod.OnToggle(info.ModEntry, true);
         } catch (Exception e) {
-            string key = "Fail Enable Mod";
-            mod.LogException(key, e);
-            mod.ReportException(key, e);
+            mod.LogReportException("Fail Enable Mod", e);
         }
         if(!active) mod.ModEntry.SetValue("mActive", false);
     }

@@ -52,11 +52,9 @@ public class JASetting : IDisposable {
             }
         } catch (Exception e) {
             JAMod mod = Mod ?? JALib.Instance;
-            if(mod != null) {
-                string key = "Failed To Load Setting";
-                mod.LogException(key, e);
-                mod.ReportException(key, e);
-            } else UnityModManager.Logger.LogException(e);
+            string key = "Failed To Load Setting";
+            if(mod != null) mod.LogReportException(key, e);
+            else UnityModManager.Logger.LogException(key, e);
         }
     }
 
@@ -127,9 +125,7 @@ public class JASetting : IDisposable {
                 };
             }
         } catch (Exception e) {
-            string key = "Failed To Put Field Data";
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e, [Mod, JALib.Instance]);
+            JALib.Instance.LogReportException("Failed To Put Field Data", e, [Mod, JALib.Instance]);
         }
     }
 
@@ -151,9 +147,7 @@ public class JASetting : IDisposable {
                 if(field.GetValue(this) is JASetting setting) setting.RemoveFieldData();
             }
         } catch (Exception e) {
-            string key = "Failed To Remove Field Data";
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e, [Mod, JALib.Instance]);
+            JALib.Instance.LogReportException("Failed To Remove Field Data", e, [Mod, JALib.Instance]);
         }
     }
 
@@ -167,9 +161,7 @@ public class JASetting : IDisposable {
             GC.SuppressFinalize(jsonFields);
             GC.SuppressFinalize(this);
         } catch (Exception e) {
-            string key = "Failed To Setting Dispose";
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e, [Mod, JALib.Instance]);
+            JALib.Instance.LogReportException("Failed To Setting Dispose", e, [Mod, JALib.Instance]);
         }
     }
 
@@ -177,9 +169,7 @@ public class JASetting : IDisposable {
         try {
             Dispose0();
         } catch (Exception e) {
-            string key = "Failed To Setting Dispose";
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e);
+            JALib.Instance.LogReportException("Failed To Setting Dispose", e);
         }
     }
 }

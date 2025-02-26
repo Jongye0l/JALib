@@ -63,9 +63,7 @@ public class JAPatcher : IDisposable {
             __result = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
             return false;
         } catch (Exception e) {
-            string key = "Fail Patch Method '" + original.FullDescription() + '\'';
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e);
+            JALib.Instance.LogReportException("Fail Patch Method '" + original.FullDescription() + '\'', e);
             return true;
         }
     }
@@ -112,9 +110,7 @@ public class JAPatcher : IDisposable {
             __result = PatchReversePatchReverse(standin, original, postTranspiler, jaPatchInfo);
             return false;
         } catch (Exception e) {
-            string key = "Fail Reverse Patch Method '" + original.FullDescription() + "' to '" + standin.method.FullDescription() + '\'';
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e);
+            JALib.Instance.LogReportException("Fail Reverse Patch Method '" + original.FullDescription() + "' to '" + standin.method.FullDescription() + '\'', e);
             return true;
         }
     }
@@ -184,9 +180,7 @@ public class JAPatcher : IDisposable {
             __result = JAMethodPatcher.GetInstructions(generator, method, maxTranspilers, jaPatchInfo);
             return false;
         } catch (Exception e) {
-            string key = "Fail to Get Instructions '" + method.FullDescription() + '\'';
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e);
+            JALib.Instance.LogReportException("Fail to Get Instructions '" + method.FullDescription() + '\'', e);
             return true;
         }
     }
@@ -402,9 +396,7 @@ public class JAPatcher : IDisposable {
                 keyBuilder.Append("Override ").Append(overridePatchAttribute.targetType?.FullName ?? overridePatchAttribute.targetTypeName).Append(" Type");
             else keyBuilder.Append("Unknown");
             keyBuilder.Append(" Patch ").Append(attribute.PatchId).Append(" to ").Append(attribute.MethodBase.DeclaringType.FullName).Append('.').Append(attribute.MethodBase.Name).Append(" Failed");
-            string key = keyBuilder.ToString();
-            mod.LogException(key, e);
-            mod.ReportException(key, e);
+            mod.LogReportException(keyBuilder.ToString(), e);
             bool disabled = attribute is JAPatchAttribute { Disable: true };
             OnFailPatch?.Invoke(attribute.PatchId, disabled);
             if(!disabled) return;

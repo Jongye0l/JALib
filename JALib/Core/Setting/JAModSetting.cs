@@ -58,10 +58,7 @@ class JAModSetting : JASetting {
             foreach(Feature f in Mod.Features) f.FeatureSetting.PutFieldData();
             base.PutFieldData();
         } catch (Exception e) {
-            JAMod mod = Mod ?? JALib.Instance;
-            string key = "Fail PutFieldData Setting";
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e, [Mod, JALib.Instance]);
+            (Mod ?? JALib.Instance).LogReportException("Fail PutFieldData Setting", e);
         }
     }
 
@@ -71,10 +68,7 @@ class JAModSetting : JASetting {
             foreach(Feature f in Mod.Features) f.FeatureSetting.RemoveFieldData();
             base.RemoveFieldData();
         } catch (Exception e) {
-            JAMod mod = Mod ?? JALib.Instance;
-            string key = "Fail Save ModSetting";
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e, [Mod, JALib.Instance]);
+            (Mod ?? JALib.Instance).LogReportException("Fail Save ModSetting", e);
         }
     }
 
@@ -85,10 +79,7 @@ class JAModSetting : JASetting {
             File.WriteAllText(path, JsonObject.ToString());
             RemoveFieldData();
         } catch (Exception e) {
-            JAMod mod = Mod ?? JALib.Instance;
-            string key = "Fail Save ModSetting";
-            mod.LogException(key, e);
-            mod.ReportException(key, e, [Mod, JALib.Instance]);
+            (Mod ?? JALib.Instance).LogReportException("Fail Save ModSetting", e);
         }
     }
 
@@ -97,10 +88,7 @@ class JAModSetting : JASetting {
             Setting?.Dispose();
             base.Dispose0();
         } catch (Exception e) {
-            JAMod mod = Mod ?? JALib.Instance;
-            string key = "Fail Dispose ModSetting";
-            mod.LogException(key, e);
-            mod.ReportException(key, e, [Mod, JALib.Instance]);
+            (Mod ?? JALib.Instance).LogReportException("Fail Dispose ModSetting", e, [Mod, JALib.Instance]);
         }
     }
 }

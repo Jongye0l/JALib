@@ -82,9 +82,7 @@ public class JATcpClient : TcpClient {
             if(host[^1] == '.') host = host[..^1];
         } catch (Exception e) {
             if(port == -1) throw;
-            string key = "Failed to get SRV record";
-            JALib.Instance.LogException(key, e);
-            JALib.Instance.ReportException(key, e);
+            JALib.Instance.LogReportException("Failed to get SRV record", e);
         }
         Connect(host, port);
     }

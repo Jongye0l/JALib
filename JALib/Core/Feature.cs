@@ -58,9 +58,7 @@ public abstract class Feature {
             OnEnable();
             Active = true;
         } catch (Exception e) {
-            string key = "Fail Enable Feature '" + Name + "'";
-            Mod.LogException(key, e);
-            Mod.ReportException(key, e);
+            Mod.LogReportException("Fail Enable Feature '" + Name + '\'', e);
         }
     }
 
@@ -71,9 +69,7 @@ public abstract class Feature {
             OnDisable();
             Active = false;
         } catch (Exception e) {
-            string key = "Fail Disable Feature '" + Name + "'";
-            Mod.LogException(key, e);
-            Mod.ReportException(key, e);
+            Mod.LogReportException("Fail Disable Feature '" + Name + '\'', e);
         }
     }
 
@@ -84,9 +80,7 @@ public abstract class Feature {
         try {
             OnUnload();
         } catch (Exception e) {
-            string key = "Fail Unload Feature '" + Name + "'";
-            Mod.LogException(key, e);
-            Mod.ReportException(key, e);
+            Mod.LogReportException("Fail Unload Feature '" + Name + '\'', e);
         }
         Patcher = null;
         Mod = null;
@@ -168,9 +162,7 @@ public abstract class Feature {
         try {
             OnShowGUI();
         } catch (Exception e) {
-            string key = "Error OnShowGUI";
-            Mod.LogException(key, e);
-            Mod.ReportException(key, e);
+            Mod.LogReportException("Error OnShowGUI", e);
             _expanded = false;
         }
     }
@@ -182,9 +174,7 @@ public abstract class Feature {
         try {
             OnHideGUI();
         } catch (Exception e) {
-            string key = "Error OnHideGUI";
-            Mod.LogException(key, e);
-            Mod.ReportException(key, e);
+            Mod.LogReportException("Error OnHideGUI", e);
         }
     }
 
