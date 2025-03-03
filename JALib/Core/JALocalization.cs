@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using JALib.Core.Patch;
 using JALib.Tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -132,5 +133,21 @@ public class JALocalization {
     internal void Dispose() {
         if(_localizations != null) GC.SuppressFinalize(_localizations);
         GC.SuppressFinalize(this);
+    }
+
+    [JAPatch(typeof(RDString), "GetWithCheck", PatchType.Prefix, false)]
+    internal static bool RDStringPatch(string key, ref bool exists, ref string __result) {
+        if(key.StartsWith("jamod.") || key.StartsWith("jalib.")) {
+            string[] split = key.Split('.');
+            if(split.Length > 3) {
+                JAMod mod = JAMod.GetMods(split[1]);
+                if(mod != null) {
+                    exists = true;
+                    __result = mod.Localization[key.Replace("jamod." + split[1] + ".", "").Replace("jalib." + split[1] + ".", "")];
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

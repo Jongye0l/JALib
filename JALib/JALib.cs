@@ -34,6 +34,7 @@ class JALib : JAMod {
         Setup(modEntry, JaModInfo, null, new JAModSetting(System.IO.Path.Combine(modEntry.Path, "Settings.json")));
         if(JaModInfo.IsBetaBranch) ModSetting.UnlockBeta = ModSetting.Beta = true;
         Setting = (JALibSetting) base.Setting;
+        Patcher.AddPatch(JALocalization.RDStringPatch);
         JApi.Initialize();
         JATask.Run(Instance, Init);
         OnEnable();
