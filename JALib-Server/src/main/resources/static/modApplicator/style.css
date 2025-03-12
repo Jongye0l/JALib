@@ -42,3 +42,18 @@ h4 {
 .link-button:hover {
     background-color: #0056b3;
 }
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #333;
+        color: #ccc;
+    }
+    h3 {
+        color: #10fb00;
+    }
+    .content {
+        background: #222;
+    }
+    .link-button {
+        background-color: #006fe5;
+    }
+}
