@@ -150,4 +150,9 @@ public class JALocalization {
         }
         return true;
     }
+
+    [JAPatch(typeof(RDString), "Setup", PatchType.Postfix, false)]
+    internal static void RDStringSetup() {
+        foreach(JAMod mod in JAMod.GetMods()) mod.Localization?.Load();
+    }
 }
