@@ -575,6 +575,7 @@
         <Compile Include="Tools\MainThread.cs"/>
         <Compile Include="Tools\SimpleHttp.cs"/>
         <Compile Include="Tools\SimpleReflect.cs"/>
+        <Compile Include="Tools\VersionControl.cs" />
         <Compile Include="Tools\Zipper.cs"/>
     </ItemGroup>
     <ItemGroup>

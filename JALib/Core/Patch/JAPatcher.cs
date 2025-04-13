@@ -344,7 +344,7 @@ public class JAPatcher : IDisposable {
 
     private void Patch(JAPatchBaseAttribute attribute) {
         try {
-            if(attribute.MinVersion > JAPatchBaseAttribute.GetCurrentVersion || attribute.MaxVersion < JAPatchBaseAttribute.GetCurrentVersion) return;
+            if(attribute.MinVersion > VersionControl.releaseNumber || attribute.MaxVersion < VersionControl.releaseNumber) return;
             if(attribute.MethodBase == null) {
                 if(attribute is JAOverridePatchAttribute overridePatch) {
                     attribute.MethodName ??= overridePatch.Method.Name;
