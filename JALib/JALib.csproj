@@ -594,6 +594,7 @@
     <ItemGroup>
         <Content Include="Tools\SimpleUnsafeReflect.il"/>
         <Content Include="Properties\AssemblyInfo.il"/>
+        <Content Include="Tools\Unsafe.il" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -605,7 +606,7 @@
     -->
 
     <Target Name="CompileIL" BeforeTargets="CoreCompile">
-        <Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm Properties\AssemblyInfo.il Tools\SimpleUnsafeReflect.il /dll /output:$(OutputPath)JALib-IL.dll"/>
+        <Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm Properties\AssemblyInfo.il Tools\SimpleUnsafeReflect.il Tools\Unsafe.il /dll /output:$(OutputPath)JALib-IL.dll"/>
     </Target>
 
     <Target Name="AfterBuild">
