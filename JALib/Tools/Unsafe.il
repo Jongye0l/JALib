@@ -166,6 +166,12 @@
         ret
     }
 
+    .method public hidebysig static !!TTo As<TFrom, TTo>(!!TFrom source) cil managed aggressiveinlining {
+        .maxstack 1
+        ldarg.0
+        ret
+    }
+
     .method public hidebysig static !!T& AsRef<T>(void* source) cil managed aggressiveinlining {
         .locals (int32&)
         .maxstack 1
@@ -361,6 +367,14 @@
         .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
         .locals init ([0] !!T)
+        ldarg.0
+        ret
+    }
+
+    .method public hidebysig static !!TTo AsUnsafe<valuetype .ctor (class [mscorlib]System.ValueType) TFrom, valuetype .ctor (class [mscorlib]System.ValueType) TTo>(!!TFrom o) cil managed aggressiveinlining {
+        .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        .locals init ([0] !!TTo)
         ldarg.0
         ret
     }

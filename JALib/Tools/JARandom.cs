@@ -18,7 +18,7 @@ public class JARandom : Random {
 
     public int NextInt() => Next();
 
-    public uint NextUInt() => Next().ToBytes().ToUInt();
+    public uint NextUInt() => Unsafe.As<int, uint>(Next());
 
     public long NextLong() => NextBytes(8).ToLong();
 
@@ -26,7 +26,7 @@ public class JARandom : Random {
 
     public float NextFloat() => (float) NextDouble();
 
-    public float NextAllFloat() => Next().ToBytes().ToFloat();
+    public float NextAllFloat() => Unsafe.As<int, float>(Next());
 
     public double NextAllDouble() => NextBytes(8).ToDouble();
 

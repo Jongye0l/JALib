@@ -83,7 +83,7 @@
             <HintPath>D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\A Dance of Fire and Ice_Data\Managed\I18N.West.dll</HintPath>
         </Reference>
         <Reference Include="JALib_IL">
-            <HintPath>bin\Debug\JALib-IL.dll</HintPath>
+          <HintPath>lib\JALib-IL.dll</HintPath>
         </Reference>
         <Reference Include="Mono.Data.Sqlite">
             <HintPath>D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\A Dance of Fire and Ice_Data\Managed\Mono.Data.Sqlite.dll</HintPath>
@@ -606,7 +606,7 @@
     -->
 
     <Target Name="CompileIL" BeforeTargets="CoreCompile">
-        <Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm Properties\AssemblyInfo.il Tools\SimpleUnsafeReflect.il Tools\Unsafe.il /dll /output:$(OutputPath)JALib-IL.dll"/>
+        <Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm Properties\AssemblyInfo.il Tools\SimpleUnsafeReflect.il Tools\Unsafe.il /dll /output:lib\JALib-IL.dll"/>
     </Target>
 
     <Target Name="AfterBuild">
