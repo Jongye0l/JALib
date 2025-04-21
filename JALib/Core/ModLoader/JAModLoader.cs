@@ -31,7 +31,7 @@ class JAModLoader {
     public static void CheckDependenciesLoadComplete() {
         if(LoadComplete) return;
         FieldInfo field = typeof(JABootstrap).Field("LoadCount");
-        if(field != null && count < field.GetValue<int>()) return;
+        if(field != null && count < SimpleUnsafeReflect.GetValueUnsafeValue<int>(field)) return;
         if(ModLoadDataList.Values.Any(data => data.RawModData?.loadDependencies == false)) return;
         LoadComplete = true;
         foreach(JAModLoader data in ModLoadDataList.Values) {

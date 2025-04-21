@@ -89,6 +89,7 @@
         ldarg.1
         ldarg.2
         callvirt instance object [mscorlib]System.Reflection.MethodBase::Invoke(object, object[])
+        unbox !!T
         ret
     }
 
@@ -110,7 +111,7 @@
         ldarg.1
         call class [mscorlib]System.Reflection.MethodInfo [JALib]JALib.Tools.SimpleReflect::Method(class [mscorlib]System.Type, string)
         ldnull
-        call !!T JALib.Tools.SimpleReflect::InvokeUnsafeValue<!!T>(class [mscorlib]System.Reflection.MethodInfo, object)
+        call !!T JALib.Tools.SimpleUnsafeReflect::InvokeUnsafeValue<!!T>(class [mscorlib]System.Reflection.MethodInfo, object)
         ret
     }
 
@@ -275,7 +276,7 @@
         ret
     }
 
-    .method public hidebysig static !!T GetValueUnsafe<valuetype .ctor (class [mscorlib]System.ValueType) T>(object obj, string name) cil managed {
+    .method public hidebysig static !!T GetValueUnsafeValue<valuetype .ctor (class [mscorlib]System.ValueType) T>(object obj, string name) cil managed {
         .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 2
         ldarg.0

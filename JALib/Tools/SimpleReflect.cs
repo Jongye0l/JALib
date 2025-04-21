@@ -173,9 +173,9 @@ public static class SimpleReflect {
 
     public static MethodInfo[] Accessors(this object obj, [NotNull] string name) => obj.GetType().Property(name).Accessors();
 
-    public static T New<T>() => SimpleUnsafeReflect.NewUnsafe<T>();
+    public static T New<T>() => typeof(T).New<T>();
 
-    public static T New<T>(params object[] objects) => SimpleUnsafeReflect.NewUnsafe<T>(objects);
+    public static T New<T>(params object[] objects) => typeof(T).New<T>(objects);
 
     public static bool IsNumeric(this Type type) => type.IsInteger() || type.IsFloat();
 
