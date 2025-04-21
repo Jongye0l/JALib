@@ -28,13 +28,13 @@ public static class SimpleReflect {
 
     public static MethodInfo[] Methods(this Type type, [NotNull] string name) => type.GetMethods(AccessTools.all).Where(m => m.Name == name).ToArray();
 
-    public static object Invoke(this MethodInfo methodInfo, object o = null) => methodInfo.Invoke(o, Array.Empty<object>());
+    public static object Invoke(this MethodInfo methodInfo, object o = null) => methodInfo.Invoke(o, []);
 
     public static object Invoke(this MethodInfo methodInfo, [NotNull] object[] objects) => methodInfo.Invoke(null, objects);
 
     public static object Invoke(this MethodInfo methodInfo, object o, [NotNull] object[] objects) => methodInfo.Invoke(o, objects);
 
-    public static T Invoke<T>(this MethodInfo methodInfo, object o = null) => (T) methodInfo.Invoke(o, Array.Empty<object>()) ?? default;
+    public static T Invoke<T>(this MethodInfo methodInfo, object o = null) => (T) methodInfo.Invoke(o, []) ?? default;
 
     public static T Invoke<T>(this MethodInfo methodInfo, [NotNull] params object[] objects) => (T) methodInfo.Invoke(null, objects) ?? default;
 
@@ -173,9 +173,9 @@ public static class SimpleReflect {
 
     public static MethodInfo[] Accessors(this object obj, [NotNull] string name) => obj.GetType().Property(name).Accessors();
 
-    public static T New<T>() => typeof(T).New<T>() ?? default;
+    public static T New<T>() => SimpleUnsafeReflect.NewUnsafe<T>();
 
-    public static T New<T>(params object[] objects) => typeof(T).New<T>(objects) ?? default;
+    public static T New<T>(params object[] objects) => SimpleUnsafeReflect.NewUnsafe<T>(objects);
 
     public static bool IsNumeric(this Type type) => type.IsInteger() || type.IsFloat();
 

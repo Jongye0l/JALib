@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
-            Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
+    <Import Project="..\packages\ILRepack.2.0.41\build\ILRepack.props" Condition="Exists('..\packages\ILRepack.2.0.41\build\ILRepack.props')"/>
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
     <PropertyGroup>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -81,6 +81,9 @@
         </Reference>
         <Reference Include="I18N.West">
             <HintPath>D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\A Dance of Fire and Ice_Data\Managed\I18N.West.dll</HintPath>
+        </Reference>
+        <Reference Include="JALib_IL">
+            <HintPath>bin\Debug\JALib-IL.dll</HintPath>
         </Reference>
         <Reference Include="Mono.Data.Sqlite">
             <HintPath>D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\A Dance of Fire and Ice_Data\Managed\Mono.Data.Sqlite.dll</HintPath>
@@ -520,7 +523,7 @@
         <Compile Include="Core\ModLoader\ModLoadState.cs"/>
         <Compile Include="Core\ModLoader\RawModData.cs"/>
         <Compile Include="Core\ModReloadCache.cs"/>
-        <Compile Include="Core\Patch\AllPatchType.cs" />
+        <Compile Include="Core\Patch\AllPatchType.cs"/>
         <Compile Include="Core\Patch\JAEmitter.cs"/>
         <Compile Include="Core\Patch\JAMethodPatcher.cs"/>
         <Compile Include="Core\Patch\JAOverridePatchAttribute.cs"/>
@@ -531,7 +534,7 @@
         <Compile Include="Core\Patch\JAReversePatchAttribute.cs"/>
         <Compile Include="Core\Patch\OverridePatchData.cs"/>
         <Compile Include="Core\Patch\PatchBinding.cs"/>
-        <Compile Include="Core\Patch\PatchData.cs" />
+        <Compile Include="Core\Patch\PatchData.cs"/>
         <Compile Include="Core\Patch\PatchType.cs"/>
         <Compile Include="Core\Patch\ReversePatchData.cs"/>
         <Compile Include="Core\Patch\ReversePatchType.cs"/>
@@ -575,7 +578,7 @@
         <Compile Include="Tools\MainThread.cs"/>
         <Compile Include="Tools\SimpleHttp.cs"/>
         <Compile Include="Tools\SimpleReflect.cs"/>
-        <Compile Include="Tools\VersionControl.cs" />
+        <Compile Include="Tools\VersionControl.cs"/>
         <Compile Include="Tools\Zipper.cs"/>
     </ItemGroup>
     <ItemGroup>
@@ -588,6 +591,10 @@
             <Name>JALib.Bootstrap</Name>
         </ProjectReference>
     </ItemGroup>
+    <ItemGroup>
+        <Content Include="Tools\SimpleUnsafeReflect.il"/>
+        <Content Include="Properties\AssemblyInfo.il"/>
+    </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
          Other similar extension points exist, see Microsoft.Common.targets.
@@ -597,8 +604,13 @@
     </Target>
     -->
 
+    <Target Name="CompileIL" BeforeTargets="CoreCompile">
+        <Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm Properties\AssemblyInfo.il Tools\SimpleUnsafeReflect.il /dll /output:$(OutputPath)JALib-IL.dll"/>
+    </Target>
+
     <Target Name="AfterBuild">
-        <Copy SourceFiles="bin/Debug/JALib.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
+        <Exec Command="..\packages\ILRepack.2.0.41\tools\ILRepack.exe /lib:$(OutputPath) /out:$(OutputPath)JALib.dll $(OutputPath)JALib.dll $(OutputPath)JALib-IL.dll"/>
+        <Copy SourceFiles="$(OutputPath)JALib.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
         <Copy SourceFiles="bin/Release/JALib.dll" DestinationFolder="D:\ModRelease/JALib"/>
     </Target>
 
