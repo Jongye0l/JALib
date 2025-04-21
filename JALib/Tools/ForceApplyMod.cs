@@ -8,7 +8,7 @@ namespace JALib.Tools;
 
 public static class ForceApplyMod {
     public static void ApplyMod(string path) {
-        UnityModManager.GameInfo config = SimpleUnsafeReflect.GetValueUnsafe<UnityModManager.GameInfo>(typeof(UnityModManager), "Config");
+        UnityModManager.GameInfo config = typeof(UnityModManager).GetValueUnsafe<UnityModManager.GameInfo>("Config");
         string path1 = Path.Combine(path, config.ModInfo);
         if(!File.Exists(path1)) path1 = Path.Combine(path, config.ModInfo.ToLower());
         if(!File.Exists(path1)) return;

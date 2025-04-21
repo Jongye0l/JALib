@@ -1,4 +1,6 @@
 .class public abstract sealed auto ansi beforefieldinit JALib.Tools.SimpleUnsafeReflect extends [mscorlib]System.Object {
+    .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
+
     .method public hidebysig static !!T GetValueUnsafe<class T>(class [mscorlib]System.Reflection.FieldInfo 'field', [opt] object o) cil managed {
         .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
         .param [2] = nullref

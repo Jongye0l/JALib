@@ -1,4 +1,6 @@
 ﻿.class public abstract sealed auto ansi beforefieldinit JALib.Tools.Unsafe extends [mscorlib]System.Object {
+    .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
+
     .method public hidebysig static !!T Read<T>(void* source) cil managed aggressiveinlining {
         .maxstack 1
         IL_0000: ldarg.0
