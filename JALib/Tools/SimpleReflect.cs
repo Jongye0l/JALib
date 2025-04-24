@@ -12,7 +12,7 @@ namespace JALib.Tools;
 public static class SimpleReflect {
     public static object GetValue(this FieldInfo field) => field.GetValue(null);
 
-    public static T GetValue<T>(this FieldInfo field, object o = null) => (T) field.GetValue(o) ?? default;
+    public static T GetValue<T>(this FieldInfo field, object o = null) => (T) field.GetValue(o);
 
     public static void SetValue(this FieldInfo field, object o) => field.SetValue(null, o);
 
@@ -34,11 +34,11 @@ public static class SimpleReflect {
 
     public static object Invoke(this MethodInfo methodInfo, object o, [NotNull] object[] objects) => methodInfo.Invoke(o, objects);
 
-    public static T Invoke<T>(this MethodInfo methodInfo, object o = null) => (T) methodInfo.Invoke(o, []) ?? default;
+    public static T Invoke<T>(this MethodInfo methodInfo, object o = null) => (T) methodInfo.Invoke(o, []);
 
-    public static T Invoke<T>(this MethodInfo methodInfo, [NotNull] params object[] objects) => (T) methodInfo.Invoke(null, objects) ?? default;
+    public static T Invoke<T>(this MethodInfo methodInfo, [NotNull] params object[] objects) => (T) methodInfo.Invoke(null, objects);
 
-    public static T Invoke<T>(this MethodInfo methodInfo, object obj, params object[] parameters) => (T) methodInfo.Invoke(obj, parameters) ?? default;
+    public static T Invoke<T>(this MethodInfo methodInfo, object obj, params object[] parameters) => (T) methodInfo.Invoke(obj, parameters);
 
     public static MemberInfo[] Member(this Type type, [NotNull] string name) => type.GetMember(name, AccessTools.all);
 
@@ -54,19 +54,19 @@ public static class SimpleReflect {
 
     public static object Invoke(this Type type, Type[] types, [NotNull] string name, [NotNull] params object[] objects) => type.Method(name, types).Invoke(null, objects);
 
-    public static T Invoke<T>(this Type type, [NotNull] string name) => type.Method(name).Invoke<T>() ?? default;
+    public static T Invoke<T>(this Type type, [NotNull] string name) => type.Method(name).Invoke<T>();
 
-    public static T Invoke<T>(this Type type, [NotNull] string name, object o) => type.Method(name).Invoke<T>(o) ?? default;
+    public static T Invoke<T>(this Type type, [NotNull] string name, object o) => type.Method(name).Invoke<T>(o);
 
-    public static T Invoke<T>(this Type type, [NotNull] string name, [NotNull] params object[] objects) => (T) type.Method(name).Invoke(null, objects) ?? default;
+    public static T Invoke<T>(this Type type, [NotNull] string name, [NotNull] params object[] objects) => (T) type.Method(name).Invoke(null, objects);
 
     public static T Invoke<T>(this Type type, Type[] types, [NotNull] string name, object o = null) => type.Method(name, types).Invoke<T>(o);
 
-    public static T Invoke<T>(this Type type, Type[] types, [NotNull] string name, [NotNull] params object[] objects) => (T) type.Method(name, types).Invoke(null, objects) ?? default;
+    public static T Invoke<T>(this Type type, Type[] types, [NotNull] string name, [NotNull] params object[] objects) => (T) type.Method(name, types).Invoke(null, objects);
 
     public static object GetValue(this Type type, [NotNull] string name, object o = null) => type.Field(name).GetValue(o);
 
-    public static T GetValue<T>(this Type type, [NotNull] string name, object o = null) => (T) type.Field(name).GetValue(o) ?? default;
+    public static T GetValue<T>(this Type type, [NotNull] string name, object o = null) => (T) type.Field(name).GetValue(o);
 
     public static void SetValue(this Type type, [NotNull] string name, object value, object o = null) => type.Field(name).SetValue(o, value);
 
@@ -86,9 +86,9 @@ public static class SimpleReflect {
 
     public static object New(this Type type, params object[] objects) => Activator.CreateInstance(type, AccessTools.all, null, objects, null);
 
-    public static T New<T>(this Type type) => (T) type.New() ?? default;
+    public static T New<T>(this Type type) => (T) type.New();
 
-    public static T New<T>(this Type type, params object[] objects) => (T) type.New(objects) ?? default;
+    public static T New<T>(this Type type, params object[] objects) => (T) type.New(objects);
 
     public static object GetValue(this object obj, [NotNull] string name) {
         FieldInfo field = obj.GetType().Field(name);
@@ -115,11 +115,11 @@ public static class SimpleReflect {
 
     public static object Invoke(this object obj, [NotNull] string name, [NotNull] Type[] types, [NotNull] params object[] objects) => obj.Method(name, types).Invoke(obj, objects);
 
-    public static T Invoke<T>(this object obj, [NotNull] string name) => obj.Method(name, []).Invoke<T>(obj) ?? default;
+    public static T Invoke<T>(this object obj, [NotNull] string name) => obj.Method(name, []).Invoke<T>(obj);
 
-    public static T Invoke<T>(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke<T>(obj, objects) ?? default;
+    public static T Invoke<T>(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke<T>(obj, objects);
 
-    public static T Invoke<T>(this object obj, [NotNull] string name, [NotNull] Type[] types, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(obj, objects) ?? default;
+    public static T Invoke<T>(this object obj, [NotNull] string name, [NotNull] Type[] types, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(obj, objects);
 
     public static object GetValue(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke(obj, objects);
 
@@ -133,17 +133,17 @@ public static class SimpleReflect {
 
     public static object GetValue(this object obj, [NotNull] string name, Type[] types, object o, [NotNull] params object[] objects) => obj.Method(name, types).Invoke(o, objects);
 
-    public static T GetValue<T>(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke<T>(obj, objects) ?? default;
+    public static T GetValue<T>(this object obj, [NotNull] string name, [NotNull] params object[] objects) => obj.Method(name).Invoke<T>(obj, objects);
 
-    public static T GetValue<T>(this object obj, [NotNull] string name, object o) => obj.Method(name).Invoke<T>(o) ?? default;
+    public static T GetValue<T>(this object obj, [NotNull] string name, object o) => obj.Method(name).Invoke<T>(o);
 
-    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(obj, objects) ?? default;
+    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(obj, objects);
 
-    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types, object o) => obj.Method(name, types).Invoke<T>(o) ?? default;
+    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types, object o) => obj.Method(name, types).Invoke<T>(o);
 
-    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types) => obj.Method(name, types).Invoke<T>() ?? default;
+    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types) => obj.Method(name, types).Invoke<T>();
 
-    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types, object o, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(o, objects) ?? default;
+    public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types, object o, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(o, objects);
 
     public static PropertyInfo Property(this Type type, [NotNull] string name) => type.GetProperty(name, AccessTools.all);
 
@@ -151,7 +151,7 @@ public static class SimpleReflect {
 
     public static object GetValue(this PropertyInfo property, object o = null) => property.GetValue(o);
 
-    public static T GetValue<T>(this PropertyInfo property, object o = null) => (T) property.GetValue(o) ?? default;
+    public static T GetValue<T>(this PropertyInfo property, object o = null) => (T) property.GetValue(o);
 
     public static void SetValue(this PropertyInfo property, object o, object value) => property.SetValue(o, value);
 
@@ -236,14 +236,13 @@ public static class SimpleReflect {
 
     public static UnityModManager.ModEntry GetMod(this Assembly assembly) {
         if(assembly == typeof(JALib).Assembly) return JALib.Instance.ModEntry;
-        foreach(UnityModManager.ModEntry modEntry in UnityModManager.modEntries) {
-            if(modEntry.Assembly == assembly) return modEntry;
-            if(modEntry.OnToggle?.Method.DeclaringType?.Assembly == assembly) return modEntry;
-            if(modEntry.OnGUI?.Method.DeclaringType?.Assembly == assembly) return modEntry;
-            if(modEntry.OnUpdate?.Method.DeclaringType?.Assembly == assembly) return modEntry;
-            if(modEntry.OnFixedUpdate?.Method.DeclaringType?.Assembly == assembly) return modEntry;
-            if(modEntry.OnLateUpdate?.Method.DeclaringType?.Assembly == assembly) return modEntry;
-        }
+        foreach(UnityModManager.ModEntry modEntry in UnityModManager.modEntries)
+            if(modEntry.Assembly == assembly ||
+               modEntry.OnToggle?.Method.DeclaringType?.Assembly == assembly ||
+               modEntry.OnGUI?.Method.DeclaringType?.Assembly == assembly ||
+               modEntry.OnUpdate?.Method.DeclaringType?.Assembly == assembly ||
+               modEntry.OnFixedUpdate?.Method.DeclaringType?.Assembly == assembly ||
+               modEntry.OnLateUpdate?.Method.DeclaringType?.Assembly == assembly) return modEntry;
         return null;
     }
 
