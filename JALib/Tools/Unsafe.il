@@ -3,9 +3,9 @@
 
     .method public hidebysig static !!T Read<T>(void* source) cil managed aggressiveinlining {
         .maxstack 1
-        IL_0000: ldarg.0
-        IL_0001: ldobj !!T
-        IL_0006: ret
+        ldarg.0
+        ldobj !!T
+        ret
     }
 
     .method public hidebysig static !!T ReadUnaligned<T>(void* source) cil managed aggressiveinlining {
