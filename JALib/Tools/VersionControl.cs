@@ -7,7 +7,7 @@ public static class VersionControl {
     public static Version version;
 
     static VersionControl() {
-        releaseNumber = typeof(GCNS).Field("releaseNumber").GetValueUnsafeValue<int>();
+        releaseNumber = typeof(GCNS).Field("releaseNumber").GetValue<int>();
         Version.TryParse(Application.version, out version);
     }
 }
