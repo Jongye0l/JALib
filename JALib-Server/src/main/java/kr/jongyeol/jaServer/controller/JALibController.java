@@ -49,7 +49,11 @@ public class JALibController extends CustomController {
     public byte[] modInfoV2(HttpServletRequest request, @PathVariable String name, @PathVariable String version) {
         info(request, "GetModInfo(V2): " + name + " " + version + ", beta: null");
         ModData modData = ModData.getModData(name);
-        Version curVer = new Version(version);
+        Version curVer = version.toLowerCase().equals("latest") ? null : new Version(version);
+        if(curVer == null) {
+            curVer = modData.getVersion();
+            if(curVer == null) curVer = modData.getBetaVersion();
+        }
         boolean beta = modData != null && modData.getBetaMap().containsKey(curVer);
         return modInfoV2(modData, curVer, beta);
     }
@@ -58,7 +62,7 @@ public class JALibController extends CustomController {
     public byte[] modInfoV2(HttpServletRequest request, @PathVariable String name, @PathVariable String version, @PathVariable int beta) {
         info(request, "GetModInfo(V2): " + name + " " + version + ", beta: " + (beta == 1));
         ModData modData = ModData.getModData(name);
-        return modInfoV2(modData, new Version(version), beta != 0);
+        return modInfoV2(modData, version.toLowerCase().equals("latest") ? beta == 0 ? modData.getVersion() : modData.getBetaVersion() : new Version(version), beta != 0);
     }
 
     private byte[] modInfoV2(ModData modData, Version version, boolean beta) {
