@@ -607,7 +607,7 @@
 
     <Target Name="CompileIL" BeforeTargets="CoreCompile">
         <MakeDir Directories="lib" />
-        <Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm Properties\AssemblyInfo.il Tools\SimpleUnsafeReflect.il Tools\Unsafe.il Tools\VersionControl.il /dll /output:lib\JALib-IL.dll"/>
+        <Exec Command="C:\Windows\Microsoft.NET\Framework\v4.0.30319\ilasm Properties\AssemblyInfo.il Tools\SimpleUnsafeReflect.il Tools\Unsafe.il Tools\VersionControl.il /dll /optimize /output:lib\JALib-IL.dll"/>
     </Target>
 
     <Target Name="AfterBuild">
