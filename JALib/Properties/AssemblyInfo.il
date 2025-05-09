@@ -7,12 +7,6 @@
   .ver 1:0:0:29
 }
 
-.assembly extern 'Assembly-CSharp' {
-}
-
-.assembly extern 'UnityEngine.CoreModule' {
-}
-
 .assembly JALib_IL {
   .custom instance void [mscorlib]System.Reflection.AssemblyTitleAttribute::.ctor(string)
     = ( 01 00 08 4a 41 4c 69 62 2d 49 4c 00 00 )
