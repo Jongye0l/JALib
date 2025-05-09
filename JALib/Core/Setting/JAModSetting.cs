@@ -2,6 +2,7 @@ using System.IO;
 using JALib.Tools;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using UnityModManagerNet;
 
 namespace JALib.Core.Setting;
 
@@ -34,14 +35,12 @@ class JAModSetting : JASetting {
         try {
             return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
         } catch (Exception e) {
-            JALib.Instance.Error("Failed to load settings.");
-            JALib.Instance.LogException(e);
+            UnityModManager.Logger.LogException("Failed to load settings", e, "[JALib] [Exception]");
             try {
                 path += ".bak";
                 return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
             } catch (Exception e2) {
-                JALib.Instance.Error("Failed to load backuped settings.");
-                JALib.Instance.LogException(e2);
+                UnityModManager.Logger.LogException("Failed to load backuped settings", e2, "[JALib] [Exception]");
                 return new JObject();
             }
         }
