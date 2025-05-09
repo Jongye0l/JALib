@@ -12,7 +12,6 @@ using UnityModManagerNet;
 namespace JALib.Core.ModLoader;
 
 class RawModData {
-    private static AppDomain domain = AppDomain.CurrentDomain;
     public JAModLoader data;
     public string name;
     public JAModInfo info;
@@ -185,8 +184,8 @@ class RawModData {
                 try {
                     string cacheFile = Path.Combine(cacheDependencyPath, Path.GetFileNameWithoutExtension(file) + "-" + new FileInfo(file).LastWriteTimeUtc.GetHashCode() + ".dll");
                     if(!File.Exists(cacheFile)) File.Copy(file, cacheFile);
-                    domain.Load(cacheFile);
                     cacheFiles.Add(cacheFile);
+                    Assembly.LoadFrom(cacheFile);
                 } catch (Exception e) {
                     info.ModEntry.Logger.LogException(e);
                 }
