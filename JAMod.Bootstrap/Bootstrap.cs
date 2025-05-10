@@ -24,9 +24,6 @@ public static class Bootstrap {
                         new HarmonyMethod(((Delegate) GetConstructorPatch).Method));
                 }
             } else _ = new BootModData(modEntry);
-            new Thread(Installer.InstallMod) {
-                Name = "JALib Installer"
-            }.Start();
         }
     }
     
