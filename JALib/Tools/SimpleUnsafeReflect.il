@@ -17,7 +17,7 @@
         .maxstack 3
         ldarg.0
         ldarg.1
-        call object[] [mscorlib]System.Array::Empty<object>()
+        call !!T[] [mscorlib]System.Array::Empty<object>() // Why object is not work? Why !!T is work?
         callvirt instance object [mscorlib]System.Reflection.MethodBase::Invoke(object, object[])
         ret
     }
