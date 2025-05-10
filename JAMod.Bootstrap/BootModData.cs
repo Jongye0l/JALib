@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using HarmonyLib;
 using UnityModManagerNet;
 
@@ -65,7 +64,8 @@ struct BootModData {
     }
 
     public static Action<UnityModManager.ModEntry> CreateSetupAction(UnityModManager.ModEntry modEntry) => 
-        (Action<UnityModManager.ModEntry>) Delegate.CreateDelegate(typeof(Action<UnityModManager.ModEntry>), modEntry.Assembly.GetType("JALib.Bootstrap.JABootstrap").GetMethod("Setup"));
+        (Action<UnityModManager.ModEntry>) Delegate.CreateDelegate(typeof(Action<UnityModManager.ModEntry>), 
+            modEntry.Assembly.GetType("JALib.Bootstrap.JABootstrap").GetMethod("Load", BindingFlags.Public | BindingFlags.Static));
     
     public void SetPostfix(string postfix) {
         if(modEntry == null) return;

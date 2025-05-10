@@ -53,8 +53,13 @@ public static class Installer {
             UnityModManager.Logger.Log("Applying JALib...", prefix);
             UnityModManager.ModEntry modEntry = ApplyMod(path);
             UnityModManager.Logger.Log("Apply Complete JALib", prefix);
-            Action<UnityModManager.ModEntry> action = BootModData.CreateSetupAction(modEntry);
-            foreach(BootModData modData in BootModData.bootModDataList) modData.Run(action);
+            try {
+                Action<UnityModManager.ModEntry> action = BootModData.CreateSetupAction(modEntry);
+                foreach(BootModData modData in BootModData.bootModDataList) modData.Run(action);
+            } catch (Exception e) {
+                UnityModManager.Logger.LogException("Failed to run setup action", e, prefix);
+                foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Setup Failed]</color>");
+            }
             return;
         } catch (ArgumentException e) {
             if(PatchCookieDomain()) {
