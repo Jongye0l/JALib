@@ -47,10 +47,10 @@ struct BootModData {
         }.Start();
     }
 
-    private static void OnLoad(UnityModManager.ModEntry modEntry, bool __result) {
-        if(modEntry.Info.Id != "JALib") return;
+    private static void OnLoad(UnityModManager.ModEntry __instance, bool __result) {
+        if(__instance.Info.Id != "JALib") return;
         if(__result) {
-            Action<UnityModManager.ModEntry> action = CreateSetupAction(modEntry);
+            Action<UnityModManager.ModEntry> action = CreateSetupAction(__instance);
             foreach(BootModData modData in bootModDataList) modData.Run(action);
         } else {
             UnityModManager.Logger.Error("JALib Failed to load", "[JAMod] ");
