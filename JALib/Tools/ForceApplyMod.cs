@@ -8,9 +8,8 @@ namespace JALib.Tools;
 
 public static class ForceApplyMod {
     public static void ApplyMod(string path) {
-        UnityModManager.GameInfo config = typeof(UnityModManager).GetValueUnsafe<UnityModManager.GameInfo>("Config");
-        string path1 = Path.Combine(path, config.ModInfo);
-        if(!File.Exists(path1)) path1 = Path.Combine(path, config.ModInfo.ToLower());
+        string path1 = Path.Combine(path, "Info.json");
+        if(!File.Exists(path1)) path1 = Path.Combine(path, "info.json");
         if(!File.Exists(path1)) return;
         UnityModManager.Logger.Log("Reading file '" + path1 + "'.");
         try {
@@ -22,7 +21,7 @@ public static class ForceApplyMod {
             if(string.IsNullOrEmpty(info.AssemblyName) && File.Exists(Path.Combine(path, info.Id + ".dll"))) info.AssemblyName = info.Id + ".dll";
             UnityModManager.ModEntry modEntry = new(info, path + Path.DirectorySeparatorChar);
             UnityModManager.modEntries.Add(modEntry);
-            foreach(UnityModManager.Param.Mod mod in typeof(UnityModManager).GetValue<UnityModManager.Param>("Params").ModParams.Where(mod => mod.Id == info.Id)) modEntry.Enabled = mod.Enabled;
+            foreach(UnityModManager.Param.Mod mod in typeof(UnityModManager).InvokeUnsafe<UnityModManager.Param>("get_Params").ModParams.Where(mod => mod.Id == info.Id)) modEntry.Enabled = mod.Enabled;
             if(modEntry.Enabled) modEntry.Active = true;
         } catch (Exception ex) {
             UnityModManager.Logger.Error("Error parsing file '" + path1 + "'.");
