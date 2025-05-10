@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Bootstrap")]
+[assembly: AssemblyTitle("JAMod.Bootstrap")]
 [assembly: AssemblyDescription("Jongyeol Adofai Library's Mod Bootstrap")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Jongyeol")]
-[assembly: AssemblyProduct("Bootstrap")]
+[assembly: AssemblyProduct("JAMod.Bootstrap")]
 [assembly: AssemblyCopyright("Copyright ©Jongyeol 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

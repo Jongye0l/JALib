@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib", "JALib\JALib.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib.Bootstrap", "JALib.Bootstrap\JALib.Bootstrap.csproj", "{C34F6CFE-9C98-4E36-91FD-3FB94C1E6443}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bootstrap", "Bootstrap\Bootstrap.csproj", "{DB41C971-9D5B-4E64-86E8-5D280DA5422A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JAMod.Bootstrap", "JAMod.Bootstrap\JAMod.Bootstrap.csproj", "{DB41C971-9D5B-4E64-86E8-5D280DA5422A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JALib.ModApplicator", "JALib.ModApplicator\JALib.ModApplicator.csproj", "{0A12A6D0-C7CA-4861-884C-18A688E27101}"
 EndProject
