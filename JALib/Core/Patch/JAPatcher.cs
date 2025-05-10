@@ -22,7 +22,7 @@ public class JAPatcher : IDisposable {
     private static object locker = typeof(PatchProcessor).GetValue("locker");
 
     static JAPatcher() {
-        Harmony harmony = JALib.Harmony = typeof(JABootstrap).GetValue<Harmony>("harmony") ?? new Harmony("JALib");
+        Harmony harmony = JALib.Harmony = new Harmony("JALib");
         Assembly assembly = typeof(Harmony).Assembly;
         Type patchFunctions = assembly.GetType("HarmonyLib.PatchFunctions");
         _isOldHarmony = assembly.GetName().Version < new Version(2, 0, 3, 0);

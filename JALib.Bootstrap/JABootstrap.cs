@@ -13,7 +13,7 @@ public static class JABootstrap {
     private static AppDomain domain;
     private static Action<JAModInfo> LoadJAMod;
     private static Task _task;
-    internal static Harmony harmony;
+    [Obsolete] internal static Harmony harmony;
     private static JAModInfo jalibModInfo;
     private static int LoadCount;
 
