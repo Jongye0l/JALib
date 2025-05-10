@@ -518,10 +518,4 @@
     <Target Name="AfterBuild">
     </Target>
     -->
-
-    <Target Name="AfterBuild">
-        <Copy SourceFiles="bin/Debug/Bootstrap.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JipperResourcePack"/>
-    </Target>
-
-
 </Project>
