@@ -8,10 +8,10 @@ using UnityModManagerNet;
 
 namespace JALib.Bootstrap;
 
-public class JABootstrap {
+public static class JABootstrap {
     public const int BootstrapVersion = 0;
     private static AppDomain domain;
-    private static MethodInfo LoadJAMod;
+    private static Action<JAModInfo> LoadJAMod;
     private static Task _task;
     internal static Harmony harmony;
     private static JAModInfo jalibModInfo;
@@ -37,7 +37,7 @@ public class JABootstrap {
 
     private static void SetupJALib(JAModInfo modInfo) {
         jalibModInfo = modInfo;
-        LoadJAMod = LoadMod(modInfo).GetMethod("LoadModInfo", (BindingFlags) 15420);
+        LoadJAMod = (Action<JAModInfo>) Delegate.CreateDelegate(typeof(Action<JAModInfo>), LoadMod(modInfo).GetMethod("LoadModInfo", BindingFlags.NonPublic | BindingFlags.Static));
     }
 
     private static JAModInfo LoadModInfo(UnityModManager.ModEntry modEntry, bool beta) {
@@ -65,7 +65,7 @@ public class JABootstrap {
             Version versionValue = Version.Parse(onlyVersion);
             modEntry.Info.Version = (versionValue.Build == 0     ? new Version(versionValue.Major, versionValue.Minor) :
                                      versionValue.Revision == -1 ? versionValue : new Version(versionValue.Major, versionValue.Minor, versionValue.Build)) + behindVersion;
-            typeof(UnityModManager.ModEntry).GetField("Version", (BindingFlags) 15420).SetValue(modEntry, versionValue);
+            typeof(UnityModManager.ModEntry).GetField("Version", BindingFlags.Public | BindingFlags.Instance).SetValue(modEntry, versionValue);
             return beta;
         } catch (Exception e) {
             modEntry.Logger.LogException(e);
@@ -87,7 +87,7 @@ public class JABootstrap {
         Assembly modAssembly = Assembly.LoadFrom(modInfo.AssemblyRequireModPath ? Path.Combine(modInfo.ModEntry.Path, modInfo.AssemblyPath) : modInfo.AssemblyPath);
         Type modType = modAssembly.GetType(modInfo.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
-        Activator.CreateInstance(modType, (BindingFlags) 15420, null, [modInfo.ModEntry], null, null);
+        Activator.CreateInstance(modType, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.CreateInstance, null, [modInfo.ModEntry], null, null);
         return modType;
     }
 
@@ -98,7 +98,7 @@ public class JABootstrap {
             bool beta = InitializeVersion(modEntry);
             JAModInfo modInfo = LoadModInfo(modEntry, beta);
             await _task;
-            LoadJAMod.Invoke(null, [modInfo]);
+            LoadJAMod(modInfo);
         });
     }
 }

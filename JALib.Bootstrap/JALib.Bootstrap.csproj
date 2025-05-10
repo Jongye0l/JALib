@@ -37,6 +37,9 @@
         <Reference Include="0Harmony">
           <HintPath>D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\A Dance of Fire and Ice_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
         </Reference>
+        <Reference Include="JAMod.Bootstrap">
+          <HintPath>..\JAMod.Bootstrap\obj\Release\JAMod.Bootstrap.dll</HintPath>
+        </Reference>
         <Reference Include="mscorlib">
           <HintPath>D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\A Dance of Fire and Ice_Data\Managed\mscorlib.dll</HintPath>
         </Reference>

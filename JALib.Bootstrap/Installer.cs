@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
@@ -15,7 +12,7 @@ using UnityModManagerNet;
 
 namespace JALib.Bootstrap;
 
-class Installer {
+static class Installer {
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
 
@@ -24,6 +21,7 @@ class Installer {
         using HttpClient client = new();
         client.DefaultRequestHeaders.ExpectContinue = false;
         string domain = Domain1;
+        Exception exception;
         try {
             modEntry.Info.DisplayName = modName + "<color=gray> [Check Update...]</color>";
             HttpResponseMessage response = null;
@@ -43,60 +41,24 @@ class Installer {
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
             foreach(ZipArchiveEntry entry in archive.Entries) {
                 string entryPath = Path.Combine(modEntry.Path, entry.FullName);
-                if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
-                else CopyFile(entryPath, entry);
+                if(entryPath.EndsWith("/")) {
+                    if(!Directory.Exists(entryPath)) Directory.CreateDirectory(entryPath);
+                } else JAMod.Bootstrap.Installer.CopyFile(entryPath, entry);
             }
             string path = Path.Combine(modEntry.Path, "Info.json");
             if(!File.Exists(path)) path = Path.Combine(modEntry.Path, "info.json");
             UnityModManager.ModInfo modInfo = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
-            typeof(UnityModManager.ModEntry).GetField("Info", AccessTools.all).SetValue(modEntry, modInfo);
+            typeof(UnityModManager.ModEntry).GetField("Info", BindingFlags.Public | BindingFlags.Instance).SetValue(modEntry, modInfo);
             return true;
-        } catch (ArgumentException) {
-            if(JABootstrap.harmony != null) return false;
-            JABootstrap.harmony = new Harmony(modEntry.Info.Id);
-            JABootstrap.harmony.Patch(typeof(CookieContainer).GetConstructor([]), transpiler: new HarmonyMethod(((Delegate) CookieDomainPatch).Method));
-            return await CheckMod(modEntry);
+        } catch (ArgumentException e) {
+            if(JAMod.Bootstrap.Installer.PatchCookieDomain()) return await CheckMod(modEntry);
+            exception = e;
         } catch (Exception e) {
-            modEntry.Logger.Error("Failed to connect to the auto installer server.");
-            modEntry.Logger.LogException(e);
-            modEntry.Info.DisplayName = modName;
-            return false;
+            exception = e;
         }
-    }
-
-    private static void CopyFile(string entryPath, ZipArchiveEntry entry) {
-        string directory = Path.GetDirectoryName(entryPath);
-        if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-        FileStream fileStream = null;
-        try {
-            try {
-                fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
-            } catch (IOException) {
-                fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
-            }
-            entry.Open().CopyTo(fileStream);
-            int left = (int) (fileStream.Length - fileStream.Position);
-            if(left <= 0) return;
-            byte[] buffer = new byte[left];
-            for(int i = 0; i < left; i++) buffer[i] = 32;
-            fileStream.Write(buffer, 0, left);
-        } finally {
-            fileStream?.Close();
-        }
-    }
-
-    private static IEnumerable<CodeInstruction> CookieDomainPatch(IEnumerable<CodeInstruction> instructions) {
-        using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
-        while(enumerator.MoveNext()) {
-            CodeInstruction instruction = enumerator.Current;
-            if(instruction.opcode == OpCodes.Call && instruction.operand is MethodInfo method &&
-               method == typeof(IPGlobalProperties).GetMethod("InternalGetIPGlobalProperties", AccessTools.all)) {
-                yield return new CodeInstruction(OpCodes.Ldstr, "JALib-Custom");
-                enumerator.MoveNext();
-                enumerator.MoveNext();
-                instruction = enumerator.Current;
-            }
-            yield return instruction;
-        }
+        modEntry.Logger.Error("Failed to connect to the auto installer server.");
+        modEntry.Logger.LogException(exception);
+        modEntry.Info.DisplayName = modName;
+        return false;
     }
 }

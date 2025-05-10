@@ -20,7 +20,7 @@ namespace JAMod.Bootstrap;
 public static class Installer {
     public const string Domain1 = "jalib.jongyeol.kr";
     public const string Domain2 = "jalib2.jongyeol.kr";
-    public static bool setupCookieDomain;
+    private static bool setupCookieDomain;
 
     internal static void InstallMod() {
         const string prefix = "[JAMod] ";
@@ -106,7 +106,7 @@ public static class Installer {
         return true;
     }
 
-    private static void CopyFile(string entryPath, ZipArchiveEntry entry) {
+    public static void CopyFile(string entryPath, ZipArchiveEntry entry) {
         string directory = Path.GetDirectoryName(entryPath);
         if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
         FileStream fileStream = null;
