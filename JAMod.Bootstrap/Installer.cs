@@ -24,6 +24,7 @@ public static class Installer {
 
     internal static void InstallMod() {
         const string prefix = "[JAMod] ";
+        const string exceptionPrefix = "[JAMod] [Exception] ";
         using HttpClient client = new();
         client.DefaultRequestHeaders.ExpectContinue = false;
         string domain = Domain1;
@@ -57,7 +58,7 @@ public static class Installer {
                 Action<UnityModManager.ModEntry> action = BootModData.CreateSetupAction(modEntry);
                 foreach(BootModData modData in BootModData.bootModDataList) modData.Run(action);
             } catch (Exception e) {
-                UnityModManager.Logger.LogException("Failed to run setup action", e, prefix);
+                UnityModManager.Logger.LogException("Failed to run setup action", e, exceptionPrefix);
                 foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Setup Failed]</color>");
             }
             return;
@@ -70,7 +71,7 @@ public static class Installer {
         } catch (Exception e) {
             exception = e;
         }
-        UnityModManager.Logger.LogException("Failed to install JALib", exception, prefix);
+        UnityModManager.Logger.LogException("Failed to install JALib", exception, exceptionPrefix);
         foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Install Failed]</color>");
     }
     
@@ -88,7 +89,9 @@ public static class Installer {
             if(string.IsNullOrEmpty(info.AssemblyName) && File.Exists(Path.Combine(path, info.Id + ".dll"))) info.AssemblyName = info.Id + ".dll";
             UnityModManager.ModEntry modEntry = new(info, path + Path.DirectorySeparatorChar);
             UnityModManager.modEntries.Add(modEntry);
-            foreach(UnityModManager.Param.Mod mod in ((UnityModManager.Param) typeof(UnityModManager).GetMethod("get_Params", (BindingFlags) 15420).Invoke(null, null)).ModParams.Where(mod => mod.Id == info.Id)) modEntry.Enabled = mod.Enabled;
+            foreach(UnityModManager.Param.Mod mod in 
+                    ((UnityModManager.Param) typeof(UnityModManager).GetMethod("get_Params", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null)).ModParams) 
+                if(mod.Id == info.Id) modEntry.Enabled = mod.Enabled;
             if(modEntry.Enabled) modEntry.Active = true;
             return modEntry;
         } catch (Exception ex) {
