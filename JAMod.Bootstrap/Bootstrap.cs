@@ -12,8 +12,7 @@ public static class Bootstrap {
         try {
             RunBootstrap(modEntry);
         } catch (Exception) {
-            bool old = typeof(UnityModManager).Assembly.GetName().Version < new Version(0, 27, 13, 0);
-            if(old) {
+            if(typeof(UnityModManager).Assembly.GetName().Version < new Version(0, 27, 13, 0)) {
                 try {
                     _ = typeof(BootModData).GetConstructor(null).Invoke([modEntry]);
                 } catch (ArgumentNullException) {
