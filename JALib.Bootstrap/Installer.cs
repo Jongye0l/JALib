@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
@@ -51,7 +53,13 @@ static class Installer {
             typeof(UnityModManager.ModEntry).GetField("Info", BindingFlags.Public | BindingFlags.Instance).SetValue(modEntry, modInfo);
             return true;
         } catch (ArgumentException e) {
-            if(JAMod.Bootstrap.Installer.PatchCookieDomain()) return await CheckMod(modEntry);
+            bool run;
+            try {
+                run = PatchCookieDomain();
+            } catch (Exception) {
+                run = CookieHandler.PatchCookieDomain();
+            }
+            if(run) return await CheckMod(modEntry);
             exception = e;
         } catch (Exception e) {
             exception = e;
@@ -60,5 +68,33 @@ static class Installer {
         modEntry.Logger.LogException(exception);
         modEntry.Info.DisplayName = modName;
         return false;
+    }
+
+    private static bool PatchCookieDomain() => JAMod.Bootstrap.Installer.PatchCookieDomain();
+}
+
+static class CookieHandler {
+    private static bool isPatched;
+
+    public static bool PatchCookieDomain() {
+        if(isPatched) return false;
+        Harmony harmony = new("JAMod");
+        harmony.Patch(typeof(CookieContainer).GetConstructor([]), transpiler: new HarmonyMethod(((Delegate) CookieDomainPatch).Method));
+        isPatched = true;
+        return true;
+    }
+
+    private static IEnumerable<CodeInstruction> CookieDomainPatch(IEnumerable<CodeInstruction> instructions) {
+        using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
+        while(enumerator.MoveNext()) {
+            CodeInstruction instruction = enumerator.Current;
+            if(instruction.opcode == OpCodes.Call && instruction.operand is MethodInfo { Name: "InternalGetIPGlobalProperties" }) {
+                yield return new CodeInstruction(OpCodes.Ldstr, "JALib-Custom");
+                enumerator.MoveNext();
+                enumerator.MoveNext();
+                instruction = enumerator.Current;
+            }
+            yield return instruction;
+        }
     }
 }
