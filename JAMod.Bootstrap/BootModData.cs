@@ -29,6 +29,7 @@ struct BootModData {
     }
 
     public static void Checker() {
+        UnityModManager.Logger.Log("Checking JALib", "[JAMod] ");
         foreach(UnityModManager.ModEntry modEntry in UnityModManager.modEntries) {
             if(modEntry.Info.Id != "JALib") continue;
             if(modEntry.Enabled) {

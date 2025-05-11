@@ -131,8 +131,7 @@ public static class Installer {
         using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
         while(enumerator.MoveNext()) {
             CodeInstruction instruction = enumerator.Current;
-            if(instruction.opcode == OpCodes.Call && instruction.operand is MethodInfo method &&
-               method == typeof(IPGlobalProperties).GetMethod("InternalGetIPGlobalProperties", AccessTools.all)) {
+            if(instruction.opcode == OpCodes.Call && instruction.operand is MethodInfo { Name: "InternalGetIPGlobalProperties" }) {
                 yield return new CodeInstruction(OpCodes.Ldstr, "JALib-Custom");
                 enumerator.MoveNext();
                 enumerator.MoveNext();
