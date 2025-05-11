@@ -169,8 +169,9 @@ End:
             if(!Directory.Exists(path)) Directory.CreateDirectory(path);
             foreach(ZipArchiveEntry entry in archive.Entries) {
                 string entryPath = Path.Combine(path, entry.FullName);
-                if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
-                else CopyFile(entryPath, entry);
+                if(entryPath.EndsWith("/")) {
+                    if(!Directory.Exists(entryPath)) Directory.CreateDirectory(entryPath);
+                } else CopyFile(entryPath, entry);
             }
             try {
                 JObject modInfo = JObject.Parse(File.ReadAllText(Path.Combine(path, "JAModInfo.json")));
