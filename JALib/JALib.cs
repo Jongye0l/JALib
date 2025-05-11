@@ -72,7 +72,7 @@ class JALib : JAMod {
         }
         if(File.Exists(applicationPath)) {
             FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(applicationPath);
-            if(Version.Parse(versionInfo.FileVersion) >= new Version(1, 0, 0, 1)) return;
+            if(Version.Parse(versionInfo.FileVersion) >= new Version(1, 0, 0, 2)) return;
         }
         Directory.CreateDirectory(applicationFolderPath);
         Process[] processes = Process.GetProcessesByName("JALib ModApplicator.exe");
