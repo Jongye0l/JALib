@@ -14,7 +14,6 @@ public class Localization {
         AdofaiRestartTitle = "JALib 모드 적용기",
         AdofaiStart = "얼불춤을 시작하시겠습니까?",
         ModAnnounceTitle = "모드 적용 안내",
-        StartModApply = "{0} 모드 적용을 시작합니다.",
         FinishModApply = "모드 적용이 완료되었습니다.",
         ModAlreadyTitle = "모드 적용이 취소되었습니다.",
         ModAlreadyInstalled = "해당 버전의 {0} 모드가 이미 적용되어 있습니다.",
@@ -34,7 +33,6 @@ public class Localization {
         AdofaiRestartTitle = "JALib Mod Applicator",
         AdofaiStart = "Do you want to start A Dance of Fire and Ice?",
         ModAnnounceTitle = "Mod Application Announcement",
-        StartModApply = "Start applying the {0} mod.",
         FinishModApply = "mod application is complete.",
         ModAlreadyTitle = "Mod application canceled.",
         ModAlreadyInstalled = "The {0} mod of that version is already installed.",
@@ -45,21 +43,20 @@ public class Localization {
 
     public static Localization Current = CultureInfo.CurrentCulture.Name == "ko-KR" ? Korean : English;
 
-    public string Error_ArgumentNotSet { get; private set; }
-    public string Error_Title { get; private set; }
-    public string Error_VersionNotSet { get; private set; }
-    public string Error_FailConnectServer { get; private set; }
-    public string Error_LoadAdofaiPath { get; private set; }
-    public string Error_LoadModInfo { get; private set; }
-    public string AdofaiRestart { get; private set; }
-    public string AdofaiRestartTitle { get; private set; }
-    public string AdofaiStart { get; private set; }
-    public string ModAnnounceTitle { get; private set; }
-    public string StartModApply{ get; private set; }
-    public string FinishModApply { get; private set; }
-    public string ModAlreadyTitle { get; private set; }
-    public string ModAlreadyInstalled { get; private set; }
-    public string ModInstalling { get; private set; }
-    public string DependenciesInstalling { get; private set; }
-    public string ModApplyFinish { get; private set; }
+    public string Error_ArgumentNotSet;
+    public string Error_Title;
+    public string Error_VersionNotSet;
+    public string Error_FailConnectServer;
+    public string Error_LoadAdofaiPath;
+    public string Error_LoadModInfo;
+    public string AdofaiRestart;
+    public string AdofaiRestartTitle;
+    public string AdofaiStart;
+    public string ModAnnounceTitle;
+    public string FinishModApply;
+    public string ModAlreadyTitle;
+    public string ModAlreadyInstalled;
+    public string ModInstalling;
+    public string DependenciesInstalling;
+    public string ModApplyFinish;
 }
