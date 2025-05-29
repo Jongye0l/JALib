@@ -19,7 +19,7 @@ public static class Zipper {
         Dictionary<string, RawFile> folders = new();
         foreach(ZipArchiveEntry entry in archive.Entries) {
             byte[] buffer = new byte[entry.Length];
-            entry.Open().Read(buffer);
+            using(Stream st = entry.Open()) st.Read(buffer, 0, buffer.Length);
             string[] path = entry.FullName.Split('/');
             if(path.Length > 1) {
                 string folder = string.Join("/", path[..^1]);
@@ -62,7 +62,8 @@ public static class Zipper {
                 string directory = Path.GetDirectoryName(entryPath);
                 if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
                 using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
-                entry.Open().CopyTo(fileStream);
+                using Stream st = entry.Open();
+                st.CopyTo(fileStream);
             }
         }
     }

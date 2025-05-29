@@ -119,7 +119,7 @@ public static class Installer {
             } catch (IOException) {
                 fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
             }
-            entry.Open().CopyTo(fileStream);
+            using(Stream st = entry.Open()) st.CopyTo(fileStream);
             int left = (int) (fileStream.Length - fileStream.Position);
             if(left <= 0) return;
             byte[] buffer = new byte[left];
