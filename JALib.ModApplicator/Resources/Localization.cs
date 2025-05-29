@@ -3,7 +3,7 @@
 namespace JALib.ModApplicator.Resources;
 
 public class Localization {
-    public static Localization Korean = new() {
+    public static readonly Localization Korean = new() {
         Error_ArgumentNotSet = "인수가 설정되지 않았습니다.",
         Error_Title = "모드 적용 오류",
         Error_VersionNotSet = "버전이 설정되지 않았습니다.",
@@ -23,7 +23,7 @@ public class Localization {
         ModApplyFinish = "{0} 모드 적용 완료"
     };
 
-    public static Localization English = new() {
+    public static readonly Localization English = new() {
         Error_ArgumentNotSet = "Argument is not set.",
         Error_Title = "Mod Applicator Error",
         Error_VersionNotSet = "Version is not set.",
@@ -43,7 +43,7 @@ public class Localization {
         ModApplyFinish = "{0} mod application complete"
     };
 
-    public static Localization Current => CultureInfo.CurrentCulture.Name == "ko-KR" ? Korean : English;
+    public static Localization Current = CultureInfo.CurrentCulture.Name == "ko-KR" ? Korean : English;
 
     public string Error_ArgumentNotSet { get; private set; }
     public string Error_Title { get; private set; }

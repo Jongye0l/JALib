@@ -20,11 +20,16 @@ namespace JALib.ModApplicator;
 class Program {
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
+    private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
     private static string adofaiPath;
     private static AdofaiStatus adofaiStatus = AdofaiStatus.NotSet;
     private static int port;
     private static JALibStatus jaLibStatus = JALibStatus.NotSet;
     private static Dictionary<string, string> dependencies;
+
+    static Program() {
+        Client.DefaultRequestHeaders.ExpectContinue = false;
+    }
 
     public static async Task Main(string[] args) {
         bool jalibInstall = false;
@@ -151,9 +156,8 @@ End:
         try {
             HttpResponseMessage response = null;
             string domain = Domain1;
-            using HttpClient client = new();
             for(int i = 0; i < 2; i++) {
-                response = await client.GetAsync($"https://{domain}/downloadMod/{modName}/{version}");
+                response = await Client.GetAsync($"https://{domain}/downloadMod/{modName}/{version}");
                 if(response.IsSuccessStatusCode) break;
                 domain = Domain2;
             }
@@ -256,3 +260,4 @@ End:
         }
     }
 }
+

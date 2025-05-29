@@ -19,13 +19,13 @@ public static class Bootstrap {
                     _ = new BootModData(modEntry);
                     BootModData.constructorInfo = typeof(BootModData).GetConstructor([typeof(UnityModManager.ModEntry)]);
                     new Harmony("JAMod.Bootstrap").Patch(
-                        typeof(Type).GetMethod("GetConstructor", BindingFlags.Public | BindingFlags.Instance, null, [typeof(Type[])], null), 
+                        typeof(Type).GetMethod("GetConstructor", BindingFlags.Public | BindingFlags.Instance, null, [typeof(Type[])], null),
                         new HarmonyMethod(((Delegate) GetConstructorPatch).Method));
                 }
             } else _ = new BootModData(modEntry);
         }
     }
-    
+
     private static bool GetConstructorPatch(Type __instance, Type[] types, ref ConstructorInfo __result) {
         if(types != null || __instance.FullName != typeof(BootModData).FullName) return true;
         __result = BootModData.constructorInfo;

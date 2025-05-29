@@ -21,6 +21,7 @@ static class Installer {
     internal static async Task<bool> CheckMod(UnityModManager.ModEntry modEntry) {
         string modName = modEntry.Info.Id;
         using HttpClient client = new();
+        client.Timeout = TimeSpan.FromSeconds(10);
         client.DefaultRequestHeaders.ExpectContinue = false;
         string domain = Domain1;
         Exception exception;
