@@ -28,6 +28,7 @@ class JApi {
     private Task retryTask;
 
     public static void Initialize() {
+        HttpClient.Timeout = TimeSpan.FromSeconds(10);
         HttpClient.DefaultRequestHeaders.ExpectContinue = false;
         _instance ??= new JApi();
     }

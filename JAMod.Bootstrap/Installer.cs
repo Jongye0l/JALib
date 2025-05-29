@@ -26,6 +26,7 @@ public static class Installer {
         const string prefix = "[JAMod] ";
         const string exceptionPrefix = "[JAMod] [Exception] ";
         using HttpClient client = new();
+        client.Timeout = TimeSpan.FromSeconds(10);
         client.DefaultRequestHeaders.ExpectContinue = false;
         string domain = Domain1;
         Exception exception;
@@ -33,15 +34,14 @@ public static class Installer {
             foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=gray> [JALib Install : Check Server...]</color>");
             UnityModManager.Logger.Log("Checking server...", prefix);
             for(int i = 0; i < 2; i++) {
-                Task<HttpResponseMessage> task = client.GetAsync($"https://{domain}/ping");
-                task.Wait(10000);
-                if(task.IsCompleted && task.Result.IsSuccessStatusCode) break;
-                if(i == 1) task.Result.EnsureSuccessStatusCode();
+                HttpResponseMessage response = client.GetAsync($"https://{domain}/ping").GetAwaiter().GetResult();
+                if(response.IsSuccessStatusCode) break;
+                if(i == 1) response.EnsureSuccessStatusCode();
                 domain = Domain2;
             }
             foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=green> [JALib Installing...]</color>");
             UnityModManager.Logger.Log("Installing JALib...", prefix);
-            using Stream stream = client.GetAsync($"https://{domain}/downloadMod/JALib/latest").Result.Content.ReadAsStreamAsync().Result;
+            using Stream stream = client.GetStreamAsync($"https://{domain}/downloadMod/JALib/latest").GetAwaiter().GetResult();
             string path = Path.Combine(UnityModManager.modsPath, "JALib");
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
             foreach(ZipArchiveEntry entry in archive.Entries) {
@@ -111,7 +111,7 @@ public static class Installer {
 
     public static void CopyFile(string entryPath, ZipArchiveEntry entry) {
         string directory = Path.GetDirectoryName(entryPath);
-        if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+        if(directory != null && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
         FileStream fileStream = null;
         try {
             try {
@@ -144,3 +144,4 @@ public static class Installer {
         }
     }
 }
+
