@@ -7,6 +7,7 @@ using JALib.Data;
 namespace JALib.Tools;
 
 public static class Zipper {
+    public static readonly Encoding Encoding = Encoding.GetEncoding(949);
 
     public static RawFile[] Unzip(byte[] zipData) {
         using MemoryStream zipStream = new(zipData);
@@ -14,7 +15,7 @@ public static class Zipper {
     }
 
     public static RawFile[] Unzip(Stream stream) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding);
         List<RawFile> files = [];
         Dictionary<string, RawFile> folders = new();
         foreach(ZipArchiveEntry entry in archive.Entries) {
@@ -50,7 +51,7 @@ public static class Zipper {
     }
 
     public static RawFile[] Unzip(Stream stream, Func<string, string> nameChanger, Func<byte[], byte[]> dataChanger) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding);
         List<RawFile> files = [];
         Dictionary<string, RawFile> folders = new();
         foreach(ZipArchiveEntry entry in archive.Entries) {
@@ -95,7 +96,7 @@ public static class Zipper {
     }
 
     public static void Unzip(Stream stream, string path) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding);
         foreach(ZipArchiveEntry entry in archive.Entries) {
             string entryPath = Path.Combine(path, entry.FullName);
             if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
@@ -115,7 +116,7 @@ public static class Zipper {
     }
 
     public static void Unzip(Stream stream, string path, Func<string, string> nameChanger, Func<byte[], byte[]> dataChanger) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding);
         foreach(ZipArchiveEntry entry in archive.Entries) {
             string entryPath = Path.Combine(path, nameChanger(entry.FullName));
             if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
@@ -137,7 +138,7 @@ public static class Zipper {
     }
 
     public static void Unzip(Stream stream, string path, Func<string, string> nameChanger, Stream writeStream, Stream readStream) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding);
         foreach(ZipArchiveEntry entry in archive.Entries) {
             string entryPath = Path.Combine(path, nameChanger(entry.FullName));
             if(entryPath.EndsWith("/")) Directory.CreateDirectory(entryPath);
@@ -174,7 +175,7 @@ public static class Zipper {
     }
 
     public static void Zip(IEnumerable<RawFile> files, Stream stream) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Create, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Create, false, Encoding);
         foreach(RawFile file in files) WriteZip(file, archive, null);
     }
 
@@ -191,12 +192,12 @@ public static class Zipper {
     }
 
     public static void Zip(IEnumerable<RawFile> files, Stream stream, Func<string, string> nameChanger, Func<byte[], byte[]> dataChanger) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Create, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Create, false, Encoding);
         foreach(RawFile file in files) WriteZip(file, archive, null, nameChanger, dataChanger);
     }
 
     public static void Zip(IEnumerable<RawFile> files, Stream stream, Func<string, string> nameChanger, Stream writeStream, Stream readStream) {
-        using ZipArchive archive = new(stream, ZipArchiveMode.Create, false, Encoding.UTF8);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Create, false, Encoding);
         foreach(RawFile file in files) WriteZip(file, archive, null, nameChanger, writeStream, readStream);
     }
 
