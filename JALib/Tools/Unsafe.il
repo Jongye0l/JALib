@@ -389,4 +389,20 @@
         unbox !!T
         ret
     }
+
+    .method public hidebysig static native int AsPointer(object o) cil managed aggressiveinlining {
+        .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0
+        conv.i
+        ret
+    }
+
+    .method public hidebysig static native unsigned int AsUnsignedPointer(object o) cil managed aggressiveinlining {
+        .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0
+        conv.u
+        ret
+    }
 }
