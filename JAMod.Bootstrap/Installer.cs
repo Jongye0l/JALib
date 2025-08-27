@@ -9,6 +9,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using HarmonyLib;
 using TinyJson;
@@ -28,6 +29,7 @@ public static class Installer {
         using HttpClient client = new();
         client.Timeout = TimeSpan.FromSeconds(10);
         client.DefaultRequestHeaders.ExpectContinue = false;
+        client.DefaultRequestHeaders.Add("User-Agent", $"JAMod Bootstrap/{typeof(Installer).Assembly.GetName().Version} ({GetOSInfo()})");
         string domain = Domain1;
         Exception exception;
         try {
@@ -74,7 +76,48 @@ public static class Installer {
         UnityModManager.Logger.LogException("Failed to install JALib", exception, exceptionPrefix);
         foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Install Failed]</color>");
     }
-    
+
+    private static string GetOSInfo() {
+        string os = SystemInfo.operatingSystem;
+        Match m;
+        string ver;
+        Version version;
+
+        if(os.Contains("Windows")) {
+            m = Regex.Match(os, @"\(([\d\.]+)\) (\d+)bit");
+            if(m.Success) {
+                version = new Version(m.Groups[1].Value);
+                ver = version.Major + "." + version.Minor;
+            } else ver = "10.0";
+            int bit = m.Success && int.TryParse(m.Groups[2].Value, out int b) ? b : 64;
+            return $"Windows NT {ver}; " + (bit == 64 ? "Win64; x64" : "WOW64");
+        }
+        if(os.Contains("Linux")) {
+            m = Regex.Match(os, @"Linux\s+([\d\.]+)");
+            if(m.Success) {
+                version = new Version(m.Groups[1].Value);
+                ver = version.Major + "." + version.Minor;
+            } else ver = "5.0";
+            return $"X11; Linux {ver} x86_64";
+        }
+        if(os.Contains("Mac OS")) {
+            m = Regex.Match(os, @"Mac OS X (\d+[\._]\d+[\._]?\d*)");
+            ver = m.Success ? m.Groups[1].Value.Replace('_', '.') : "10.15.7";
+            return $"Macintosh; Intel Mac OS X {ver}";
+        }
+        if(os.Contains("Android")) {
+            m = Regex.Match(os, @"Android OS (\d+)");
+            ver = m.Success ? m.Groups[1].Value : "10";
+            return $"Linux; Android {ver}";
+        }
+        if(os.Contains("iOS")) {
+            m = Regex.Match(os, @"iOS (\d+(\.\d+)*)");
+            ver = m.Success ? m.Groups[1].Value : "16.0";
+            return $"iPhone; CPU iPhone OS {ver.Replace('.', '_')} like Mac OS X";
+        }
+        return "Unknown";
+    }
+
     private static UnityModManager.ModEntry ApplyMod(string path) {
         string path1 = Path.Combine(path, "Info.json");
         if(!File.Exists(path1)) path1 = Path.Combine(path, "info.json");
@@ -89,9 +132,10 @@ public static class Installer {
             if(string.IsNullOrEmpty(info.AssemblyName) && File.Exists(Path.Combine(path, info.Id + ".dll"))) info.AssemblyName = info.Id + ".dll";
             UnityModManager.ModEntry modEntry = new(info, path + Path.DirectorySeparatorChar);
             UnityModManager.modEntries.Add(modEntry);
-            foreach(UnityModManager.Param.Mod mod in 
-                    ((UnityModManager.Param) typeof(UnityModManager).GetMethod("get_Params", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null)).ModParams) 
-                if(mod.Id == info.Id) modEntry.Enabled = mod.Enabled;
+            foreach(UnityModManager.Param.Mod mod in
+                    ((UnityModManager.Param) typeof(UnityModManager).GetMethod("get_Params", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null)).ModParams)
+                if(mod.Id == info.Id)
+                    modEntry.Enabled = mod.Enabled;
             if(modEntry.Enabled) modEntry.Active = true;
             return modEntry;
         } catch (Exception ex) {
@@ -100,7 +144,7 @@ public static class Installer {
             return null;
         }
     }
-    
+
     public static bool PatchCookieDomain() {
         if(setupCookieDomain) return false;
         Harmony harmony = new("JAMod");
@@ -115,17 +159,20 @@ public static class Installer {
         FileStream fileStream = null;
         try {
             try {
-                fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
+                fileStream = File.Exists(entryPath)
+                                 ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None)
+                                 : new FileStream(entryPath, FileMode.Create);
             } catch (IOException) {
                 fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
             }
-            using(Stream st = entry.Open()) st.CopyTo(fileStream);
+            using (Stream st = entry.Open()) st.CopyTo(fileStream);
             int left = (int) (fileStream.Length - fileStream.Position);
             if(left <= 0) return;
             byte[] buffer = new byte[left];
             for(int i = 0; i < left; i++) buffer[i] = 32;
             fileStream.Write(buffer, 0, left);
-        } finally {
+        }
+        finally {
             fileStream?.Close();
         }
     }
@@ -144,4 +191,3 @@ public static class Installer {
         }
     }
 }
-

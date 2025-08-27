@@ -8,7 +8,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using JALib.ModApplicator.Resources;
@@ -29,6 +31,31 @@ class Program {
 
     static Program() {
         Client.DefaultRequestHeaders.ExpectContinue = false;
+        try {
+            OperatingSystem os = Environment.OSVersion;
+            string osInfo;
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                Regex regex = new(@"([\d\.]+)");
+                Match match = regex.Match(RuntimeInformation.OSDescription);
+                string version;
+                if(match.Success) {
+                    Version ver = new(match.Groups[1].Value);
+                    version = $"{ver.Major}.{ver.Minor}";
+                } else version = "10.0";
+                osInfo = $"Windows NT {version} " + (Environment.Is64BitOperatingSystem ? "Win64; x64" : "WOW64");
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) osInfo = $"Macintosh; Intel Mac OS X {os.Version.Major}.{os.Version.Minor}";
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) osInfo = "X11; Linux " + RuntimeInformation.OSArchitecture switch {
+                    Architecture.Arm64 => "aarch64",
+                    Architecture.Arm => "armv7l",
+                    Architecture.X64 => "x86_64",
+                    _ => "i686"
+                };
+            else osInfo = "Unknown";
+            Client.DefaultRequestHeaders.Add("User-Agent", $"JALib ModApplicator/{typeof(Program).Assembly.GetName().Version} ({osInfo})");
+        } catch (Exception) {
+            Client.DefaultRequestHeaders.Add("User-Agent", $"JALib ModApplicator/{typeof(Program).Assembly.GetName().Version} (Windows NT 10.0; Win64; x64)");
+        }
     }
 
     public static async Task Main(string[] args) {
