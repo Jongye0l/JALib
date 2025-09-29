@@ -21,6 +21,7 @@ public static class JABootstrap {
         _task = Task.Run(async () => {
             try {
                 domain ??= AppDomain.CurrentDomain;
+                LoadJAModBootstrap(modEntry.Path);
                 Task<bool> checkMod = Installer.CheckMod(modEntry);
                 bool beta = InitializeVersion(modEntry);
                 JAModInfo modInfo = LoadModInfo(modEntry, beta);
@@ -33,6 +34,12 @@ public static class JABootstrap {
                 modEntry.Logger.LogException(e);
             }
         });
+    }
+
+    private static void LoadJAModBootstrap(string path) {
+        foreach(Assembly assembly in domain.GetAssemblies()) 
+            if(assembly.GetName().Name == "JAMod.Bootstrap") return;
+        Assembly.LoadFrom(Path.Combine(path, "JAMod.Bootstrap.dll"));
     }
 
     private static void SetupJALib(JAModInfo modInfo) {
@@ -97,7 +104,12 @@ public static class JABootstrap {
         Task.Run(async () => {
             bool beta = InitializeVersion(modEntry);
             JAModInfo modInfo = LoadModInfo(modEntry, beta);
-            await _task;
+            try {
+                await _task;
+            } catch (Exception) {
+                modEntry.Info.DisplayName = modEntry.Info.Id + " <color=red>[Error Loading JALib]</color>";
+                throw;
+            }
             LoadJAMod(modInfo);
         });
     }
