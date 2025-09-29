@@ -167,10 +167,11 @@ public class SettingGUI(JAMod mod) {
         GUILayout.Label(text);
         GUILayout.Space(4f);
         string result = GUILayout.TextField(value ?? defaultValue);
-        if(value == result) return;
-        value = result;
-        onChanged?.Invoke();
-        mod.ModSetting.Save();
+        if(value != result) {
+            value = result;
+            onChanged?.Invoke();
+            mod.ModSetting.Save();
+        }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
     }
