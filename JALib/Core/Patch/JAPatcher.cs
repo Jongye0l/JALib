@@ -35,21 +35,21 @@ public class JAPatcher : IDisposable {
         harmony.CreateReversePatcher(methodPatcher.Method("PrefixAffectsOriginal"), new HarmonyMethod(((Delegate) JAMethodPatcher.PrefixAffectsOriginal).Method)).Patch();
         harmony.Patch(((Delegate) JAMethodPatcher.AddOverride).Method, transpiler: new HarmonyMethod(((Delegate) JAMethodPatcher.EmitterPatch).Method));
         harmony.CreateReversePatcher(methodPatcher.Method("CreateReplacement"), new HarmonyMethod(((Delegate) JAMethodPatcher.CreateReplacement).Method)).Patch();
-        JAMethodPatcher.LoadAddPrePostMethod(harmony);
         harmony.CreateReversePatcher(assembly.GetType("HarmonyLib.HarmonySharedState").Method("GetPatchInfo"), new HarmonyMethod(((Delegate) GetPatchInfo).Method)).Patch();
         lock(locker) {
+            JAMethodPatcher.LoadAddPrePostMethod(harmony);
             harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
             harmony.Patch(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
             harmony.Patch(assembly.GetType("HarmonyLib.MethodCopier").Method("GetInstructions"), new HarmonyMethod(((Delegate) GetInstructions).Method));
+            JAPatchAttribute attribute = new(typeof(PatchProcessor).Method("Unpatch", typeof(MethodInfo)), PatchType.Replace, false) {
+                Method = ((Delegate) UnpatchPatch1).Method
+            };
+            CustomPatch(attribute.MethodBase, new HarmonyMethod(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug), attribute, null);
+            attribute = new JAPatchAttribute(typeof(PatchProcessor).Method("Unpatch", typeof(HarmonyPatchType), typeof(string)), PatchType.Replace, false) {
+                Method = ((Delegate) UnpatchPatch2).Method
+            };
+            CustomPatch(attribute.MethodBase, new HarmonyMethod(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug), attribute, null);
         }
-        JAPatchAttribute attribute = new(typeof(PatchProcessor).Method("Unpatch", typeof(MethodInfo)), PatchType.Replace, false) {
-            Method = ((Delegate) UnpatchPatch1).Method
-        };
-        CustomPatch(attribute.MethodBase, new HarmonyMethod(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug), attribute, null);
-        attribute = new JAPatchAttribute(typeof(PatchProcessor).Method("Unpatch", typeof(HarmonyPatchType), typeof(string)), PatchType.Replace, false) {
-            Method = ((Delegate) UnpatchPatch2).Method
-        };
-        CustomPatch(attribute.MethodBase, new HarmonyMethod(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug), attribute, null);
     }
 
     private static void FixPatchCtorNull(ref string[] before, ref string[] after) {
