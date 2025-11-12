@@ -6,6 +6,7 @@ using System.Text;
 using HarmonyLib;
 using JALib.Bootstrap;
 using JALib.Tools;
+using UnityModManagerNet;
 
 namespace JALib.Core.Patch;
 
@@ -20,13 +21,16 @@ public class JAPatcher : IDisposable {
     #region CustomPatchPatching
     private static Dictionary<MethodBase, JAPatchInfo> jaPatches = new();
     private static object locker = typeof(PatchProcessor).GetValue("locker");
+    private const string LogPrefix = "[JAPatcher] ";
 
     static JAPatcher() {
+        UnityModManager.Logger.Log("Starting JAPatcher Initialization...(0/4)", LogPrefix);
         Harmony harmony = JALib.Harmony = new Harmony("JALib");
         Assembly assembly = typeof(Harmony).Assembly;
         Type patchFunctions = assembly.GetType("HarmonyLib.PatchFunctions");
         _isOldHarmony = assembly.GetName().Version < new Version(2, 0, 3, 0);
         if(_isOldHarmony) harmony.Patch(typeof(HarmonyLib.Patch).Constructor(), new HarmonyMethod(((Delegate) FixPatchCtorNull).Method));
+        UnityModManager.Logger.Log("Starting JAPatcher Reverse Patches.(1/4)", LogPrefix);
         harmony.CreateReversePatcher(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperReverse).Method)).Patch();
         MethodInfo reversePatchMethod = patchFunctions.Method("ReversePatch");
         harmony.CreateReversePatcher(reversePatchMethod, new HarmonyMethod(((Delegate) PatchReversePatchReverse).Method)).Patch();
@@ -36,7 +40,9 @@ public class JAPatcher : IDisposable {
         harmony.Patch(((Delegate) JAMethodPatcher.AddOverride).Method, transpiler: new HarmonyMethod(((Delegate) JAMethodPatcher.EmitterPatch).Method));
         harmony.CreateReversePatcher(methodPatcher.Method("CreateReplacement"), new HarmonyMethod(((Delegate) JAMethodPatcher.CreateReplacement).Method)).Patch();
         harmony.CreateReversePatcher(assembly.GetType("HarmonyLib.HarmonySharedState").Method("GetPatchInfo"), new HarmonyMethod(((Delegate) GetPatchInfo).Method)).Patch();
+        UnityModManager.Logger.Log("Start Enter the Harmony Locker.(2/4)", LogPrefix);
         lock(locker) {
+            UnityModManager.Logger.Log("Start JAPatcher Patches.(3/4)", LogPrefix);
             JAMethodPatcher.LoadAddPrePostMethod(harmony);
             harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
             harmony.Patch(patchFunctions.Method("ReversePatch"), new HarmonyMethod(((Delegate) PatchReversePatchPatch).Method));
@@ -50,6 +56,7 @@ public class JAPatcher : IDisposable {
             };
             CustomPatch(attribute.MethodBase, new HarmonyMethod(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug), attribute, null);
         }
+        UnityModManager.Logger.Log("Complete JAPatcher Initialization.(4/4)", LogPrefix);
     }
 
     private static void FixPatchCtorNull(ref string[] before, ref string[] after) {
