@@ -19,9 +19,9 @@ class AssemblyLoader {
         return assembly;
     }
 
-    public static void CreateCacheAssembly(string path, string cachePath, bool noChangeAssemblyName) {
+    public static void CreateCacheAssembly(string path, string cachePath) {
         ModuleDef module = ModuleDefMD.Load(path);
-        if(!noChangeAssemblyName) SetupName(module);
+        SetupName(module);
         module.Write(cachePath);
     }
 

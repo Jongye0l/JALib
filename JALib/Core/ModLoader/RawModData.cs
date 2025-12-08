@@ -7,6 +7,7 @@ using JALib.API.Packets;
 using JALib.Bootstrap;
 using JALib.Core.Setting;
 using JALib.Tools;
+using Newtonsoft.Json.Linq;
 using UnityModManagerNet;
 
 namespace JALib.Core.ModLoader;
@@ -201,11 +202,16 @@ class RawModData {
         }
         if(!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
         string assemblyPath = info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath;
-        string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileNameWithoutExtension(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + ".dll");
-        FieldInfo field;
-        bool noChangeAssemblyName = (field = info.Field("NoChangeAssemblyName")) != null ? field.GetValue<bool>() : info.NoChangeAssemblyName;
+        bool noChangeAssemblyName;
+        try {
+            noChangeAssemblyName = GetNoChangeAssemblyName(info);
+        } catch (Exception) {
+            noChangeAssemblyName = GetNoChangeAssemblyNameOld();
+        }
+        string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileNameWithoutExtension(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + (noChangeAssemblyName ? "_" : "") + ".dll");
         if(!File.Exists(cacheAssemblyPath)) {
-            if(noChangeAssemblyName || repeatCount == 0) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath, noChangeAssemblyName);
+            if(noChangeAssemblyName) File.Copy(assemblyPath, cacheAssemblyPath);
+            else if(repeatCount == 0) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath);
             else AssemblyLoader.CreateCacheReloadAssembly(assemblyPath, cacheAssemblyPath, repeatCount);
         }
         foreach(string file in Directory.GetFiles(cachePath)) {
@@ -223,6 +229,15 @@ class RawModData {
         data.mod = (JAMod) constructor.Invoke(constructor.GetParameters().Length == 0 ? [] : [info.ModEntry]);
         data.mod.reloadCount = repeatCount;
         data.mod.Setup(info.ModEntry, info, modInfoTask.IsCompletedSuccessfully ? modInfoTask.Result : null, setting);
+    }
+    
+    private static bool GetNoChangeAssemblyName(JAModInfo info) => info.NoChangeAssemblyName;
+
+    private bool GetNoChangeAssemblyNameOld() {
+        string modInfoPath = Path.Combine(info.ModEntry.Path, "JAModInfo.json");
+        if(!File.Exists(modInfoPath)) throw new FileNotFoundException("JAModInfo not found.");
+        JObject jObject = JObject.Parse(File.ReadAllText(modInfoPath));
+        return jObject["NoChangeAssemblyName"]?.ToObject<bool>() ?? false;
     }
 
     public void InstallFinish() {
