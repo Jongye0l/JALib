@@ -9,7 +9,7 @@ using UnityModManagerNet;
 namespace JALib.Bootstrap;
 
 public static class JABootstrap {
-    public const int BootstrapVersion = 0;
+    public const int BootstrapVersion = 1;
     private static AppDomain domain;
     private static Action<JAModInfo> LoadJAMod;
     private static Task _task;

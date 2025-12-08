@@ -13,15 +13,15 @@ class AssemblyLoader {
 
     private static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args) => LoadedAssemblies.GetValueOrDefault(args.Name);
 
-    public static Assembly LoadAssembly(string path) {
+    public static Assembly LoadAssembly(string path, bool noChangeAssemblyName) {
         Assembly assembly = Assembly.LoadFrom(path);
-        LoadedAssemblies[assembly.GetName().Name[..^6]] = assembly;
+        if(!noChangeAssemblyName) LoadedAssemblies[assembly.GetName().Name[..^6]] = assembly;
         return assembly;
     }
 
-    public static void CreateCacheAssembly(string path, string cachePath) {
+    public static void CreateCacheAssembly(string path, string cachePath, bool noChangeAssemblyName) {
         ModuleDef module = ModuleDefMD.Load(path);
-        SetupName(module);
+        if(!noChangeAssemblyName) SetupName(module);
         module.Write(cachePath);
     }
 

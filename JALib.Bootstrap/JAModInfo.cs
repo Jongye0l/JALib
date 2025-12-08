@@ -16,4 +16,5 @@ public class JAModInfo {
     public UnityModManager.ModEntry ModEntry;
     public bool IsBetaBranch;
     public Dictionary<string, string> Dependencies;
+    public bool NoChangeAssemblyName;
 }
