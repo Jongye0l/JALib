@@ -202,8 +202,10 @@ class RawModData {
         if(!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
         string assemblyPath = info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath;
         string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileNameWithoutExtension(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + ".dll");
+        FieldInfo field;
+        bool noChangeAssemblyName = (field = info.Field("NoChangeAssemblyName")) != null ? field.GetValue<bool>() : info.NoChangeAssemblyName;
         if(!File.Exists(cacheAssemblyPath)) {
-            if(info.NoChangeAssemblyName || repeatCount == 0) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath, info.NoChangeAssemblyName);
+            if(noChangeAssemblyName || repeatCount == 0) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath, noChangeAssemblyName);
             else AssemblyLoader.CreateCacheReloadAssembly(assemblyPath, cacheAssemblyPath, repeatCount);
         }
         foreach(string file in Directory.GetFiles(cachePath)) {
@@ -214,7 +216,7 @@ class RawModData {
                 // ignored
             }
         }
-        Assembly modAssembly = AssemblyLoader.LoadAssembly(cacheAssemblyPath, info.NoChangeAssemblyName);
+        Assembly modAssembly = AssemblyLoader.LoadAssembly(cacheAssemblyPath, noChangeAssemblyName);
         Type modType = modAssembly.GetType(info.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
         ConstructorInfo constructor = modType.Constructor([]) ?? modType.Constructor(typeof(UnityModManager.ModEntry));
