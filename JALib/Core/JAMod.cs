@@ -162,6 +162,9 @@ public abstract class JAMod {
     }
 
     internal void SetupEventMain() {
+#if TEST
+        VersionControl.SetupVersion();
+#endif
         ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
         if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
         if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;

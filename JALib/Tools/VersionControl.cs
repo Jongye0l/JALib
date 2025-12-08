@@ -8,6 +8,13 @@ public static class VersionControl {
 
     static VersionControl() {
         releaseNumber = typeof(GCNS).Field("releaseNumber").GetValue<int>();
+#if !TEST
+        Version.TryParse(Application.version, out version);
+#endif
+    }
+#if TEST
+    internal static void SetupVersion() {
         Version.TryParse(Application.version, out version);
     }
+#endif
 }

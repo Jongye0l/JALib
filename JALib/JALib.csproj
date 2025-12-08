@@ -33,6 +33,15 @@
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Test|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Test\</OutputPath>
+        <DefineConstants>TEST;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
     <ItemGroup>
         <Reference Include="0Harmony">
             <HintPath>D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\A Dance of Fire and Ice_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
@@ -613,6 +622,7 @@
     <Target Name="AfterBuild">
         <Exec Command="..\packages\ILRepack.2.0.41\tools\ILRepack.exe /lib:$(OutputPath) /out:$(OutputPath)JALib.dll $(OutputPath)JALib.dll $(OutputPath)JALib-IL.dll"/>
         <Copy SourceFiles="$(OutputPath)JALib.dll" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
+        <Copy SourceFiles="$(OutputPath)JALib.pdb" DestinationFolder="D:\SteamLibrary\steamapps\common\A Dance of Fire and Ice\Mods\JALib"/>
         <Copy SourceFiles="bin/Release/JALib.dll" DestinationFolder="D:\ModRelease/JALib"/>
     </Target>
 

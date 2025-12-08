@@ -37,6 +37,9 @@ class JApi {
     }
 
     private static string GetOSInfo() {
+#if TEST
+        return "Windows NT 10.0; Win64; x64";
+#else
         string os = SystemInfo.operatingSystem;
         Match m;
         string ver;
@@ -75,6 +78,7 @@ class JApi {
             return $"iPhone; CPU iPhone OS {ver.Replace('.', '_')} like Mac OS X";
         }
         return "Unknown";
+#endif
     }
 
     public static Task<bool> CompleteLoadTask() {
