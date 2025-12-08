@@ -423,6 +423,7 @@ public class JAPatcher : IDisposable {
 
 #pragma warning disable CS0618
     private static void CustomPatch(MethodBase original, HarmonyMethod patchMethod, JAPatchAttribute attribute, JAMod mod) {
+        if(!patchMethod.method.IsStatic) throw new NotSupportedException("Patch Method is need to be Static");
         lock(locker) {
             PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
             JAPatchInfo jaPatchInfo = jaPatches.GetValueOrDefault(original) ?? (jaPatches[original] = new JAPatchInfo());
