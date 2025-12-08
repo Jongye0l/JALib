@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -549,6 +549,9 @@ class JAMethodPatcher {
             LocalBuilder fix = generator.DeclareLocal(typeof(MethodInfo));
             CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
             LocalBuilder emitter = generator.DeclareLocal(emitterType);
+            // ---- create code C# ----
+            // MethodInfo fix = arg1.patchMethod;
+            // Emitter emitter = patcher.originalPatcher.emitter; // patcher.originalPatcher is MethodPatcher
             List<CodeInstruction> list = [
                 new(OpCodes.Ldarg_1),
                 new(OpCodes.Ldfld, SimpleReflect.Field(typeof(HarmonyLib.Patch), "patchMethod")),
@@ -571,8 +574,28 @@ class JAMethodPatcher {
                         FieldInfo field = (FieldInfo) next.operand;
                         if(field == AddPrefixesSubArguments[0] && enumerator.MoveNext()) {
                             CodeInstruction next2 = enumerator.Current;
+                            // ---- original code C# ----
+                            // this.emitter.Emit(*);
+                            // ---- replace code C# ----
+                            // emitter.Emit(*);
+                            // ---- original code IL ----
+                            // ldarg.0      // this
+                            // ldfld        class HarmonyLib.MethodPatcher HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>4__this'
+                            // ldfld        class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                            // ---- replace code IL ----
+                            // ldloc        emitter
                             if(next2.opcode == OpCodes.Ldfld && next2.operand is FieldInfo { Name: "emitter" })
                                 code = new CodeInstruction(OpCodes.Ldloc, emitter).WithLabels(code.labels);
+                            // ---- original code C# ----
+                            // this.*;
+                            // ---- replace code C# ----
+                            // originalPatcher.*;
+                            // ---- original code IL ----
+                            // ldarg.0      // this
+                            // ldfld        class HarmonyLib.MethodPatcher HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>4__this'
+                            // ---- replace code IL ----
+                            // ldarg.0      // patcher
+                            // ldfld        class HarmonyLib.MethodPatcher JAMethodPatcher::originalPatcher
                             else {
                                 list.AddRange([
                                     code,
@@ -581,8 +604,63 @@ class JAMethodPatcher {
                                 code = next2;
                                 goto Recheck;
                             }
-                        } else if(field == AddPrefixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
+                        }
+                        // ---- original code IL ----
+                        // ldarg.0      // this
+                        // ldfld        class [mscorlib]System.Collections.Generic.Dictionary`2<string, class [mscorlib]System.Reflection.Emit.LocalBuilder> HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::variables
+                        // ---- replace code IL ----
+                        // ldarg.2      // variables
+                        else if(field == AddPrefixesSubArguments[1]) code = new CodeInstruction(OpCodes.Ldarg_2).WithLabels(code.labels).WithBlocks(code.blocks);
+                        // ---- original code IL ----
+                        // ldarg.0      // this
+                        // ldfld        class [mscorlib]System.Reflection.Emit.LocalBuilder HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::runOriginalVariable
+                        // ---- replace code IL ----
+                        // ldarg.3      // runOriginalVariable
                         else if(field == AddPrefixesSubArguments[2]) code = new CodeInstruction(OpCodes.Ldarg_3).WithLabels(code.labels).WithBlocks(code.blocks);
+                        // ---- original code C# ----
+                        // keyValuePairList.Do<KeyValuePair<LocalBuilder, System.Type>>((Action<KeyValuePair<LocalBuilder, System.Type>>) (tmpBoxVar =>
+                        // {
+                        //     // ==============================
+                        //     // Original LINQ Method code
+                        //     // ==============================
+                        // }));
+                        // ---- replace code C# ----
+                        // foreach(var tmpBoxVar in keyValuePairList) {
+                        //     // ==============================
+                        //     // Patched LINQ Method code
+                        //     // ==============================
+                        // }
+                        // ---- original code IL ----
+                        // IL_02f6: ldloc.1      // keyValuePairList
+                        // IL_02f7: ldarg.0      // this
+                        // IL_02f8: ldfld        class [mscorlib]System.Action`1<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>> HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>9__2'
+                        // IL_02fd: dup
+                        //
+                        // IL_02fe: brtrue.s     IL_0318
+                        // IL_0300: pop
+                        // IL_0301: ldarg.0      // this
+                        // IL_0302: ldarg.0      // this
+                        // IL_0303: ldftn        instance void HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<AddPrefixes>b__2'(valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>)
+                        // IL_0309: newobj       instance void class [mscorlib]System.Action`1<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>>::.ctor(object, native int)
+                        // IL_030e: dup
+                        // IL_030f: stloc.s      V_8
+                        // IL_0311: stfld        class [mscorlib]System.Action`1<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>> HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>9__2'
+                        // IL_0316: ldloc.s      V_8
+                        // IL_0318: call         void HarmonyLib.CollectionExtensions::Do<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>>(class [mscorlib]System.Collections.Generic.IEnumerable`1<!!0/*valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>*/>, class [mscorlib]System.Action`1<!!0/*valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>*/>)
+                        // ---- replace code IL ----
+                        // ldloc.1      // keyValuePairList
+                        // callvirt     instance class [mscorlib]System.Collections.Generic.List`1/Enumerator<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>> class [mscorlib]System.Collections.Generic.List`1<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>>::GetEnumerator()
+                        // stloc        enumeratorVar
+                        // br           check
+                        // start: ldloca       enumeratorVar
+                        // call         instance valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type> class [mscorlib]System.Collections.Generic.List`1/Enumerator<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>>::get_Current
+                        // stloc        tmpBoxVar
+                        // // ==============================
+                        // // Patched LINQ Method code
+                        // // ==============================
+                        // check: ldloca       enumeratorVar
+                        // call         instance bool class [mscorlib]System.Collections.Generic.List`1/Enumerator<valuetype [mscorlib]System.Collections.Generic.KeyValuePair`2<class [mscorlib]System.Reflection.Emit.LocalBuilder, class [mscorlib]System.Type>>::MoveNext
+                        // brtrue       start
                         else {
                             MethodInfo method = null;
                             while(enumerator.MoveNext()) {
@@ -605,13 +683,37 @@ class JAMethodPatcher {
                             List<CodeInstruction> methodInstructions = PatchProcessor.GetCurrentInstructions(method, generator: generator);
                             list.Invoke("EnsureCapacity", list.Count + methodInstructions.Count);
                             IEnumerator<CodeInstruction> codes = methodInstructions.GetEnumerator();
+                            // LINQ Method
                             while(codes.MoveNext()) {
                                 CodeInstruction repeat = codes.Current;
+                                // Skip Ret
                                 if(repeat.opcode == OpCodes.Ret) continue;
                                 if(repeat.opcode == OpCodes.Ldarg_0) {
                                     codes.MoveNext();
                                     codes.MoveNext();
+                                    // ---- original code C# ----
+                                    // this.emitter.Emit(*);
+                                    // ---- replace code C# ----
+                                    // emitter.Emit(*);
+                                    // ---- original code IL ----
+                                    // ldarg.0      // this
+                                    // ldfld        class HarmonyLib.MethodPatcher HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>4__this'
+                                    // ldfld        class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                                    // ---- replace code IL ----
+                                    // ldloc        emitter
                                     if(codes.Current.operand is FieldInfo { Name: "emitter" }) list.Add(new CodeInstruction(OpCodes.Ldloc, emitter));
+                                    // ---- original code C# ----
+                                    // this.original.*
+                                    // ---- replace code C# ----
+                                    // patcher.originalPatcher.original.*
+                                    // ---- original code IL ----
+                                    // IL_000b: ldarg.0      // this
+                                    // IL_000c: ldfld        class HarmonyLib.MethodPatcher HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>4__this'
+                                    // IL_0011: ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::original
+                                    // ---- replace code IL ----
+                                    // ldarg.0      // this
+                                    // ldfld        class HarmonyLib.MethodPatcher JAMethodPatcher::originalPatcher
+                                    // ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::original
                                     else list.AddRange([
                                         repeat,
                                         originalPatcher,
@@ -619,6 +721,11 @@ class JAMethodPatcher {
                                     ]);
                                     continue;
                                 }
+                                // argument to local
+                                // ---- original code IL ----
+                                // ldarga.s     tmpBoxVar
+                                // ---- replace code IL ----
+                                // ldloca       tmpBoxVar
                                 if(repeat.opcode == OpCodes.Ldarga_S) repeat = new CodeInstruction(OpCodes.Ldloca, tmpBoxVar);
                                 list.Add(repeat);
                             }
@@ -630,7 +737,26 @@ class JAMethodPatcher {
                             continue;
                         }
                     } else throw new Exception("This Code Is Not field: " + next.opcode);
-                } else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix).WithLabels(code.labels);
+                } 
+                // ---- original code IL ----
+                // ldarg.1
+                // ---- replace code IL ----
+                // ldloc        fix
+                else if(code.opcode == OpCodes.Ldarg_1) code = new CodeInstruction(OpCodes.Ldloc, fix).WithLabels(code.labels);
+                // ---- original code IL ----
+                // IL_00ac: ldsfld       class [mscorlib]System.Func`2<valuetype [mscorlib]System.ValueTuple`2<class [mscorlib]System.Reflection.ParameterInfo, string>, bool> HarmonyLib.MethodPatcher/'<>c'::'<>9__38_1'
+                // IL_00b1: dup
+                //
+                // IL_00b2: brtrue.s     IL_00cb
+                // IL_00b4: pop
+                // IL_00b5: ldsfld       class HarmonyLib.MethodPatcher/'<>c' HarmonyLib.MethodPatcher/'<>c'::'<>9'
+                // IL_00ba: ldftn        instance bool HarmonyLib.MethodPatcher/'<>c'::'<AddPrefixes>b__38_1'(valuetype [mscorlib]System.ValueTuple`2<class [mscorlib]System.Reflection.ParameterInfo, string>)
+                // IL_00c0: newobj       instance void class [mscorlib]System.Func`2<valuetype [mscorlib]System.ValueTuple`2<class [mscorlib]System.Reflection.ParameterInfo, string>, bool>::.ctor(object, native int)
+                // IL_00c5: dup
+                // IL_00c6: stsfld       class [mscorlib]System.Func`2<valuetype [mscorlib]System.ValueTuple`2<class [mscorlib]System.Reflection.ParameterInfo, string>, bool> HarmonyLib.MethodPatcher/'<>c'::'<>9__38_1'
+                // IL_00cb: call         bool [System.Core]System.Linq.Enumerable::Any<valuetype [mscorlib]System.ValueTuple`2<class [mscorlib]System.Reflection.ParameterInfo, string>>(class [mscorlib]System.Collections.Generic.IEnumerable`1<!!0/*valuetype [mscorlib]System.ValueTuple`2<class [mscorlib]System.Reflection.ParameterInfo, string>*/>, class [mscorlib]System.Func`2<!!0/*valuetype [mscorlib]System.ValueTuple`2<class [mscorlib]System.Reflection.ParameterInfo, string>*/, bool>)
+                // ---- replace code IL ----
+                // call         bool JALib.Core.Patch.JAMethodPatcher::CheckArgs(class [mscorlib]System.Reflection.ParameterInfo)
                 else if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo field && field.FieldType == typeof(Func<ParameterInfo, bool>)) {
                     while(enumerator.MoveNext()) if(enumerator.Current.opcode == OpCodes.Call) break;
                     list.Add(new CodeInstruction(OpCodes.Call, ((Delegate) CheckArgs).Method));
@@ -639,9 +765,46 @@ class JAMethodPatcher {
                 switch(state) {
                     case 0:
                     case 1:
+                        // ---- original code C# ----
+                        // if (nullable.HasValue)
+                        // {
+                        //     this.emitter.Emit(OpCodes.Ldloc, runOriginalVariable);
+                        //     this.emitter.Emit(OpCodes.Brfalse, nullable.Value);
+                        // }
+                        // ---- replace code C# ----
+                        // if (nullable.HasValue)
+                        // {
+                        //     this.emitter.Emit(OpCodes.Ldloc, runOriginalVariable);
+                        //     this.emitter.Emit(OpCodes.Brfalse, nullable.Value);
+                        // }
+                        // bool requireTry;
+                        // if(requireTry = patcher.tryPrefixes.Contains(patch)) {
+                        //     emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock), out Label? notUsingLocal);
+                        // }
+                        // ---- original code IL ----
+                        // IL_002a: ldloca.s     nullable
+                        // IL_002c: call         instance bool valuetype [mscorlib]System.Nullable`1<valuetype [mscorlib]System.Reflection.Emit.Label>::get_HasValue()
+                        // IL_0031: brfalse.s    IL_006a
+                        //
+                        // // [827 9 - 827 62]
+                        // IL_0033: ldarg.0      // this
+                        // IL_0034: ldfld        class HarmonyLib.MethodPatcher HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>4__this'
+                        // IL_0039: ldfld        class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                        // IL_003e: ldsfld       valuetype [mscorlib]System.Reflection.Emit.OpCode [mscorlib]System.Reflection.Emit.OpCodes::Ldloc
+                        // IL_0043: ldarg.0      // this
+                        // IL_0044: ldfld        class [mscorlib]System.Reflection.Emit.LocalBuilder HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::runOriginalVariable
+                        // IL_0049: callvirt     instance void HarmonyLib.Emitter::Emit(valuetype [mscorlib]System.Reflection.Emit.OpCode, class [mscorlib]System.Reflection.Emit.LocalBuilder)
+                        //
+                        // // [828 9 - 828 59]
+                        // IL_004e: ldarg.0      // this
+                        // IL_004f: ldfld        class HarmonyLib.MethodPatcher HarmonyLib.MethodPatcher/'<>c__DisplayClass38_0'::'<>4__this'
+                        // IL_0054: ldfld        class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                        // IL_0059: ldsfld       valuetype [mscorlib]System.Reflection.Emit.OpCode [mscorlib]System.Reflection.Emit.OpCodes::Brfalse
+                        // IL_005e: ldloca.s     nullable
+                        // IL_0060: call         instance !0/*valuetype [mscorlib]System.Reflection.Emit.Label*/ valuetype [mscorlib]System.Nullable`1<valuetype [mscorlib]System.Reflection.Emit.Label>::get_Value()
+                        // IL_0065: callvirt     instance void HarmonyLib.Emitter::Emit(valuetype [mscorlib]System.Reflection.Emit.OpCode, valuetype [mscorlib]System.Reflection.Emit.Label)
                         if(code.opcode == OpCodes.Callvirt && code.operand is MethodInfo { Name: "Emit" }) {
-                            state++;
-                            if(state == 1) {
+                            if(state++ == 1) {
                                 list.Add(code);
                                 enumerator.MoveNext();
                                 code = enumerator.Current;
@@ -659,10 +822,10 @@ class JAMethodPatcher {
                                     new CodeInstruction(OpCodes.Ldnull),
                                     new CodeInstruction(OpCodes.Newobj, typeof(ExceptionBlock).Constructor(typeof(ExceptionBlockType), typeof(Type))),
                                     new CodeInstruction(OpCodes.Ldloca, notUsingLocal),
-                                    new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore")),
-                                    new CodeInstruction(OpCodes.Nop).WithLabels(falseLabel)
+                                    new CodeInstruction(OpCodes.Callvirt, emitterType.Method("MarkBlockBefore"))
                                 ]);
                                 code.labels.Clear();
+                                code.labels.Add(falseLabel);
                                 goto Recheck;
                             }
                         }
@@ -671,6 +834,22 @@ class JAMethodPatcher {
                         if(code.opcode == OpCodes.Throw) state++;
                         break;
                     case 3:
+                        // ---- original code C# ----
+                        // if (returnType != typeof (bool))
+                        //     throw new Exception($"Prefix patch {fix} has not \"bool\" or \"void\" return type: {fix.ReturnType}");
+                        // this.emitter.Emit(OpCodes.Stloc, runOriginalVariable);
+                        // ---- replace code C# ----
+                        // if (returnType != typeof (bool))
+                        //     throw new Exception($"Prefix patch {fix} has not \"bool\" or \"void\" return type: {fix.ReturnType}");
+                        // this.emitter.Emit(OpCodes.Stloc, runOriginalVariable);
+                        // if (requireTry) {
+                        //     emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock), out _);
+                        //     emitter.Emit(OpCodes.Ldsfld, ((TriedPatchData) patch).mod.staticField);
+                        //     emitter.Emit(OpCodes.Ldstr, patch.owner);
+                        //     emitter.Emit(OpCodes.Ldc_I4_0);
+                        //     emitter.Emit(OpCodes.Call, ((Delegate) JAMod.LogPatchException).Method);
+                        //     emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
+                        // }
                         if((code.opcode == OpCodes.Call || code.opcode == OpCodes.Callvirt) && code.operand is MethodInfo { Name: "Emit" }) {
                             list.Add(code);
                             enumerator.MoveNext();
