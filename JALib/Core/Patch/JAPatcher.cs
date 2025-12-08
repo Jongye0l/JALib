@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -396,18 +396,26 @@ public class JAPatcher : IDisposable {
             else if(attribute is JAOverridePatchAttribute overridePatchAttribute) OverridePatch(attribute.MethodBase, attribute.Method, overridePatchAttribute, mod);
             else throw new NotSupportedException("Unsupported Patch Type");
         } catch (Exception e) {
-            StringBuilder keyBuilder = new();
-            if(attribute is JAPatchAttribute patchAttribute) keyBuilder.Append(patchAttribute.PatchType);
-            else if(attribute is JAReversePatchAttribute) keyBuilder.Append("Reverse");
-            else if(attribute is JAOverridePatchAttribute overridePatchAttribute)
-                keyBuilder.Append("Override ").Append(overridePatchAttribute.targetType?.FullName ?? overridePatchAttribute.targetTypeName).Append(" Type");
-            else keyBuilder.Append("Unknown");
-            keyBuilder.Append(" Patch ").Append(attribute.PatchId).Append(" to ").Append(attribute.MethodBase.DeclaringType.FullName).Append('.').Append(attribute.MethodBase.Name).Append(" Failed");
-            mod.LogReportException(keyBuilder.ToString(), e);
+            try {
+                StringBuilder keyBuilder = new();
+                if(attribute is JAPatchAttribute patchAttribute) keyBuilder.Append(patchAttribute.PatchType);
+                else if(attribute is JAReversePatchAttribute) keyBuilder.Append("Reverse");
+                else if(attribute is JAOverridePatchAttribute overridePatchAttribute)
+                    keyBuilder.Append("Override ").Append(overridePatchAttribute.targetType?.FullName ?? overridePatchAttribute.targetTypeName).Append(" Type");
+                else keyBuilder.Append("Unknown");
+                keyBuilder.Append(" Patch ").Append(attribute.PatchId).Append(" to ");
+                if(attribute.MethodBase != null) keyBuilder.Append(attribute.MethodBase?.DeclaringType?.FullName).Append('.').Append(attribute.MethodBase?.Name);
+                else keyBuilder.Append(attribute.MethodName);
+                keyBuilder.Append(" Failed");
+                mod.LogReportException(keyBuilder.ToString(), e);
+            } catch (Exception exception) {
+                mod.LogReportException("Fail to Build Patch Error Message", exception);
+                mod.LogReportException("Original Patch Exception", e);
+            }
             bool disabled = attribute is JAPatchAttribute { Disable: true };
             OnFailPatch?.Invoke(attribute.PatchId, disabled);
             if(!disabled) return;
-            mod.Error($"Mod {mod.Name} is Disabled.");
+            mod.Error("Patch disabled is true, unpatching...");
             Unpatch();
             throw;
         }
