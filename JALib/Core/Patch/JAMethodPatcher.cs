@@ -213,6 +213,11 @@ class JAMethodPatcher {
             LocalBuilder gotoFinishLabel = generator.DeclareLocal(typeof(Label?));
             LocalBuilder gotoPostfixLabel = generator.DeclareLocal(typeof(Label?));
             CodeInstruction originalArg0 = new(OpCodes.Ldloc, patcher);
+            // ---- create code C# ----
+            // MethodPatcher methodPatcher = this.originalPatcher;
+            // Label? gotoFinishLabel = null;
+            // Label? gotoPostfixLabel = null;
+            // AddOverride(patcher, methodPatcher.il, methodPatcher.original, methodPatcher.emitter, true, ref gotoFinishLabel);
             List<CodeInstruction> list = [
                 new(OpCodes.Ldarg_0),
                 new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher")),
@@ -240,21 +245,76 @@ class JAMethodPatcher {
                 CodeInstruction code = enumerator.Current;
                 Recheck:
                 if(code.opcode == OpCodes.Ldarg_0) code = originalArg0.Clone().WithLabels(code.labels);
+                // ---- original code C# ----
+                // this(methodPatcher).AddPrefixes(privateVars, localBuilder);
+                // ---- replace code C# ----
+                // JAMethodPatcher.AddPrefixes(methodPatcher, privateVars, localBuilder, patcher);
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPrefixes" }) {
                     list.Add(new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels));
                     code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("AddPrefixes"));
                 }
+                // ---- original code C# ----
+                // this(methodPatcher).AddPostfixes(privateVars, localBuilder, false);
+                // ---- replace code C# ----
+                // JAMethodPatcher.AddPostfixes(methodPatcher, privateVars, localBuilder, false, patcher);
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPostfixes" } methodInfo) {
                     list.Add(new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels));
                     code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method(methodInfo.GetParameters().Length == 3 ? "AddPostfixes" : "AddPostfixes_old"));
                 }
                 switch(state) {
                     case 0:
+                        // ---- original code C# ----
+                        // LocalBuilder[] existingVariables = MethodPatcher.DeclareLocalVariables(this.il, this.source ?? this.original);
+                        // ---- replace code C# ----
+                        // LocalBuilder[] existingVariables = patcher.removes.Length == 0 ? [] :
+                        //         MethodPatcher.DeclareLocalVariables(methodPatcher.il, JAMethodPatcher.replace ?? methodPatcher.source ?? methodPatcher.original);
+                        // ---- original code IL ----
+                        // IL_000d: ldarg.0      // this
+                        // IL_000e: ldfld        class [mscorlib]System.Reflection.Emit.ILGenerator HarmonyLib.MethodPatcher::'il'
+                        // IL_0013: ldarg.0      // this
+                        // IL_0014: ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::source
+                        // IL_0019: dup
+                        //
+                        // IL_001a: brtrue.s     IL_0023
+                        // IL_001c: pop
+                        // IL_001d: ldarg.0      // this
+                        // IL_001e: ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::original
+                        // IL_0023: call         class [mscorlib]System.Reflection.Emit.LocalBuilder[] HarmonyLib.MethodPatcher::DeclareLocalVariables(class [mscorlib]System.Reflection.Emit.ILGenerator, class [mscorlib]System.Reflection.MethodBase)
+                        // IL_0028: stloc.1      // existingVariables
+                        // ---- original code IL ----
+                        // // [Section 1]
+                        // oldCode: ldarg.0(patched) // patcher
+                        // ldfld        class HarmonyLib.Patch[] JALib.Core.Patch.JAMethodPatcher::removes
+                        // ldlen
+                        // brfalse      falseLabel
+                        // call         class boolean [mscorlib]System.Array::Empty<class [mscorlib]System.Reflection.Emit.LocalBuilder>()
+                        // br           skipLabel
+                        // falseLabel: ldarg.0 // this(methodPatcher)
+                        // ldfld        class [mscorlib]System.Reflection.Emit.ILGenerator HarmonyLib.MethodPatcher::'il'
+                        // ldarg.0(patched) // patcher
+                        // ldfld        class [mscorlib]System.Reflection.MethodBase JALib.Core.Patch.JAMethodPatcher::replace
+                        // dup
+                        //
+                        // // [Section 2]
+                        // brtrue.s     IL_0023
+                        // pop
+                        // ldarg.0      // this(methodPatcher)
+                        // ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::source
+                        // dup
+                        // brtrue.s     IL_0023
+                        //
+                        // // [Section 3]
+                        // pop
+                        // ldarg.0      // this(methodPatcher)
+                        // ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::original
+                        // IL_0023: call class [mscorlib]System.Reflection.Emit.LocalBuilder[] HarmonyLib.MethodPatcher::DeclareLocalVariables(class [mscorlib]System.Reflection.Emit.ILGenerator, class [mscorlib]System.Reflection.MethodBase)
+                        // skipLabel: stloc.1 // existingVariables
                         if(code.opcode == OpCodes.Ldfld && code.operand is FieldInfo { Name: "il" }) {
                             CodeInstruction oldCode = list[^1];
                             list.Remove(oldCode);
                             Label falseLabel = generator.DefineLabel();
                             Label skipLabel = generator.DefineLabel();
+                            // [Section 1]
                             list.AddRange([
                                 new CodeInstruction(OpCodes.Ldarg_0).WithLabels(oldCode.labels),
                                 new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes")),
@@ -274,6 +334,7 @@ class JAMethodPatcher {
                             list.Add(enumerator.Current);
                             enumerator.MoveNext();
                             CodeInstruction moveLabel = enumerator.Current;
+                            // [Section 2]
                             list.AddRange([
                                 moveLabel,
                                 new CodeInstruction(OpCodes.Pop),
@@ -282,6 +343,7 @@ class JAMethodPatcher {
                                 new CodeInstruction(OpCodes.Dup),
                                 moveLabel
                             ]);
+                            // [Section 3]
                             while(enumerator.MoveNext()) {
                                 CodeInstruction cur = enumerator.Current;
                                 if(cur.opcode == OpCodes.Ldarg_0) cur = originalArg0;
@@ -296,6 +358,11 @@ class JAMethodPatcher {
                         }
                         break;
                     case 1:
+                        // ---- original code C# ----
+                        // this.AddPrefixes(privateVars, localBuilder);
+                        // ---- replace code C# ----
+                        // this.AddPrefixes(privateVars, localBuilder);
+                        // if(patcher.removes.Length != 0) goto removeLabel;
                         if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPrefixes" }) {
                             list.AddRange([
                                 code,
@@ -309,6 +376,56 @@ class JAMethodPatcher {
                         }
                         break;
                     case 2:
+                        // ---- original code C# ----
+                        // MethodCopier methodCopier = new MethodCopier(this.source ?? this.original, this.il, existingVariables);
+                        // ---- replace code C# ----
+                        // patcher.AddOverride(methodPatcher.il, methodPatcher.original, methodPatcher.emitter, false, ref gotoPostfixLabel);
+                        // MethodCopier methodCopier = new MethodCopier(patcher.replace ?? methodPatcher.source ?? methodPatcher.original, methodPatcher.il, existingVariables);
+                        // ---- original code IL ----
+                        // IL_0245: ldarg.0      // this
+                        // IL_0246: ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::source
+                        // IL_024b: dup
+                        //
+                        // IL_024c: brtrue.s     IL_0255
+                        // IL_024e: pop
+                        // IL_024f: ldarg.0      // this
+                        // IL_0250: ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::original
+                        // IL_0255: ldarg.0      // this
+                        // IL_0256: ldfld        class [mscorlib]System.Reflection.Emit.ILGenerator HarmonyLib.MethodPatcher::'il'
+                        // IL_025b: ldloc.1      // existingVariables
+                        // IL_025c: newobj       instance void HarmonyLib.MethodCopier::.ctor(class [mscorlib]System.Reflection.MethodBase, class [mscorlib]System.Reflection.Emit.ILGenerator, class [mscorlib]System.Reflection.Emit.LocalBuilder[])
+                        // IL_0261: stloc.s      methodCopier
+                        // ---- replace code IL ----
+                        // ldarg.0(patched) // patcher
+                        // ldarg.0     // this(methodPatcher)
+                        // ldfld       class [mscorlib]System.Reflection.Emit.ILGenerator HarmonyLib.MethodPatcher::'il'
+                        // ldarg.0     // this(methodPatcher)
+                        // ldfld       class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::original
+                        // ldarg.0     // this(methodPatcher)
+                        // ldfld       class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                        // ldc.i4.0
+                        // ldloca      gotoPostfixLabel
+                        // call        void JALib.Core.Patch.JAMethodPatcher::AddOverride(class JALib.Core.Patch.JAMethodPatcher, class [mscorlib]System.Reflection.Emit.ILGenerator, class [mscorlib]System.Reflection.MethodBase, class HarmonyLib.Emitter, bool, class [mscorlib]System.Nullable`1<class [mscorlib]System.Reflection.Emit.Label>&)
+                        //
+                        // ldarg.0(patched) // patcher
+                        // ldfld       void [mscorlib]System.Reflection.MethodBase JALib.Core.Patch.JAMethodPatcher::replace
+                        // dup
+                        //
+                        // brtrue.s     IL_0255
+                        // pop
+                        // ldarg.0      // this(methodPatcher)
+                        // ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::source
+                        // dup
+                        // brtrue.s     IL_0255
+                        //
+                        // pop
+                        // ldarg.0      // this
+                        // ldfld        class [mscorlib]System.Reflection.MethodBase HarmonyLib.MethodPatcher::original
+                        // ldarg.0      // this
+                        // ldfld        class [mscorlib]System.Reflection.Emit.ILGenerator HarmonyLib.MethodPatcher::'il'
+                        // ldloc.1      // existingVariables
+                        // newobj       instance void HarmonyLib.MethodCopier::.ctor(class [mscorlib]System.Reflection.MethodBase, class [mscorlib]System.Reflection.Emit.ILGenerator, class [mscorlib]System.Reflection.Emit.LocalBuilder[])
+                        // stloc.s      methodCopier
                         if(code.opcode == OpCodes.Ldfld && code.operand is FieldInfo { Name: "source" }) {
                             CodeInstruction oldCode = list[^1];
                             list.Remove(oldCode);
@@ -409,6 +526,14 @@ class JAMethodPatcher {
                         }
                         break;
                     case 4:
+                        // ---- original code C# ----
+                        // if (local1 != null & hasReturnCode)
+                        //     this.emitter.Emit(OpCodes.Stloc, local1);
+                        // ---- replace code C# ----
+                        // if (local1 != null & hasReturnCode)
+                        //     methodPatcher.emitter.Emit(OpCodes.Stloc, local1);
+                        // if(gotoPostfixLabel.HasValue) methodPatcher.emitter.MarkLabel(gotoPostfixLabel.Value);
+                        // removeLabel:
                         if(code.opcode == OpCodes.Callvirt && code.operand is MethodInfo { Name: "Emit" }) {
                             list.AddRange([
                                 code,
@@ -427,6 +552,56 @@ class JAMethodPatcher {
                         }
                         break;
                     case 5:
+                        // ---- original code C#(Compile) ----
+                        // if ((num1 | (hasReturnCode ? 1 : 0)) != 0)
+                        //     this.emitter.Emit(OpCodes.Ret);
+                        // ---- original code C# ----
+                        // if (num1 || hasReturnCode)
+                        //     this.emitter.Emit(OpCodes.Ret);
+                        // ---- replace code C# ----
+                        // if(num1 || hasReturnCode || gotoFinishLabel.HasValue || patcher.removes.Length == 0) {
+                        //     if(gotoFinishLabel.HasValue) methodPatcher.emitter.MarkLabel(gotoFinishLabel.Value);
+                        //     methodPatcher.emitter.Emit(OpCodes.Ret);
+                        // }
+                        // ---- original code IL ----
+                        // // [204 5 - 204 47]
+                        // IL_060b: ldloc.s      hasReturnCode
+                        // IL_060d: or
+                        //
+                        // IL_060e: brfalse.s    IL_0620
+                        //
+                        // // [205 7 - 205 37]
+                        // IL_0610: ldarg.0      // this
+                        // IL_0611: ldfld        class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                        // IL_0616: ldsfld       valuetype [mscorlib]System.Reflection.Emit.OpCode [mscorlib]System.Reflection.Emit.OpCodes::Ret
+                        // IL_061b: callvirt     instance void HarmonyLib.Emitter::Emit(valuetype [mscorlib]System.Reflection.Emit.OpCode)
+                        // ---- replace code IL ----
+                        // // [204 5 - 204 47]
+                        // IL_060b: ldloc.s      hasReturnCode
+                        // IL_060d: or
+                        //
+                        // brtrue      IL_0610
+                        // ldloca      gotoFinishLabel
+                        // call        instance bool [mscorlib]System.Nullable`1<class [mscorlib]System.Reflection.Emit.Label>::get_HasValue()
+                        // brtrue      IL_0610
+                        // ldarg.0(patched) // patcher
+                        // ldfld       class HarmonyLib.Patch[] JALib.Core.Patch.JAMethodPatcher::removes
+                        // ldlen
+                        // brfalse     IL_0620
+                        // IL_0610: ldloca      gotoFinishLabel
+                        // call        instance bool [mscorlib]System.Nullable`1<class [mscorlib]System.Reflection.Emit.Label>::get_HasValue()
+                        // brfalse     IL_0616
+                        // ldarg.0     // this(methodPatcher)
+                        // ldfld       class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                        // ldloca      gotoFinishLabel
+                        // call        instance class [mscorlib]System.Reflection.Emit.Label [mscorlib]System.Nullable`1<class [mscorlib]System.Reflection.Emit.Label>::get_Value()
+                        // call        instance void HarmonyLib.Emitter::MarkLabel(valuetype [mscorlib]System.Reflection.Emit.Label)
+                        //
+                        // ldarg.0     // this(methodPatcher)
+                        // ldfld       class HarmonyLib.Emitter HarmonyLib.MethodPatcher::emitter
+                        // IL_0616: ldsfld       valuetype [mscorlib]System.Reflection.Emit.OpCode [mscorlib]System.Reflection.Emit.OpCodes::Ret
+                        // IL_061b: callvirt     instance void HarmonyLib.Emitter::Emit(valuetype [mscorlib]System.Reflection.Emit.OpCode)
+                        // 
                         if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo { Name: "Ret" }) {
                             int loc = list.Count - 2;
                             List<Label> labels = list[loc].labels;
@@ -441,6 +616,10 @@ class JAMethodPatcher {
                                 new CodeInstruction(OpCodes.Brtrue, run),
                                 new CodeInstruction(OpCodes.Ldloca, gotoFinishLabel),
                                 new CodeInstruction(OpCodes.Call, typeof(Label?).Method("get_HasValue")),
+                                new CodeInstruction(OpCodes.Brtrue, run),
+                                new CodeInstruction(OpCodes.Ldarg_0),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes")),
+                                new CodeInstruction(OpCodes.Ldlen),
                                 new CodeInstruction(OpCodes.Brfalse, skip),
                                 new CodeInstruction(OpCodes.Ldloca, gotoFinishLabel) {
                                     labels = labels

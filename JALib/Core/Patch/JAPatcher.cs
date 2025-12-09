@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using HarmonyLib;
-using JALib.Bootstrap;
 using JALib.Tools;
 using UnityModManagerNet;
 
@@ -102,7 +101,7 @@ public class JAPatcher : IDisposable {
                 list.Add(code);
                 break;
             }
-            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement")));
+            list.Add(new CodeInstruction(OpCodes.Call, ((Delegate) JAMethodPatcher.CreateReplacement).Method));
             while(enumerator.MoveNext()) list.Add(enumerator.Current);
             return list;
         }

@@ -55,7 +55,7 @@
 * Rider 2025.3.0.3
 * .NET Framework 4.8.1
 * C# 13
-* A Dance of Fire and Ice 2.9.7(r131, 3af4113)
+* A Dance of Fire and Ice 2.9.7(r135, 3af4113)
 ---
 ### 테스트 환경 Test environment
 * Windows 11
