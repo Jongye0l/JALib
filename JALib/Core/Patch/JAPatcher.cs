@@ -412,7 +412,11 @@ public class JAPatcher : IDisposable {
                 mod.LogReportException("Original Patch Exception", e);
             }
             bool disabled = attribute is JAPatchAttribute { Disable: true };
-            OnFailPatch?.Invoke(attribute.PatchId, disabled);
+            try {
+                OnFailPatch?.Invoke(attribute.PatchId, disabled);
+            } catch (Exception exception) {
+                mod.LogReportException("Fail to Invoke OnFailPatch Event", exception);
+            }
             if(!disabled) return;
             mod.Error("Patch disabled is true, unpatching...");
             Unpatch();

@@ -559,7 +559,7 @@ class JAMethodPatcher {
                         // if (num1 || hasReturnCode)
                         //     this.emitter.Emit(OpCodes.Ret);
                         // ---- replace code C# ----
-                        // if(num1 || hasReturnCode || gotoFinishLabel.HasValue || patcher.removes.Length == 0) {
+                        // if(num1 || hasReturnCode || gotoFinishLabel.HasValue || patcher.removes.Length != 0) {
                         //     if(gotoFinishLabel.HasValue) methodPatcher.emitter.MarkLabel(gotoFinishLabel.Value);
                         //     methodPatcher.emitter.Emit(OpCodes.Ret);
                         // }
