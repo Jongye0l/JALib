@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -20,8 +19,6 @@ class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
     internal new JALibSetting Setting;
-    private static Dictionary<string, Task> loadTasks = new();
-    private static Dictionary<string, Version> updateQueue = new();
     private static bool enableInit;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(typeof(JALibSetting)) {
@@ -139,10 +136,6 @@ class JALib : JAMod {
     }
 
     protected override void OnUnload() {
-        loadTasks.Clear();
-        updateQueue.Clear();
-        loadTasks = null;
-        updateQueue = null;
         ApplicatorAPI.Dispose();
         Dispose();
     }
