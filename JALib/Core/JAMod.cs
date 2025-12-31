@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using System.Threading.Tasks;
 using JALib.API;
 using JALib.API.Packets;
@@ -90,7 +91,7 @@ public abstract class JAMod {
 
     internal void Setup(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
         modEntry.SetValue("mAssembly", GetType().Assembly);
-        if(typeof(JABootstrap).Assembly.GetName().Version == new Version(1, 0, 0, 0)) SetupOldBootstrap(modEntry, modInfo, apiInfo, setting);
+        if(typeof(JABootstrap).Assembly.GetName().Version == new Version(1, 0, 0, 0)) SetupOldBootstrap(modEntry, apiInfo, setting);
         else SetupCurBootstrap(modEntry, modInfo, apiInfo, setting);
     }
 
@@ -120,7 +121,7 @@ public abstract class JAMod {
         }
     }
 
-    internal void SetupOldBootstrap(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
+    internal void SetupOldBootstrap(UnityModManager.ModEntry modEntry, GetModInfo apiInfo, JAModSetting setting) {
         try {
             ModEntry = modEntry;
             modEntry.SetValue("mAssembly", GetType().Assembly);
@@ -165,6 +166,7 @@ public abstract class JAMod {
 #if TEST
         VersionControl.SetupVersion();
 #endif
+        Thread.CurrentThread.Name ??= "Main Thread";
         ModEntry.Info.HomePage = ModSetting.Homepage ?? ModEntry.Info.HomePage ?? Discord;
         if(CheckGUIRequire()) ModEntry.OnGUI = OnGUI0;
         if(CheckGUIEventRequire(nameof(OnShowGUI))) ModEntry.OnShowGUI = OnShowGUI0;
@@ -489,19 +491,33 @@ public abstract class JAMod {
     protected virtual void OnLocalizationUpdate() {
     }
 
-    public void Log(object o) => Logger.Log(o?.ToString());
+    public void Log(object o) => JALogger.Log(this, o?.ToString(), 1);
 
-    public void Error(object o) => Logger.Error(o?.ToString());
+    public void Log(object o, int stackTraceSkip) => JALogger.Log(this, o?.ToString(), stackTraceSkip + 1);
 
-    public void Warning(object o) => Logger.Warning(o?.ToString());
+    public void Error(object o) => JALogger.Error(this, o?.ToString(), 1);
 
-    public void Critical(object o) => Logger.Critical(o?.ToString());
+    public void Error(object o, int stackTraceSkip) => JALogger.Error(this, o?.ToString(), stackTraceSkip + 1);
 
-    public void NativeLog(object o) => Logger.NativeLog(o?.ToString());
+    public void Warning(object o) => JALogger.Warn(this, o?.ToString(), 1);
+    
+    public void Warning(object o, int stackTraceSkip) => JALogger.Warn(this, o?.ToString(), stackTraceSkip + 1);
 
-    public void LogException(Exception e) => Logger.LogException(e);
+    public void Critical(object o) => JALogger.Critical(this, o?.ToString(), 1);
 
-    public void LogException(string key, Exception e) => Logger.LogException(key, e);
+    public void Critical(object o, int stackTraceSkip) => JALogger.Critical(this, o?.ToString(), stackTraceSkip + 1);
+
+    public void NativeLog(object o) => JALogger.NativeLog(this, o?.ToString(), 1);
+
+    public void NativeLog(object o, int stackTraceSkip) => JALogger.NativeLog(this, o?.ToString(), stackTraceSkip + 1);
+
+    public void LogException(Exception e) => JALogger.LogException(this, null, e, 1);
+
+    public void LogException(Exception e, int stackTraceSkip) => JALogger.LogException(this, null, e, stackTraceSkip + 1);
+
+    public void LogException(string key, Exception e) => JALogger.LogException(this, key, e, 1);
+
+    public void LogException(string key, Exception e, int stackTraceSkip) => JALogger.LogException(this, key, e, stackTraceSkip + 1);
 
     public void ReportException(Exception e) => ReportException(e, [this]);
 
@@ -522,22 +538,42 @@ public abstract class JAMod {
     }
 
     public void LogReportException(Exception e) {
-        LogException(e);
+        LogException(e, 1);
+        ReportException(e);
+    }
+
+    public void LogReportException(Exception e, int stackTraceSkip) {
+        LogException(e, stackTraceSkip + 1);
         ReportException(e);
     }
 
     public void LogReportException(string key, Exception e) {
-        LogException(key, e);
+        LogException(key, e, 1);
+        ReportException(key, e);
+    }
+
+    public void LogReportException(string key, Exception e, int stackTraceSkip) {
+        LogException(key, e, stackTraceSkip + 1);
         ReportException(key, e);
     }
 
     public void LogReportException(Exception e, JAMod[] mod) {
-        LogException(e);
+        LogException(e, 1);
+        ReportException(e, mod);
+    }
+
+    public void LogReportException(Exception e, JAMod[] mod, int stackTraceSkip) {
+        LogException(e, stackTraceSkip + 1);
         ReportException(e, mod);
     }
 
     public void LogReportException(string key, Exception e, JAMod[] mod) {
-        LogException(key, e);
+        LogException(key, e, 1);
+        ReportException(key, e, mod);
+    }
+
+    public void LogReportException(string key, Exception e, JAMod[] mod, int stackTraceSkip) {
+        LogException(key, e, stackTraceSkip + 1);
         ReportException(key, e, mod);
     }
 

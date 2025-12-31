@@ -368,7 +368,6 @@
     .method public hidebysig static !!T AsUnsafe<class T>(object o) cil managed aggressiveinlining {
         .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
-        .locals init ([0] !!T)
         ldarg.0
         ret
     }
@@ -376,7 +375,6 @@
     .method public hidebysig static !!TTo AsUnsafe<valuetype .ctor (class [mscorlib]System.ValueType) TFrom, valuetype .ctor (class [mscorlib]System.ValueType) TTo>(!!TFrom o) cil managed aggressiveinlining {
         .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
-        .locals init ([0] !!TTo)
         ldarg.0
         ret
     }
@@ -384,7 +382,6 @@
     .method public hidebysig static !!T& UnboxUnsafe<valuetype .ctor (class [mscorlib]System.ValueType) T> (object 'box') cil managed aggressiveinlining {
         .custom instance void [mscorlib]System.Runtime.CompilerServices.ExtensionAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
-        .locals init ([0] !!T)
         ldarg.0
         unbox !!T
         ret

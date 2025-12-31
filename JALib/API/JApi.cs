@@ -27,7 +27,6 @@ class JApi {
     private string domain;
     private TaskCompletionSource<bool> completeLoadTask = new();
     private int retryCount;
-    private Task retryTask;
 
     public static void Initialize() {
         HttpClient.Timeout = TimeSpan.FromSeconds(10);

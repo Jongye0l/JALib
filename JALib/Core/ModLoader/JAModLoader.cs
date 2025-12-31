@@ -18,7 +18,7 @@ class JAModLoader {
     public JAMod mod;
 
     static JAModLoader() {
-        JAModLoader modLoadData = GetModLoadData("JALib");
+        JAModLoader modLoadData = GetModLoadData(JALib.ModId);
         modLoadData.LoadState = ModLoadState.Loaded;
     }
 

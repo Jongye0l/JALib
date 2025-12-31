@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("JALib")]
+[assembly: AssemblyTitle(JALib.JALib.ModId)]
 [assembly: AssemblyDescription("Jongyeol Adofai Library")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Jongyeol")]
-[assembly: AssemblyProduct("JALib")]
+[assembly: AssemblyProduct(JALib.JALib.ModId)]
 [assembly: AssemblyCopyright("Copyright ©Jongyeol 2024-2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

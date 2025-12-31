@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="..\packages\ILRepack.2.0.41\build\ILRepack.props" Condition="Exists('..\packages\ILRepack.2.0.41\build\ILRepack.props')"/>
     <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
@@ -539,6 +539,7 @@
         <Compile Include="API\GetRequest.cs"/>
         <Compile Include="Core\Feature.cs"/>
         <Compile Include="Core\JALocalization.cs"/>
+        <Compile Include="Core\JALogger.cs" />
         <Compile Include="Core\JAMod.cs"/>
         <Compile Include="Core\ModLoader\AssemblyLoader.cs"/>
         <Compile Include="Core\ModLoader\DownloadModData.cs"/>

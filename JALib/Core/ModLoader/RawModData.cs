@@ -214,13 +214,13 @@ class RawModData {
             else if(repeatCount == 0) AssemblyLoader.CreateCacheAssembly(assemblyPath, cacheAssemblyPath);
             else AssemblyLoader.CreateCacheReloadAssembly(assemblyPath, cacheAssemblyPath, repeatCount);
         }
+        string pdbCachePath = cacheAssemblyPath[..^4] + ".pdb";
         if(File.Exists(assemblyPath[..^4] + ".pdb")) {
-            string pdbCachePath = cacheAssemblyPath[..^4] + ".pdb";
             if(!File.Exists(pdbCachePath) || new FileInfo(assemblyPath[..^4] + ".pdb").LastWriteTimeUtc != new FileInfo(pdbCachePath).LastWriteTimeUtc)
                 File.Copy(assemblyPath[..^4] + ".pdb", pdbCachePath, true);
         }
         foreach(string file in Directory.GetFiles(cachePath)) {
-            if(file == cacheAssemblyPath || !file.EndsWith(".dll")) continue;
+            if((file == cacheAssemblyPath || !file.EndsWith(".dll")) && (file == pdbCachePath || !file.EndsWith(".pdb"))) continue;
             try {
                 File.Delete(file);
             } catch (Exception) {

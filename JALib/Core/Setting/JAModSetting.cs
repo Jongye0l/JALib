@@ -35,12 +35,12 @@ class JAModSetting : JASetting {
         try {
             return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
         } catch (Exception e) {
-            UnityModManager.Logger.LogException("Failed to load settings", e, "[JALib] [Exception]");
+            JALogger.LogExceptionInternal("Failed to load settings", e);
             try {
                 path += ".bak";
                 return !File.Exists(path) ? new JObject() : JObject.Parse(File.ReadAllText(path));
             } catch (Exception e2) {
-                UnityModManager.Logger.LogException("Failed to load backuped settings", e2, "[JALib] [Exception]");
+                JALogger.LogExceptionInternal("Failed to load backuped settings", e2);
                 return new JObject();
             }
         }

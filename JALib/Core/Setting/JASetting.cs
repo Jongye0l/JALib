@@ -46,19 +46,20 @@ public class JASetting : IDisposable {
                     } else if(IsSettingType(field.FieldType)) field.SetValue(this, SetupJASetting(field.FieldType, null));
                 } catch (Exception e) {
                     JAMod mod = Mod ?? JALib.Instance;
-                    if(mod != null) mod.LogException("Failed To Load Field: " + name, e);
-                    else UnityModManager.Logger.LogException("Failed To Load Field: " + name, e);
+                    string key = "Failed To Load Field: " + name;
+                    if(mod != null) mod.LogException(key, e);
+                    else JALogger.LogExceptionInternal(key, e);
                 }
             }
         } catch (Exception e) {
             JAMod mod = Mod ?? JALib.Instance;
-            string key = "Failed To Load Setting";
+            const string key = "Failed To Load Setting";
             if(mod != null) mod.LogReportException(key, e);
-            else UnityModManager.Logger.LogException(key, e);
+            else JALogger.LogExceptionInternal(key, e);
         }
     }
 
-    private Version ToVersion(JToken token) {
+    private static Version ToVersion(JToken token) {
         try {
             return token.ToObject<Version>();
         } catch (Exception) {
@@ -71,7 +72,7 @@ public class JASetting : IDisposable {
         }
     }
 
-    private bool IsSettingType(Type type) {
+    private static bool IsSettingType(Type type) {
         return type.IsSubclassOf(typeof(JASetting)) || type == typeof(JASetting);
     }
 

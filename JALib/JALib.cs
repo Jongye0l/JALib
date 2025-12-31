@@ -16,6 +16,7 @@ namespace JALib;
 
 #pragma warning disable CS0649
 class JALib : JAMod {
+    internal const string ModId = nameof(JALib);
     internal static JALib Instance;
     internal static Harmony Harmony;
     internal new JALibSetting Setting;
@@ -55,7 +56,7 @@ class JALib : JAMod {
             return;
         }
         Task<int> portTask = JATask.Run(Instance, ApplicatorAPI.Connect);
-        string applicationFolderPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JALib", "ModApplicator");
+        string applicationFolderPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ModId, "ModApplicator");
         string applicationPath = System.IO.Path.Combine(applicationFolderPath, "JALib ModApplicator.exe");
         using(RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib")) {
             if(key.GetValue("URL Protocol") == null) {
