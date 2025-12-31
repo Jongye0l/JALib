@@ -99,14 +99,16 @@ public class JALocalization {
                 }
                 localization._localizations = localizations.ToFrozenDictionary();
                 MainThread.Run(new JAction(mod, mod.OnLocalizationUpdate0));
-                List<KeyValuePair<string, string>>[] allLocalizations = new List<KeyValuePair<string, string>>[languages.Count];
-                for(int i = 0; i < languages.Count; i++) allLocalizations[i] = [];
+                JObject[] allLocalizations = new JObject[languages.Count];
+                for(int i = 0; i < languages.Count; i++) allLocalizations[i] = new JObject();
                 foreach(JToken token in array.Skip(1))
-                    for(int i = 0; i < languages.Count; i++) 
-                        allLocalizations[i].Add(SetLocalization(token, i + 1, subindex, languages.Count));
+                    for(int i = 0; i < languages.Count; i++) {
+                        KeyValuePair<string, string> v = SetLocalization(token, i + 1, subindex, languages.Count);
+                        allLocalizations[i][v.Key] = v.Value;
+                    }
                 for(int i = 0; i < languages.Count; i++) {
                     string path = Path.Combine(mod.Path, "localization", languages[i] + ".json");
-                    File.WriteAllTextAsync(path, JsonConvert.SerializeObject(allLocalizations[i], Formatting.Indented));
+                    File.WriteAllTextAsync(path, allLocalizations[i].ToString()).CatchException(JALib.Instance);
                 }
             } catch (Exception e) {
                 mod.LogReportException("Failed to load localization data.", e);
