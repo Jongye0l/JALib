@@ -215,8 +215,7 @@ class JApi {
 
     internal void Restart() {
         domain = null;
-        retryTask = Task.Delay(10000 * ++retryCount);
-        retryTask.GetAwaiter().OnCompleted(Connect);
+        Task.Delay(10000 * ++retryCount).OnCompleted(Connect);
     }
 
     internal void Dispose() {

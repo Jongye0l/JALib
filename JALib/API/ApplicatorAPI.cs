@@ -1,9 +1,6 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using JALib.Core;
 using JALib.Tools;
@@ -14,7 +11,6 @@ namespace JALib.API;
 
 class ApplicatorAPI(TcpClient client) {
     private static TcpListener listener;
-    private static Task<TcpClient> task;
 
     public static int Connect() {
 Setup:
@@ -36,18 +32,15 @@ Setup:
     public static void Dispose() {
         listener.Stop();
         listener = null;
-        if(task == null) return;
-        task.Dispose();
-        task = null;
     }
 
     public static void Listen() {
-        task = listener.AcceptTcpClientAsync();
-        task.GetAwaiter().UnsafeOnCompleted(Work);
+        listener.AcceptTcpClientAsync().OnCompleted(Work);
     }
 
-    private static void Work() {
+    private static void Work(Task<TcpClient> task) {
         try {
+            if(listener == null) return;
             TcpClient client = task.Result;
             Listen();
             JATask.Run(JALib.Instance, new ApplicatorAPI(client).Run);

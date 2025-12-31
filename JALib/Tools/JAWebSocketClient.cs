@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,40 +25,45 @@ public class JAWebSocketClient(JAction read = null, bool autoConnect = true) : I
     public void Connect(string uri, CancellationToken token = default) => Connect(new Uri(uri), token);
     public void Connect(Uri uri, CancellationToken token = default) => ConnectAsync(uri, token).Wait(token);
     public Task ConnectAsync(string uri, CancellationToken token = default) => ConnectAsync(new Uri(uri), token);
-    public Task ConnectAsync(Uri uri, CancellationToken token = default) => new AsyncConnect(this, uri, token).tcs.Task;
+    public Task ConnectAsync(Uri uri, CancellationToken token = default) => new AsyncConnect(this, uri, token).Run();
 
-    private class AsyncConnect {
+    private struct AsyncConnect : IAsyncStateMachine {
         private readonly JAWebSocketClient client;
         private readonly Uri uri;
         private readonly CancellationToken token;
-        internal readonly TaskCompletionSource<bool> tcs = new();
+        private AsyncTaskMethodBuilder builder;
         private Task task;
 
         internal AsyncConnect(JAWebSocketClient client, Uri uri, CancellationToken token) {
             this.client = client;
             this.uri = uri;
             this.token = token;
-            MoveNext();
+        }
+
+        internal Task Run() {
+            builder = AsyncTaskMethodBuilder.Create();
+            builder.Start(ref this);
+            return builder.Task;
         }
 
         public void MoveNext() {
-            try {
-                task ??= client.socket.ConnectAsync(uri, token);
-                if(!task.IsCompleted) {
-                    task.GetAwaiter().UnsafeOnCompleted(MoveNext);
-                    return;
-                }
-                if(client.Connected) {
-                    client.onConnect?.Invoke();
-                    client.Read();
-                    tcs.SetResult(true);
-                } else if(client.autoConnect) {
-                    task = null;
-                    Task.Delay(60000, token).GetAwaiter().OnCompleted(MoveNext);
-                }
-            } catch (Exception e) {
-                tcs.SetException(e);
+            task ??= client.socket.ConnectAsync(uri, token);
+            if(!task.IsCompleted) {
+                TaskAwaiter awaiter = task.GetAwaiter();
+                builder.AwaitUnsafeOnCompleted(ref awaiter, ref this);
+                return;
             }
+            if(client.Connected) {
+                client.onConnect?.Invoke();
+                client.Read();
+                builder.SetResult();
+            } else if(client.autoConnect) {
+                task = null;
+                Task.Delay(60000, token).GetAwaiter().OnCompleted(MoveNext);
+            }
+        }
+        
+        public void SetStateMachine(IAsyncStateMachine stateMachine) {
         }
     }
 
@@ -67,7 +73,7 @@ public class JAWebSocketClient(JAction read = null, bool autoConnect = true) : I
             try {
                 while(Connected) {
                     if(read is not null) read.Invoke();
-                    else Task.Yield();
+                    else Thread.Yield();
                 }
                 onClose?.Invoke();
                 thread = null;
@@ -136,26 +142,33 @@ public class JAWebSocketClient(JAction read = null, bool autoConnect = true) : I
         try {
             CheckConnect();
             byte[] buffer = new byte[count];
-            if(count == 0) return Task.FromResult(buffer);
-            AsyncReadByte asyncReadByte = new(buffer);
-            socket.ReceiveAsync(buffer, CancellationToken.None).ContinueWith(asyncReadByte.Run);
-            return asyncReadByte.tcs.Task;
+            return count == 0 ? Task.FromResult(buffer) : 
+                       new AsyncReadByte(buffer, socket.ReceiveAsync(buffer, CancellationToken.None)).Run();
         } catch (Exception e) {
             return Task.FromException<byte[]>(e);
         }
     }
 
-    private class AsyncReadByte(byte[] buffer) {
-        private byte[] buffer = buffer;
-        public TaskCompletionSource<byte[]> tcs = new();
+    private struct AsyncReadByte(byte[] buffer, Task<WebSocketReceiveResult> task) : IAsyncStateMachine {
+        private AsyncTaskMethodBuilder<byte[]> builder;
 
-        public void Run(Task<WebSocketReceiveResult> result) {
-            try {
-                if(result.Result.Count != buffer.Length) throw new InvalidOperationException("Failed to read bytes");
-                tcs.SetResult(buffer);
-            } catch (Exception e) {
-                tcs.SetException(e);
+        public Task<byte[]> Run() {
+            builder = AsyncTaskMethodBuilder<byte[]>.Create();
+            builder.Start(ref this);
+            return builder.Task;
+        }
+        
+        public void MoveNext() {
+            if(!task.IsCompleted) {
+                TaskAwaiter<WebSocketReceiveResult> awaiter = task.GetAwaiter();
+                builder.AwaitUnsafeOnCompleted(ref awaiter, ref this);
+                return;
             }
+            if(task.Result.Count != buffer.Length) throw new InvalidOperationException("Failed to read bytes");
+            builder.SetResult(buffer);
+        }
+        
+        public void SetStateMachine(IAsyncStateMachine stateMachine) {
         }
     }
 

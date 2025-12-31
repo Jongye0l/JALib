@@ -18,7 +18,7 @@ class RawModData {
     public JAModInfo info;
     public JAModSetting setting;
     public UnityModManager.ModInfo modInfo;
-    public Task<GetModInfo> modInfoTask;
+    public GetModInfo apiModInfo;
     public bool checkUpdated;
     public bool loadDependencies;
     public List<JAModLoader> waitingLoad;
@@ -34,19 +34,19 @@ class RawModData {
         modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
         setting = new JAModSetting((typeof(JABootstrap).Assembly.GetName().Version != new Version(1, 0,0, 0) ? GetSettingPath() : null) ?? Path.Combine(info.ModEntry.Path, "Settings.json"));
         if(info.IsBetaBranch) setting.UnlockBeta = setting.Beta = true;
-        modInfoTask = JApi.Send(new GetModInfo(info, setting.Beta), false);
-        modInfoTask.GetAwaiter().UnsafeOnCompleted(CheckUpdate);
+        JApi.Send(new GetModInfo(info, setting.Beta), false).OnCompleted(CheckUpdate);
         LoadDependencies();
     }
 
     private string GetSettingPath() => info.SettingPath;
 
-    public void CheckUpdate() {
+    public void CheckUpdate(Task<GetModInfo> modInfoTask) {
         try {
             if(repeatCount == 0)
-                if(!modInfoTask.IsCompletedSuccessfully) info.ModEntry.Logger.LogException("Failed to get mod info", modInfoTask.Exception.InnerException ?? modInfoTask.Exception);
+                if(modInfoTask.IsFaulted) info.ModEntry.Logger.LogException("Failed to get mod info",
+                    modInfoTask.Exception!.InnerExceptions.Count == 1 ? modInfoTask.Exception.InnerExceptions[0] : modInfoTask.Exception);
                 else {
-                    GetModInfo apiInfo = modInfoTask.Result;
+                    GetModInfo apiInfo = apiModInfo = modInfoTask.Result;
                     if(apiInfo.Success) {
                         bool notLatest = (setting.Beta ? apiInfo.LatestBetaVersion : apiInfo.LatestVersion) > info.ModEntry.Version;
                         modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
@@ -233,7 +233,7 @@ class RawModData {
         ConstructorInfo constructor = modType.Constructor([]) ?? modType.Constructor(typeof(UnityModManager.ModEntry));
         data.mod = (JAMod) constructor.Invoke(constructor.GetParameters().Length == 0 ? [] : [info.ModEntry]);
         data.mod.reloadCount = repeatCount;
-        data.mod.Setup(info.ModEntry, info, modInfoTask.IsCompletedSuccessfully ? modInfoTask.Result : null, setting);
+        data.mod.Setup(info.ModEntry, info, apiModInfo, setting);
     }
     
     private static bool GetNoChangeAssemblyName(JAModInfo info) => info.NoChangeAssemblyName;
@@ -249,7 +249,7 @@ class RawModData {
         loadDependencies = false;
         data.LoadState = ModLoadState.Initializing;
         modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
-        GetModInfo apiInfo = modInfoTask.IsCompletedSuccessfully ? modInfoTask.Result : null;
+        GetModInfo apiInfo = apiModInfo;
         if(apiInfo != null) {
             bool notLatest = (setting.Beta ? apiInfo.LatestBetaVersion : apiInfo.LatestVersion) > info.ModEntry.Version;
             modInfo.Version = (notLatest ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";

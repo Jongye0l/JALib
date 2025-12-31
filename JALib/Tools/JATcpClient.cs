@@ -107,7 +107,7 @@ public class JATcpClient : TcpClient {
         thread = new Thread(() => {
             while(Connected) {
                 if(read is not null) read.Invoke();
-                else Task.Yield();
+                else Thread.Yield();
             }
             onClose?.Invoke();
             thread = null;

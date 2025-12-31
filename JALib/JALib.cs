@@ -99,10 +99,10 @@ class JALib : JAMod {
             }
             if(!task.Result) return;
             if(JaModInfo == null) {
-                Task.Yield().GetAwaiter().OnCompleted(LoadInfo);
+                Task.Yield().OnCompleted(LoadInfo);
                 return;
             }
-            JApi.Send(new GetModInfo(JaModInfo, ModSetting.Beta), false).ContinueWith(ModInfo);
+            JApi.Send(new GetModInfo(JaModInfo, ModSetting.Beta), false).OnCompleted(Instance, ModInfo, JATask.CompleteFlag.None);
         } catch (Exception e) {
             LogReportException("Fail to load mod info.", e);
         }
@@ -110,7 +110,7 @@ class JALib : JAMod {
 
     private void ModInfo(Task<GetModInfo> task) {
         try {
-            if(task.Exception != null) throw task.Exception.InnerException ?? task.Exception;
+            if(task.Exception != null) throw task.Exception.InnerExceptions.Count == 1 ? task.Exception.InnerExceptions[0] : task.Exception;
             GetModInfo apiInfo = task.Result;
             ModInfo(apiInfo);
             ModEntry.Info.Version = (apiInfo.LatestVersion > ModEntry.Version ? "<color=red>" : "<color=cyan>") + ModEntry.Info.Version + "</color>";

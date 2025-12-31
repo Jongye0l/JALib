@@ -36,28 +36,17 @@ public class JALocalization {
         string localizationDataPath = Path.Combine(localizationPath, language + ".json");
         if(!File.Exists(localizationDataPath)) localizationDataPath = Path.Combine(localizationPath, SystemLanguage.English + ".json");
         if(!File.Exists(localizationDataPath)) localizationDataPath = Path.Combine(localizationPath, SystemLanguage.Korean + ".json");
-        if(File.Exists(localizationDataPath)) _ = new FileLoader(this, localizationDataPath);
+        if(File.Exists(localizationDataPath)) File.ReadAllTextAsync(localizationDataPath).OnCompleted(LoadOnFile);
         if(_jaMod.Gid == -1) return;
         _ = new WebLoader(this, language);
     }
-    
-    private class FileLoader {
-        private readonly JALocalization localization;
-        private readonly Task<string> task;
         
-        public FileLoader(JALocalization localization, string localizationDataPath) {
-            this.localization = localization;
-            (task = File.ReadAllTextAsync(localizationDataPath)).GetAwaiter().UnsafeOnCompleted(LoadOnFile);
-        }
-        
-        public void LoadOnFile() {
-            JALocalization localization = this.localization;
-            try {
-                localization._localizations = JsonConvert.DeserializeObject<Dictionary<string, string>>(task.Result).ToFrozenDictionary();
-                localization._jaMod.OnLocalizationUpdate0();
-            } catch (Exception e) {
-                localization._jaMod.LogReportException("Failed to load localization data.", e);
-            }
+    public void LoadOnFile(Task<string> task) {
+        try {
+            _localizations = JsonConvert.DeserializeObject<Dictionary<string, string>>(task.Result).ToFrozenDictionary();
+            _jaMod.OnLocalizationUpdate0();
+        } catch (Exception e) {
+            _jaMod.LogReportException("Failed to load localization data.", e);
         }
     }
 
@@ -70,7 +59,7 @@ public class JALocalization {
         public WebLoader(JALocalization localization, SystemLanguage language) {
             this.localization = localization;
             this.language = language;
-            (task = httpClient.GetString(LOCALIZATION_URL + localization._jaMod.Gid)).GetAwaiter().UnsafeOnCompleted(Load);
+            (task = httpClient.GetString(LOCALIZATION_URL + localization._jaMod.Gid)).OnCompleted(Load);
         }
 
         public void Load() {
