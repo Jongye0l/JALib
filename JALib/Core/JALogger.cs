@@ -222,7 +222,7 @@ static class JALogger {
             string internalMethodName = frame.StackFrameDummy<string>(0);
             if(internalMethodName != null) sb.Append(internalMethodName);
             else
-                sb.AppendJoin("", "0x", frame.StackFrameDummy<long>(1).ToString("x5"), " + 0x", frame.GetNativeOffset().ToString("x5"))
+                sb.Append('<').AppendJoin("", "0x", frame.StackFrameDummy<long>(1).ToString("x5"), " + 0x", frame.GetNativeOffset().ToString("x5"))
                     .Append("> <unknown method>");
         } else {
             AddType(sb, method.DeclaringType, true);

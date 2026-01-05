@@ -2,6 +2,9 @@
 .idea
 *.sln.DotSettings.user
 
+# Visual Studio
+.vs
+
 # Compile File
 *.dll
 bin/
