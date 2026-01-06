@@ -215,18 +215,41 @@ static class JALogger {
         sb.Append('[').Append(mod).Append(' ')
             .Append(logType).Append(' ')
             .Append(now.Value.ToString("HH:mm:ss.fff")).Append(" #")
-            .Append(Time.frameCount).Append("] ").Append(message).Append("\n  ⚡ ")
-            .Append(Thread.CurrentThread.Name ?? "Native Thread").Append('(').Append(Thread.CurrentThread.ManagedThreadId).Append(')');
-        if(Thread.CurrentThread.Name == "Thread Pool Worker") {
-            Task currentTask = GetCurrentTask();
-            sb.Append(NextInfo);
-            if(currentTask != null) sb.Append("Task #").Append(currentTask.Id);
-            else sb.Append("Unknown Task");
+            .Append(Time.frameCount).Append("] ").Append(message);
+        int flag = JALib.Instance?.Setting?.loggerLogDetail ?? 7;
+        if((flag & 1) == 1) {
+            sb.Append("\n  ⚡ ")
+                .Append(Thread.CurrentThread.Name ?? "Native Thread").Append('(').Append(Thread.CurrentThread.ManagedThreadId).Append(')');
+            if(Thread.CurrentThread.Name == "Thread Pool Worker") {
+                Task currentTask = GetCurrentTask();
+                sb.Append(NextInfo);
+                if(currentTask != null) sb.Append("Task #").Append(currentTask.Id);
+                else sb.Append("Unknown Task");
+            }
         }
-        sb.Append("\n  📍 ");
-        StackFrame frame = new(stackTraceSkip, true);
-        AddStackFrameInfo(sb, frame);
-        return sb.Append('\n').ToString();
+        StackFrame frame = null;
+        if((flag & 2) == 2) {
+            frame = new StackFrame(stackTraceSkip, true);
+            sb.Append("\n  📍 ");
+            AddStackFrameInfo(sb, frame);
+        }
+        if((flag & 4) == 4) {
+            frame ??= new StackFrame(stackTraceSkip, true);
+            if((object) frame.GetMethod() != null) {
+                sb.Append("\n  📁 ");
+                string str1;
+                try {
+                    str1 = frame.GetFileName();
+                } catch (SecurityException) {
+                    str1 = null;
+                }
+                if(str1 == null || str1[0] == '<')
+                    str1 = $"<{frame.GetMethod().Module.ModuleVersionId:N}>";
+                sb.Append(str1).Append(':').Append(frame.GetFileLineNumber());
+            }
+        }
+        if(flag != 0) sb.Append('\n');
+        return sb.ToString();
     }
 
     private static void AddStackFrameInfo(StringBuilder sb, StackFrame frame) {
@@ -260,16 +283,7 @@ static class JALogger {
                 sb.Append(", ");
             }
             if(parameters.Length > 0) sb.Length -= 2;
-            sb.Append(")\n  📁 ");
-            string str1;
-            try {
-                str1 = frame.GetFileName();
-            } catch (SecurityException) {
-                str1 = null;
-            }
-            if(str1 == null || str1[0] == '<')
-                str1 = $"<{frame.GetMethod().Module.ModuleVersionId:N}>";
-            sb.Append(str1).Append(':').Append(frame.GetFileLineNumber());
+            sb.Append(')');
         }
     }
 

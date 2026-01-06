@@ -153,6 +153,22 @@ class JALib : JAMod {
         JALocalization localization = Instance.Localization;
         settingGUI.AddSettingToggle(ref Setting.logPatches, localization["Setting.LogPatches"]);
         settingGUI.AddSettingToggle(ref Setting.logPrefixWarn, localization["Setting.LogPrefixWarn"]);
+        GUILayout.BeginHorizontal();
+        int current = Setting.loggerLogDetail;
+        if(GUILayout.Button(Bold(localization["Setting.LogDetail.Thread"], (current & 1) == 1))) {
+            Setting.loggerLogDetail ^= 1;
+            SaveSetting();
+        }
+        if(GUILayout.Button(Bold(localization["Setting.LogDetail.StackFrame"], (current & 2) == 2))) {
+            Setting.loggerLogDetail ^= 2;
+            SaveSetting();
+        }
+        if(GUILayout.Button(Bold(localization["Setting.LogDetail.FileInfo"], (current & 4) == 4))) {
+            Setting.loggerLogDetail ^= 4;
+            SaveSetting();
+        }
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
     }
     
     private string Bold(string text, bool bold) => bold ? "<b>" + text + "</b>" : text;
