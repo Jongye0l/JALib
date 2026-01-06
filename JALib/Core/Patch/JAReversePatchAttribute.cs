@@ -27,4 +27,5 @@ public class JAReversePatchAttribute : JAPatchBaseAttribute {
 
     public JAReversePatchAttribute(Delegate @delegate, ReversePatchType patchType) : this(@delegate.Method, patchType) {
     }
+    protected override string GetPatchTypeString() => $"ReversePatch ({PatchType})";
 }

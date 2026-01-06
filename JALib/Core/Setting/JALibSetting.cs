@@ -6,6 +6,8 @@ namespace JALib.Core.Setting;
 class JALibSetting : JASetting {
 
     public JASetting Beta;
+    public bool logPatches;
+    public bool logPrefixWarn;
 
     protected JALibSetting(JAMod mod, JObject jsonObject = null) : base(mod, jsonObject) {
     }

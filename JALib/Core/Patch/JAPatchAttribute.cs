@@ -32,4 +32,5 @@ public class JAPatchAttribute : JAPatchBaseAttribute {
 
     public JAPatchAttribute(Delegate @delegate, PatchType patchType, bool disable) : this(@delegate.Method, patchType, disable) {
     }
+    protected override string GetPatchTypeString() => PatchType.ToString();
 }

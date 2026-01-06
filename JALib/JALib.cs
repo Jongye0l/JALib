@@ -10,6 +10,7 @@ using JALib.Core.ModLoader;
 using JALib.Core.Setting;
 using JALib.Tools;
 using Microsoft.Win32;
+using UnityEngine;
 using UnityModManagerNet;
 
 namespace JALib;
@@ -20,6 +21,7 @@ class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
     internal new JALibSetting Setting;
+    private static SettingGUI _settingGUI;
     private static bool enableInit;
 
     private JALib(UnityModManager.ModEntry modEntry) : base(typeof(JALibSetting)) {
@@ -32,6 +34,7 @@ class JALib : JAMod {
         Setup(modEntry, JaModInfo, null, new JAModSetting(System.IO.Path.Combine(modEntry.Path, "Settings.json")));
         if(JaModInfo.IsBetaBranch) ModSetting.UnlockBeta = ModSetting.Beta = true;
         Setting = (JALibSetting) base.Setting;
+        _settingGUI = new SettingGUI(this);
         Patcher.AddPatch(JALocalization.RDStringPatch).AddPatch(JALocalization.RDStringSetup);
         JApi.Initialize();
         JATask.Run(Instance, Init);
@@ -144,4 +147,13 @@ class JALib : JAMod {
     protected override void OnUpdate(float deltaTime) {
         MainThread.OnUpdate();
     }
+
+    protected override void OnGUI() {
+        SettingGUI settingGUI = _settingGUI;
+        JALocalization localization = Instance.Localization;
+        settingGUI.AddSettingToggle(ref Setting.logPatches, localization["Setting.LogPatches"]);
+        settingGUI.AddSettingToggle(ref Setting.logPrefixWarn, localization["Setting.LogPrefixWarn"]);
+    }
+    
+    private string Bold(string text, bool bold) => bold ? "<b>" + text + "</b>" : text;
 }

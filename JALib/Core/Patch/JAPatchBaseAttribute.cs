@@ -4,7 +4,7 @@ using JALib.Tools;
 namespace JALib.Core.Patch;
 
 public abstract class JAPatchBaseAttribute : Attribute {
-    internal string PatchId => Method.DeclaringType.FullName + "." + Method.Name;
+    internal string PatchId => "JAPatch: " + Method.DeclaringType.FullName + "." + Method.Name + "(" + GetPatchTypeString() + ")";
     internal string Class;
     internal Type ClassType;
     internal string MethodName;
@@ -18,4 +18,6 @@ public abstract class JAPatchBaseAttribute : Attribute {
     public bool TryingCatch = true;
     internal MethodInfo Method;
     public bool Debug;
+
+    protected abstract string GetPatchTypeString();
 }

@@ -552,6 +552,7 @@
         <Compile Include="Core\Patch\JAMethodPatcher.cs"/>
         <Compile Include="Core\Patch\JAOverridePatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatchBaseAttribute.cs"/>
+        <Compile Include="Core\Patch\JAPatchException.cs" />
         <Compile Include="Core\Patch\JAPatchInfo.cs"/>
         <Compile Include="Core\Patch\JAPatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatcher.cs"/>
@@ -560,6 +561,7 @@
         <Compile Include="Core\Patch\PatchBinding.cs"/>
         <Compile Include="Core\Patch\PatchData.cs"/>
         <Compile Include="Core\Patch\PatchType.cs"/>
+        <Compile Include="Core\Patch\PatchWaiter.cs" />
         <Compile Include="Core\Patch\ReversePatchData.cs"/>
         <Compile Include="Core\Patch\ReversePatchType.cs"/>
         <Compile Include="Core\Patch\TriedPatchData.cs"/>

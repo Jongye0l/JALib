@@ -21,4 +21,6 @@ public class JAOverridePatchAttribute : JAPatchBaseAttribute {
     public JAOverridePatchAttribute(Type @class) => ClassType = @class;
     public JAOverridePatchAttribute() {
     }
+    
+    protected override string GetPatchTypeString() => "Override";
 }
