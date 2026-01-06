@@ -26,6 +26,8 @@ static class JALogger {
     private static List<string> _history;
     private static List<LogCache> _logCache;
     private static int _historyCapacity;
+    private static CancellationTokenSource cancellationToken;
+    private static bool _removingCache;
 
     static JALogger() {
         try {
@@ -55,7 +57,14 @@ static class JALogger {
     }
 
     private static void CacheAutoRemover() {
+        if(_removingCache) return;
         try {
+            _removingCache = true;
+            if(cancellationToken != null) {
+                cancellationToken.Cancel();
+                cancellationToken.Dispose();
+                cancellationToken = null;
+            }
             List<(LogCache, int)> removeIndices = [];
             for(int i = 0; i < _logCache.Count; i++) {
                 LogCache cache = _logCache[i];
@@ -70,9 +79,12 @@ static class JALogger {
                         count++;
                     }
             if(count > 0) LogInternal($"JALogger cache removed {count} entries, current cache size: {_logCache.Count}");
-            Task.Delay(10000).OnCompleted(CacheAutoRemover);
+            cancellationToken = new CancellationTokenSource();
+            Task.Delay(1000, cancellationToken.Token).OnCompleted(CacheAutoRemover);
         } catch (Exception e) {
             LogExceptionInternal("JALogger cache remover failed", e);
+        } finally {
+            _removingCache = false;
         }
     }
 
@@ -130,6 +142,7 @@ static class JALogger {
             string halfMessage = MakeHalfString(mod.Name, logType, message, now, current.RepeatCount);
             current.FullString = halfMessage;
             _history.Add(halfMessage);
+            if(!_removingCache && _logCache.Count > _historyCapacity) Task.Run(CacheAutoRemover);
             if(_history.Count < _historyCapacity * 2) return;
             _history.RemoveRange(0, _historyCapacity);
         }
