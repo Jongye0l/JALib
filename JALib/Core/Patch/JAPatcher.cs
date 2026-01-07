@@ -44,6 +44,7 @@ public class JAPatcher : IDisposable {
         harmony.CreateReversePatcher(updateMethod, new HarmonyMethod(((Delegate) UpdatePatchInfo).Method)).Patch();
         harmony.CreateReversePatcher(updateMethod, new HarmonyMethod(((Delegate) UpdatePatchInfoOnlyPatchInfo).Method)).Patch();
         harmony.CreateReversePatcher(updateMethod, new HarmonyMethod(((Delegate) UpdatePatchInfoOnlyReplacement).Method)).Patch();
+        harmony.Patch(((Delegate) JAMethodPatcher.SortPatchMethods).Method, transpiler: new HarmonyMethod(((Delegate) JAMethodPatcher.SortPatchMethodsTranspiler).Method));
         JALogger.LogInternal("Start Enter the Harmony Locker.(2/4)");
         lock(_locker) {
             JALogger.LogInternal("Start JAPatcher Patches.(3/4)");

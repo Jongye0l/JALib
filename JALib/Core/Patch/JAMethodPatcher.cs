@@ -147,11 +147,29 @@ class JAMethodPatcher {
         }).ToArray();
     }
 
-    private static List<MethodInfo> SortPatchMethods(MethodBase original, HarmonyLib.Patch[] patches, bool debug, out HarmonyLib.Patch[] sortedPatches) {
+    internal static List<MethodInfo> SortPatchMethods(MethodBase original, HarmonyLib.Patch[] patches, bool debug, out HarmonyLib.Patch[] sortedPatches) {
         object patchSorter = typeof(Harmony).Assembly.GetType("HarmonyLib.PatchSorter").New(patches, debug);
         List<MethodInfo> sortedMethods = patchSorter.Invoke<List<MethodInfo>>("Sort", original);
         sortedPatches = patchSorter.GetValue<HarmonyLib.Patch[]>("sortedPatchArray");
         return sortedMethods;
+    }
+
+    internal static IEnumerable<CodeInstruction> SortPatchMethodsTranspiler(IEnumerable<CodeInstruction> instructions) {
+        Type patchSorterType = typeof(Harmony).Assembly.GetType("HarmonyLib.PatchSorter");
+        return [
+            new CodeInstruction(OpCodes.Ldarg_1),
+            new CodeInstruction(OpCodes.Ldarg_2),
+            new CodeInstruction(OpCodes.Newobj, patchSorterType.Constructor()),
+            new CodeInstruction(OpCodes.Stloc_0),
+            new CodeInstruction(OpCodes.Ldloc_0),
+            new CodeInstruction(OpCodes.Ldarg_0),
+            new CodeInstruction(OpCodes.Call, patchSorterType.Method("Sort")),
+            new CodeInstruction(OpCodes.Ldarg_3),
+            new CodeInstruction(OpCodes.Ldloc_0),
+            new CodeInstruction(OpCodes.Ldfld, patchSorterType.Field("sortedPatchArray")),
+            new CodeInstruction(OpCodes.Stind_Ref),
+            new CodeInstruction(OpCodes.Ret)
+        ];
     }
 
     internal static bool PrefixAffectsOriginal(MethodInfo fix) => throw new NotImplementedException();
