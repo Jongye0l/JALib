@@ -117,11 +117,12 @@ public abstract class Feature {
         bool enabled, expanded;
         try {
             expanded = GUILayout.Toggle(_expanded, Enabled && _canExpand ? _expanded ? "◢" : "▶" : "", _expandStyle);
+            if(!Mod.Localization.TryGet("Feature." + Name, out string localizedName)) localizedName = Name;
             if(!CanEnable) {
                 enabled = Enabled;
                 GUILayout.Space(15f);
-                GUILayout.Label(Name, _enableLabelStyle);
-            } else enabled = GUILayout.Toggle(Enabled, Name, _enableStyle);
+                GUILayout.Label(localizedName, _enableLabelStyle);
+            } else enabled = GUILayout.Toggle(Enabled, localizedName, _enableStyle);
         } finally {
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();

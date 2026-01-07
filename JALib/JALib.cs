@@ -171,5 +171,5 @@ class JALib : JAMod {
         GUILayout.EndHorizontal();
     }
     
-    private string Bold(string text, bool bold) => bold ? "<b>" + text + "</b>" : text;
+    private static string Bold(string text, bool bold) => bold ? "<b>" + text + "</b>" : text;
 }
