@@ -115,7 +115,7 @@ public class JASetting : IDisposable {
                 if(o is JASetting setting) {
                     setting.PutFieldData();
                     JsonObject[name] = setting.JsonObject;
-                    return;
+                    continue;
                 }
                 if(castAttribute != null) o = Convert.ChangeType(o, castAttribute.CastType);
                 if(roundAttribute != null) o = Convert.ChangeType(Math.Round((double) o!, roundAttribute.Round), o.GetType());

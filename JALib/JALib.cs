@@ -153,6 +153,7 @@ class JALib : JAMod {
         JALocalization localization = Instance.Localization;
         settingGUI.AddSettingToggle(ref Setting.logPatches, localization["Setting.LogPatches"]);
         settingGUI.AddSettingToggle(ref Setting.logPrefixWarn, localization["Setting.LogPrefixWarn"]);
+        GUILayout.Space(5);
         GUILayout.BeginHorizontal();
         int current = Setting.loggerLogDetail;
         if(GUILayout.Button(Bold(localization["Setting.LogDetail.Thread"], (current & 1) == 1))) {
