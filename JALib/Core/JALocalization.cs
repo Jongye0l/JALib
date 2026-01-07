@@ -14,9 +14,9 @@ namespace JALib.Core;
 
 public class JALocalization {
     private const string LOCALIZATION_URL = "https://docs.google.com/spreadsheets/d/1kx12GMqK9lgpiZimBSAMdj51xY4IuQUSLXzmQFZ6Sk4/gviz/tq?tqx=out:json&tq&gid=";
-    internal FrozenDictionary<string, string> _localizations;
-    internal JAMod _jaMod;
-    internal SystemLanguage? _curLang;
+    private FrozenDictionary<string, string> _localizations;
+    private JAMod _jaMod;
+    private SystemLanguage? _curLang;
 
     internal JALocalization(JAMod jaMod) {
         _jaMod = jaMod;

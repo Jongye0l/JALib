@@ -144,8 +144,7 @@ public abstract class Feature {
             OnGUI();
             _critical = 0;
         } catch (Exception e) {
-            Mod.Error("Error OnGUI in " + Name);
-            Mod.LogException(e);
+            Mod.LogReportException("Error OnGUI in " + Name, e);
             if(++_critical > 3) {
                 _expanded = false;
                 OnHideGUI0();
@@ -181,4 +180,6 @@ public abstract class Feature {
 
     protected virtual void OnHideGUI() {
     }
+
+    protected void Inactive() => Disable();
 }
