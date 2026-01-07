@@ -212,7 +212,7 @@ public abstract class JAMod {
     }
 
     protected void AddFeature(params Feature[] feature) {
-        Features.Add(feature);
+        Features.AddRange(feature);
         if(!Enabled || !ModEntry.Active || !Initialized) return;
         MainThread.Run(this, () => {
             foreach(Feature f in feature) if(f.Enabled) f.Enable();
