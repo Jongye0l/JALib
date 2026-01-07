@@ -461,12 +461,13 @@ public class JAPatcher : IDisposable {
             foreach(TriedPatchData tryPrefix in jaPatchInfo.tryPrefixes) 
                 if(tryPrefix.PatchMethod.ReturnType == typeof(bool)) warningPatches.Add(tryPrefix.PatchMethod);
             foreach(HarmonyLib.Patch remove in jaPatchInfo.removes) warningPatches.Add(remove.PatchMethod);
+            foreach(HarmonyLib.Patch replace in jaPatchInfo.replaces) warningPatches.Add(replace.PatchMethod);
             if(warningPatches.Count > 1) {
                 StringBuilder sb = new();
                 foreach(MethodBase method in warningPatches) sb.AppendLine(" - " + method.FullDescription());
                 sb.Append('\n');
                 if(JALib.Instance.Setting.logPrefixWarn) {
-                    JALib.Instance.Warning("Multiple Prefix Patches that return bool detected on method '" + original.FullDescription() + "':");
+                    JALib.Instance.Warning("Multiple Prefix Patches that return bool(or Replace) detected on method '" + original.FullDescription() + "':");
                     Console.WriteLine(sb.ToString());
                 }
             }

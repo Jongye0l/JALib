@@ -216,7 +216,7 @@ static class JALogger {
             .Append(logType).Append(' ')
             .Append(now.Value.ToString("HH:mm:ss.fff")).Append(" #")
             .Append(Time.frameCount).Append("] ").Append(message);
-        int flag = JALib.Instance?.Setting?.loggerLogDetail ?? 7;
+        int flag = JALib.Instance?.Setting.loggerLogDetail ?? 7;
         if((flag & 1) == 1) {
             sb.Append("\n  ⚡ ")
                 .Append(Thread.CurrentThread.Name ?? "Native Thread").Append('(').Append(Thread.CurrentThread.ManagedThreadId).Append(')');
