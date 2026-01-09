@@ -12,8 +12,9 @@ public enum AllPatchType {
     Replace = 128,
     Reverse = 256,
     Override = 512,
+    ReplaceTranspiler = 1024,
     AllPrefix = Prefix | TryPrefix | Remove | Override,
     AllPostfix = Postfix | TryPostfix,
-    AllTranspiler = Transpiler | Replace,
+    AllTranspiler = Transpiler | Replace | ReplaceTranspiler,
     All = AllPrefix | AllPostfix | AllTranspiler | Finalizer | Reverse
 }
