@@ -44,7 +44,14 @@
 * [이 링크](Document/DevelopGuide.md) 에서 해당 라이브러리를 이용하여 모드 개발 하는 방법을 확인할 수 있습니다.
 ---
 ### 라이브러리 Library
-* [DnsClient.NET](https://github.com/MichaCo/DnsClient.NET)
+* [DnsClient.NET](https://dnsclient.michaco.net/)
+* [ILRepack](https://www.nuget.org/packages/ILRepack)
+* [Newtonsoft.Json](https://www.newtonsoft.com/json)
+* [System.Buffers](https://www.nuget.org/packages/System.Buffers/)
+* [System.Collections.Immutable](https://www.nuget.org/packages/System.Collections.Immutable/)
+* [System.Memory](https://www.nuget.org/packages/System.Memory/)
+* [System.Numerics.Vectors](https://www.nuget.org/packages/System.Numerics.Vectors/)
+* [System.Runtime.CompilerServices.Unsafe](https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/)
 ---
 ### 참고한 코드 Reference code
 * [Overlayer](https://github.com/c3nb/Overlayer/tree/2cdf95b13add797f9c274d5766786c24c54adb9f)
@@ -52,7 +59,7 @@
 ---
 ### 개발 환경 Development environment
 * Windows 11
-* Rider 2025.3.0.3
+* Rider 2025.3.1
 * .NET Framework 4.8.1
 * C# 13
 * A Dance of Fire and Ice 2.9.7(r135, 3af4113)
