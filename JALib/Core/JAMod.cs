@@ -583,7 +583,7 @@ public abstract class JAMod {
             0 => "Prefix",
             1 => "Postfix",
             2 => "Override",
-        } + " Patch " + id, e);
+        } + " Patch " + id, e, 1);
     }
 #pragma warning restore CS8509
 
