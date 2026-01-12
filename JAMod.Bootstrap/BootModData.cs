@@ -19,6 +19,7 @@ struct BootModData {
             bootModDataList = [];
             Checker();
         }
+        modEntry.Logger.Log("Registering JAMod setup BootModData");
         bootModDataList.Add(this);
         SetPostfix(action switch {
             0 => "<color=red> [JALib Error]</color>",
@@ -53,6 +54,7 @@ struct BootModData {
         if(__result) {
             Action<UnityModManager.ModEntry> action = CreateSetupAction(__instance);
             foreach(BootModData modData in bootModDataList) modData.Run(action);
+            new Harmony("").UnpatchAll("JAMod.Bootstrap");
         } else {
             UnityModManager.Logger.Error("JALib Failed to load", "[JAMod] ");
             action = 0;
@@ -61,7 +63,7 @@ struct BootModData {
                 modData.SetPostfix("<color=red> [JALib Error]</color>");
             }
         }
-        new Harmony("JAMod.LoadChecker").UnpatchAll("JAMod.LoadChecker");
+        new Harmony("").UnpatchAll("JAMod.LoadChecker");
     }
 
     public static Action<UnityModManager.ModEntry> CreateSetupAction(UnityModManager.ModEntry modEntry) => 
@@ -69,8 +71,7 @@ struct BootModData {
             modEntry.Assembly.GetType("JALib.Bootstrap.JABootstrap").GetMethod("Load", BindingFlags.Public | BindingFlags.Static));
     
     public void SetPostfix(string postfix) {
-        if(modEntry == null) return;
-        modEntry.Info.DisplayName = modEntry.Info.Id + postfix;
+        modEntry?.Info.DisplayName = modEntry.Info.Id + postfix;
     }
 
     public void Run(Action<UnityModManager.ModEntry> action) {

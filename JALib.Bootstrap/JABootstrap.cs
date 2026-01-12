@@ -32,6 +32,7 @@ public static class JABootstrap {
                 SetupJALib(modInfo);
             } catch (Exception e) {
                 modEntry.Logger.LogException(e);
+                throw;
             }
         });
     }
@@ -54,6 +55,7 @@ public static class JABootstrap {
         if(modInfo.BootstrapVersion > BootstrapVersion) throw new Exception("Bootstrap version is too low.");
         modInfo.ModEntry = modEntry;
         modInfo.IsBetaBranch = beta;
+        modEntry.Logger.Log("Successfully loaded JAModInfo");
         return modInfo;
     }
 
@@ -73,6 +75,7 @@ public static class JABootstrap {
             modEntry.Info.Version = (versionValue.Build == 0     ? new Version(versionValue.Major, versionValue.Minor) :
                                      versionValue.Revision == -1 ? versionValue : new Version(versionValue.Major, versionValue.Minor, versionValue.Build)) + behindVersion;
             typeof(UnityModManager.ModEntry).GetField("Version", BindingFlags.Public | BindingFlags.Instance).SetValue(modEntry, versionValue);
+            modEntry.Logger.Log("Version initialized to " + modEntry.Info.Version);
             return beta;
         } catch (Exception e) {
             modEntry.Logger.LogException(e);
@@ -100,17 +103,25 @@ public static class JABootstrap {
 
     public static void Load(UnityModManager.ModEntry modEntry) {
         LoadCount++;
+        modEntry.Logger.Log("JABootstrap Load called. Count: " + LoadCount);
         modEntry.Info.DisplayName = modEntry.Info.Id + " <color=gray>[Waiting JALib...]</color>";
         Task.Run(async () => {
-            bool beta = InitializeVersion(modEntry);
-            JAModInfo modInfo = LoadModInfo(modEntry, beta);
             try {
-                await _task;
-            } catch (Exception) {
+                bool beta = InitializeVersion(modEntry);
+                JAModInfo modInfo = LoadModInfo(modEntry, beta);
+                modEntry.Logger.Log("Now waiting for JALib to load...");
+                try {
+                    await _task;
+                } catch (Exception) {
+                    modEntry.Info.DisplayName = modEntry.Info.Id + " <color=red>[Error Loading JALib]</color>";
+                    return;
+                }
+                modEntry.Logger.Log("JALib loaded. Now loading JAMod...");
+                LoadJAMod(modInfo);
+            } catch (Exception e) {
+                modEntry.Logger.LogException(e);
                 modEntry.Info.DisplayName = modEntry.Info.Id + " <color=red>[Error Loading JALib]</color>";
-                throw;
             }
-            LoadJAMod(modInfo);
         });
     }
 }
