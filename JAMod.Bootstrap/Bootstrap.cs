@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Reflection;
-using System.Threading;
 using HarmonyLib;
 using JALib.Bootstrap;
 using UnityModManagerNet;
@@ -12,17 +11,15 @@ public static class Bootstrap {
         try {
             RunBootstrap(modEntry);
         } catch (Exception) {
-            if(typeof(UnityModManager).Assembly.GetName().Version < new Version(0, 27, 13, 0)) {
-                try {
-                    _ = typeof(BootModData).GetConstructor(null).Invoke([modEntry]);
-                } catch (ArgumentNullException) {
-                    _ = new BootModData(modEntry);
-                    BootModData.constructorInfo = typeof(BootModData).GetConstructor([typeof(UnityModManager.ModEntry)]);
-                    new Harmony("JAMod.Bootstrap").Patch(
-                        typeof(Type).GetMethod("GetConstructor", BindingFlags.Public | BindingFlags.Instance, null, [typeof(Type[])], null),
-                        new HarmonyMethod(((Delegate) GetConstructorPatch).Method));
-                }
-            } else _ = new BootModData(modEntry);
+            try {
+                _ = typeof(BootModData).GetConstructor(null).Invoke([modEntry]);
+            } catch (ArgumentNullException) {
+                _ = new BootModData(modEntry);
+                BootModData.constructorInfo = typeof(BootModData).GetConstructor([typeof(UnityModManager.ModEntry)]);
+                new Harmony("JAMod.Bootstrap").Patch(
+                    typeof(Type).GetMethod("GetConstructor", BindingFlags.Public | BindingFlags.Instance, null, [typeof(Type[])], null),
+                    new HarmonyMethod(((Delegate) GetConstructorPatch).Method));
+            }
         }
     }
 
