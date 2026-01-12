@@ -90,24 +90,24 @@ public abstract class JAMod {
     }
 
     internal void Setup(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
-        ModEntry = modEntry;
-        if(this != JALib.Instance) {
-            try {
-                Assembly assembly = modEntry.Assembly;
-                if(assembly.GetName().Name == "JAMod.Bootstrap") {
-                    if(assembly.GetName().Version < new Version(1, 0, 0, 2)) {
-                        Log("JAMod.Bootstrap version is outdated. Updating...");
-                        File.Copy(System.IO.Path.Combine(JALib.Instance.Path, "JAMod.Bootstrap.dll"),
-                            System.IO.Path.Combine(modEntry.Path, modEntry.Info.AssemblyName), true);
-                    }
-                }
-            } catch (Exception e) {
-                LogReportException("Failed to Setup JAMod Assembly", e);
-            }
-        }
         try {
-            modEntry.SetValue("mAssembly", GetType().Assembly);
+            ModEntry = modEntry;
             Name = ModEntry.Info.Id;
+            if(this != JALib.Instance) {
+                try {
+                    Assembly assembly = modEntry.Assembly;
+                    if(assembly.GetName().Name == "JAMod.Bootstrap") {
+                        if(assembly.GetName().Version < new Version(1, 0, 0, 2)) {
+                            Log("JAMod.Bootstrap version is outdated. Updating...");
+                            File.Copy(System.IO.Path.Combine(JALib.Instance.Path, "JAMod.Bootstrap.dll"),
+                                System.IO.Path.Combine(modEntry.Path, modEntry.Info.AssemblyName), true);
+                        }
+                    }
+                } catch (Exception e) {
+                    LogReportException("Failed to Setup JAMod Assembly", e);
+                }
+            }
+            modEntry.SetValue("mAssembly", GetType().Assembly);
             if(ModSetting == null) {
                 ModSetting = setting;
                 setting.SetupType(SettingType, this);
