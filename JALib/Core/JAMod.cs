@@ -90,23 +90,31 @@ public abstract class JAMod {
     }
 
     internal void Setup(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
-        modEntry.SetValue("mAssembly", GetType().Assembly);
-        if(typeof(JABootstrap).Assembly.GetName().Version == new Version(1, 0, 0, 0)) SetupOldBootstrap(modEntry, apiInfo, setting);
-        else SetupCurBootstrap(modEntry, modInfo, apiInfo, setting);
-    }
-
-    internal void SetupCurBootstrap(UnityModManager.ModEntry modEntry, JAModInfo modInfo, GetModInfo apiInfo, JAModSetting setting) {
+        ModEntry = modEntry;
+        if(this != JALib.Instance) {
+            try {
+                Assembly assembly = modEntry.Assembly;
+                if(assembly.GetName().Name == "JAMod.Bootstrap") {
+                    if(assembly.GetName().Version < new Version(1, 0, 0, 2)) {
+                        Log("JAMod.Bootstrap version is outdated. Updating...");
+                        File.Copy(System.IO.Path.Combine(JALib.Instance.Path, "JAMod.Bootstrap.dll"),
+                            System.IO.Path.Combine(modEntry.Path, modEntry.Info.AssemblyName), true);
+                    }
+                }
+            } catch (Exception e) {
+                LogReportException("Failed to Setup JAMod Assembly", e);
+            }
+        }
         try {
-            ModEntry = modEntry;
             modEntry.SetValue("mAssembly", GetType().Assembly);
             Name = ModEntry.Info.Id;
             if(ModSetting == null) {
                 ModSetting = setting;
                 setting.SetupType(SettingType, this);
             } else ModSetting.Combine(setting);
-            Gid = apiInfo?.Gid ?? modInfo.Gid;
+            if(typeof(JABootstrap).Assembly.GetName().Version == new Version(1, 0, 0, 0)) SetupOldBootstrap(apiInfo);
+            else SetupCurBootstrap(modInfo, apiInfo);
             Localization = Gid != -1 ? new JALocalization(this) : null;
-            Discord = ModSetting.Discord ?? modInfo.Discord ?? Discord;
             modEntry.OnToggle = OnToggle;
             modEntry.OnUnload = OnUnload0;
             mods[Name] = this;
@@ -121,30 +129,14 @@ public abstract class JAMod {
         }
     }
 
-    internal void SetupOldBootstrap(UnityModManager.ModEntry modEntry, GetModInfo apiInfo, JAModSetting setting) {
-        try {
-            ModEntry = modEntry;
-            modEntry.SetValue("mAssembly", GetType().Assembly);
-            Name = ModEntry.Info.Id;
-            if(ModSetting == null) {
-                ModSetting = setting;
-                setting.SetupType(SettingType, this);
-            } else ModSetting.Combine(setting);
-            Gid = apiInfo?.Gid ?? 0;
-            Localization = Gid != -1 ? new JALocalization(this) : null;
-            Discord = ModSetting.Discord ?? Discord;
-            modEntry.OnToggle = OnToggle;
-            modEntry.OnUnload = OnUnload0;
-            mods[Name] = this;
-            if(apiInfo != null) ModInfo(apiInfo);
-            SaveSetting();
-            OnSetup();
-            Log("JAMod " + Name + " is Initialized");
-        } catch (Exception e) {
-            modEntry.Info.DisplayName = $"{Name} <color=red>[Fail to load]</color>";
-            LogReportException("Failed to Initialize JAMod " + Name, e);
-            throw;
-        }
+    internal void SetupCurBootstrap(JAModInfo modInfo, GetModInfo apiInfo) {
+        Gid = apiInfo?.Gid ?? modInfo.Gid;
+        Discord = ModSetting.Discord ?? modInfo.Discord ?? Discord;
+    }
+
+    internal void SetupOldBootstrap(GetModInfo apiInfo) {
+        Gid = apiInfo?.Gid ?? 0;
+        Discord = ModSetting.Discord ?? Discord;
     }
 
     protected virtual void OnSetup() {
