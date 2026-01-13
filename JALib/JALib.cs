@@ -83,6 +83,7 @@ class JALib : JAMod {
                 if(!process.HasExited) process.Kill();
             }
         }
+        Instance.Log("Unzip ModApplicator...");
         Zipper.Unzip(System.IO.Path.Combine(Instance.Path, "ModApplicator.zip"), applicationFolderPath);
     }
 
