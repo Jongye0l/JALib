@@ -163,20 +163,15 @@ public static class Installer {
         FileStream fileStream = null;
         try {
             try {
-                fileStream = File.Exists(entryPath)
-                                 ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None)
-                                 : new FileStream(entryPath, FileMode.Create);
+                fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
             } catch (IOException) {
                 fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
             }
             using (Stream st = entry.Open()) st.CopyTo(fileStream);
             int left = (int) (fileStream.Length - fileStream.Position);
             if(left <= 0) return;
-            byte[] buffer = new byte[left];
-            for(int i = 0; i < left; i++) buffer[i] = 32;
-            fileStream.Write(buffer, 0, left);
-        }
-        finally {
+            fileStream.SetLength(fileStream.Position);
+        } finally {
             fileStream?.Close();
         }
     }

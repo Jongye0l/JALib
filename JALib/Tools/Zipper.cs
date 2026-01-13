@@ -103,9 +103,20 @@ public static class Zipper {
             else {
                 string directory = Path.GetDirectoryName(entryPath);
                 if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-                using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
-                using Stream st = entry.Open();
-                st.CopyTo(fileStream);
+                FileStream fileStream = null;
+                try {
+                    try {
+                        fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
+                    } catch (IOException) {
+                        fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
+                    }
+                    using (Stream st = entry.Open()) st.CopyTo(fileStream);
+                    int left = (int) (fileStream.Length - fileStream.Position);
+                    if(left <= 0) return;
+                    fileStream.SetLength(fileStream.Position);
+                } finally {
+                    fileStream?.Close();
+                }
             }
         }
     }
@@ -123,11 +134,23 @@ public static class Zipper {
             else {
                 string directory = Path.GetDirectoryName(entryPath);
                 if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-                using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
-                byte[] buffer = new byte[entry.Length];
-                using(Stream st = entry.Open()) st.Read(buffer, 0, buffer.Length);
-                buffer = dataChanger(buffer);
-                fileStream.Write(buffer, 0, buffer.Length);
+                FileStream fileStream = null;
+                try {
+                    try {
+                        fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
+                    } catch (IOException) {
+                        fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
+                    }
+                    byte[] buffer = new byte[entry.Length];
+                    using(Stream st = entry.Open()) st.Read(buffer, 0, buffer.Length);
+                    buffer = dataChanger(buffer);
+                    fileStream.Write(buffer, 0, buffer.Length);
+                    int left = (int) (fileStream.Length - fileStream.Position);
+                    if(left <= 0) return;
+                    fileStream.SetLength(fileStream.Position);
+                } finally {
+                    fileStream?.Close();
+                }
             }
         }
     }
@@ -145,10 +168,23 @@ public static class Zipper {
             else {
                 string directory = Path.GetDirectoryName(entryPath);
                 if(!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-                using FileStream fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
-                using Stream st = entry.Open();
-                st.CopyTo(writeStream);
-                readStream.CopyTo(fileStream);
+                FileStream fileStream = null;
+                try {
+                    try {
+                        fileStream = File.Exists(entryPath) ? new FileStream(entryPath, FileMode.Truncate, FileAccess.Write, FileShare.None) : new FileStream(entryPath, FileMode.Create);
+                    } catch (IOException) {
+                        fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
+                    }
+                    using(Stream st = entry.Open()) {
+                        st.CopyTo(writeStream);
+                        readStream.CopyTo(fileStream);
+                    }
+                    int left = (int) (fileStream.Length - fileStream.Position);
+                    if(left <= 0) return;
+                    fileStream.SetLength(fileStream.Position);
+                } finally {
+                    fileStream?.Close();
+                }
             }
         }
     }

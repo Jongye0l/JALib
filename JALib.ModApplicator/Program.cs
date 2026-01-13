@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -241,9 +241,7 @@ End:
             using (Stream st = entry.Open()) st.CopyTo(fileStream);
             int left = (int) (fileStream.Length - fileStream.Position);
             if(left <= 0) return;
-            byte[] buffer = new byte[left];
-            for(int i = 0; i < left; i++) buffer[i] = 32;
-            fileStream.Write(buffer, 0, left);
+            fileStream.SetLength(fileStream.Position);
         } finally {
             fileStream?.Close();
         }
