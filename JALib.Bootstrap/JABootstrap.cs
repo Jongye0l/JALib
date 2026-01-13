@@ -103,25 +103,32 @@ public static class JABootstrap {
 
     public static void Load(UnityModManager.ModEntry modEntry) {
         LoadCount++;
-        modEntry.Logger.Log("JABootstrap Load called. Count: " + LoadCount);
-        modEntry.Info.DisplayName = modEntry.Info.Id + " <color=gray>[Waiting JALib...]</color>";
-        Task.Run(async () => {
-            try {
-                bool beta = InitializeVersion(modEntry);
-                JAModInfo modInfo = LoadModInfo(modEntry, beta);
-                modEntry.Logger.Log("Now waiting for JALib to load...");
+        try {
+            modEntry.Logger.Log("JABootstrap Load called. Count: " + LoadCount);
+            modEntry.Info.DisplayName = modEntry.Info.Id + " <color=gray>[Waiting JALib...]</color>";
+            Task.Run(async () => {
                 try {
-                    await _task;
-                } catch (Exception) {
+                    bool beta = InitializeVersion(modEntry);
+                    JAModInfo modInfo = LoadModInfo(modEntry, beta);
+                    modEntry.Logger.Log("Now waiting for JALib to load...");
+                    try {
+                        await _task;
+                    } catch (Exception) {
+                        modEntry.Info.DisplayName = modEntry.Info.Id + " <color=red>[Error Loading JALib]</color>";
+                        return;
+                    }
+                    modEntry.Logger.Log("JALib loaded. Now loading JAMod...");
+                    LoadJAMod(modInfo);
+                } catch (Exception e) {
+                    LoadCount--;
+                    modEntry.Logger.LogException(e);
                     modEntry.Info.DisplayName = modEntry.Info.Id + " <color=red>[Error Loading JALib]</color>";
-                    return;
                 }
-                modEntry.Logger.Log("JALib loaded. Now loading JAMod...");
-                LoadJAMod(modInfo);
-            } catch (Exception e) {
-                modEntry.Logger.LogException(e);
-                modEntry.Info.DisplayName = modEntry.Info.Id + " <color=red>[Error Loading JALib]</color>";
-            }
-        });
+            });
+        } catch (Exception) {
+            LoadCount--;
+            modEntry.Info.DisplayName = modEntry.Info.Id + " <color=red>[Error On JAMod]</color>";
+            throw;
+        }
     }
 }
