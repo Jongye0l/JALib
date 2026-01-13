@@ -51,7 +51,22 @@ public static class JABootstrap {
     private static JAModInfo LoadModInfo(UnityModManager.ModEntry modEntry, bool beta) {
         string modInfoPath = Path.Combine(modEntry.Path, "JAModInfo.json");
         if(!File.Exists(modInfoPath)) throw new FileNotFoundException("JAModInfo not found.");
-        JAModInfo modInfo = File.ReadAllText(modInfoPath).FromJson<JAModInfo>();
+        JAModInfo modInfo;
+        string data = File.ReadAllText(modInfoPath);
+        try {
+            modInfo = data.FromJson<JAModInfo>();
+        } catch (Exception) {
+            int depth = 0;
+            for(int i = 0; i < data.Length; i++) {
+                if(data[i] == '{') depth++;
+                else if(data[i] == '}') depth--;
+                if(depth == 0) {
+                    data = data[..(i + 1)];
+                    break;
+                }
+            }
+            modInfo = data.FromJson<JAModInfo>();
+        }
         if(modInfo.BootstrapVersion > BootstrapVersion) throw new Exception("Bootstrap version is too low.");
         modInfo.ModEntry = modEntry;
         modInfo.IsBetaBranch = beta;
