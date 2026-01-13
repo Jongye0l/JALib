@@ -240,8 +240,7 @@ End:
             }
             using (Stream st = entry.Open()) st.CopyTo(fileStream);
             int left = (int) (fileStream.Length - fileStream.Position);
-            if(left <= 0) return;
-            fileStream.SetLength(fileStream.Position);
+            if(left > 0) fileStream.SetLength(fileStream.Position);
         } finally {
             fileStream?.Close();
         }

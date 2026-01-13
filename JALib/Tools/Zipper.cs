@@ -112,8 +112,7 @@ public static class Zipper {
                     }
                     using (Stream st = entry.Open()) st.CopyTo(fileStream);
                     int left = (int) (fileStream.Length - fileStream.Position);
-                    if(left <= 0) return;
-                    fileStream.SetLength(fileStream.Position);
+                    if(left > 0) fileStream.SetLength(fileStream.Position);
                 } finally {
                     fileStream?.Close();
                 }
@@ -146,8 +145,7 @@ public static class Zipper {
                     buffer = dataChanger(buffer);
                     fileStream.Write(buffer, 0, buffer.Length);
                     int left = (int) (fileStream.Length - fileStream.Position);
-                    if(left <= 0) return;
-                    fileStream.SetLength(fileStream.Position);
+                    if(left > 0) fileStream.SetLength(fileStream.Position);
                 } finally {
                     fileStream?.Close();
                 }
@@ -180,8 +178,7 @@ public static class Zipper {
                         readStream.CopyTo(fileStream);
                     }
                     int left = (int) (fileStream.Length - fileStream.Position);
-                    if(left <= 0) return;
-                    fileStream.SetLength(fileStream.Position);
+                    if(left > 0) fileStream.SetLength(fileStream.Position);
                 } finally {
                     fileStream?.Close();
                 }
