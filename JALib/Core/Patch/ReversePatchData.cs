@@ -2,10 +2,13 @@
 
 namespace JALib.Core.Patch;
 
-class ReversePatchData {
-    public MethodBase original;
-    public MethodInfo patchMethod;
-    public bool debug;
-    public JAReversePatchAttribute attribute;
-    public JAMod mod;
+public class ReversePatchData {
+    public MethodBase Original;
+    public MethodInfo PatchMethod;
+    public bool Debug;
+    public JAReversePatchAttribute Attribute;
+    public JAMod Mod;
+
+    internal ReversePatchData() {
+    }
 }

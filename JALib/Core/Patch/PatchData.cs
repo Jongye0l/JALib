@@ -11,6 +11,7 @@ public class PatchData {
     public MethodBase[] Finalizers;
     public MethodBase[] Replaces;
     public MethodBase[] Removes;
+    public MethodBase[] Overrides;
 
     internal PatchData() {}
 }

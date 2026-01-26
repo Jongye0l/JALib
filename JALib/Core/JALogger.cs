@@ -316,7 +316,7 @@ static class JALogger {
 
     public static IEnumerable<CodeInstruction> GetCurrentTaskTranspiler(IEnumerable<CodeInstruction> instructions) {
         return [
-            new CodeInstruction(OpCodes.Ldsfld, typeof(Task).Field("t_currentTask")),
+            new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(Task), "t_currentTask")),
             new CodeInstruction(OpCodes.Ret)
         ];
     }

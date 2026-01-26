@@ -553,9 +553,11 @@
         <Compile Include="Core\Patch\JAOverridePatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatchBaseAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatchException.cs" />
-        <Compile Include="Core\Patch\JAPatchInfo.cs"/>
+        <Compile Include="Core\Patch\JAInternalPatchInfo.cs" />
         <Compile Include="Core\Patch\JAPatchAttribute.cs"/>
         <Compile Include="Core\Patch\JAPatcher.cs"/>
+        <Compile Include="Core\Patch\JAPatchInfo.cs" />
+        <Compile Include="Core\Patch\JAPatchManager.cs" />
         <Compile Include="Core\Patch\JAReversePatchAttribute.cs"/>
         <Compile Include="Core\Patch\OverridePatchData.cs"/>
         <Compile Include="Core\Patch\PatchBinding.cs"/>

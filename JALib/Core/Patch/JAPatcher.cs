@@ -19,9 +19,9 @@ public class JAPatcher : IDisposable {
     private static bool _doNotUnPatch;
 
     #region CustomPatchPatching
-    private static Dictionary<MethodBase, JAPatchInfo> _jaPatches = new();
+    internal static Dictionary<MethodBase, JAInternalPatchInfo> JaPatches = new();
     private static PatchWaiter _patchWaiter;
-    private static object _locker = typeof(PatchProcessor).GetValue("locker");
+    internal static object HarmonyLocker = typeof(PatchProcessor).GetValue("locker");
 
     static JAPatcher() {
         JALogger.LogInternal("Starting JAPatcher Initialization...(0/4)");
@@ -46,7 +46,7 @@ public class JAPatcher : IDisposable {
         harmony.CreateReversePatcher(updateMethod, new HarmonyMethod(((Delegate) UpdatePatchInfoOnlyReplacement).Method)).Patch();
         harmony.Patch(((Delegate) JAMethodPatcher.SortPatchMethods).Method, transpiler: new HarmonyMethod(((Delegate) JAMethodPatcher.SortPatchMethodsTranspiler).Method));
         JALogger.LogInternal("Start Enter the Harmony Locker.(2/4)");
-        lock(_locker) {
+        lock(HarmonyLocker) {
             JALogger.LogInternal("Start JAPatcher Patches.(3/4)");
             JAMethodPatcher.LoadAddPrePostMethod(harmony);
             harmony.Patch(patchFunctions.Method("UpdateWrapper"), new HarmonyMethod(((Delegate) PatchUpdateWrapperPatch).Method));
@@ -71,7 +71,7 @@ public class JAPatcher : IDisposable {
 
     private static bool PatchUpdateWrapperPatch(MethodBase original, PatchInfo patchInfo, ref MethodInfo __result) {
         try {
-            if(!_jaPatches.TryGetValue(original, out JAPatchInfo jaPatchInfo)) return true;
+            if(!JaPatches.TryGetValue(original, out JAInternalPatchInfo jaPatchInfo)) return true;
             __result = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
             return false;
         } catch (Exception e) {
@@ -80,18 +80,18 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static MethodInfo PatchUpdateWrapper(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+    private static MethodInfo PatchUpdateWrapper(MethodBase original, PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
         if(JALib.Instance?.Setting?.logPatches ?? false) 
             JALib.Instance.Log("Patching Method '" + original.FullDescription() + '\'', 1);
-        MethodInfo replacement = PatchUpdateWrapperReverse(original, patchInfo, jaPatchInfo);
-        foreach(ReversePatchData reversePatch in jaPatchInfo.reversePatches) {
-            if(_patchWaiter == null) UpdateReversePatch(reversePatch, patchInfo, jaPatchInfo);
+        MethodInfo replacement = PatchUpdateWrapperReverse(original, patchInfo, jaInternalPatchInfo);
+        foreach(ReversePatchData reversePatch in jaInternalPatchInfo.reversePatches) {
+            if(_patchWaiter == null) UpdateReversePatch(reversePatch, patchInfo, jaInternalPatchInfo);
             else _patchWaiter.AddReversePatch(reversePatch);
         }
         return replacement;
     }
 
-    private static MethodInfo PatchUpdateWrapperReverse(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+    private static MethodInfo PatchUpdateWrapperReverse(MethodBase original, PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
         _ = Transpiler(null);
         throw new NotImplementedException();
 
@@ -100,7 +100,7 @@ public class JAPatcher : IDisposable {
                 new(OpCodes.Ldarg_0),
                 new(OpCodes.Ldarg_1),
                 new(OpCodes.Ldarg_2),
-                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(PatchInfo), typeof(JAPatchInfo)))
+                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(MethodBase), typeof(PatchInfo), typeof(JAInternalPatchInfo)))
             ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             while(enumerator.MoveNext()) {
@@ -122,7 +122,7 @@ public class JAPatcher : IDisposable {
         try {
             if(standin == null || standin.method == null ||
                standin.reversePatchType == HarmonyReversePatchType.Snapshot ||
-               !_jaPatches.TryGetValue(original, out JAPatchInfo jaPatchInfo) ||
+               !JaPatches.TryGetValue(original, out JAInternalPatchInfo jaPatchInfo) ||
                jaPatchInfo.replaces.Length == 0) return true;
             __result = PatchReversePatchReverse(standin, original, postTranspiler, jaPatchInfo);
             return false;
@@ -132,7 +132,7 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static MethodInfo PatchReversePatchReverse(HarmonyMethod standin, MethodBase original, MethodInfo postTranspiler, JAPatchInfo jaPatchInfo) {
+    private static MethodInfo PatchReversePatchReverse(HarmonyMethod standin, MethodBase original, MethodInfo postTranspiler, JAInternalPatchInfo jaInternalPatchInfo) {
         _ = Transpiler(null);
         throw new NotImplementedException();
 
@@ -142,7 +142,7 @@ public class JAPatcher : IDisposable {
                 new(OpCodes.Ldarg_1),
                 new(OpCodes.Ldarg_3),
                 new(OpCodes.Ldarg_2),
-                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(HarmonyMethod), typeof(MethodBase), typeof(JAPatchInfo), typeof(MethodInfo)))
+                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(HarmonyMethod), typeof(MethodBase), typeof(JAInternalPatchInfo), typeof(MethodInfo)))
             ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             while(enumerator.MoveNext()) {
@@ -160,7 +160,7 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static MethodInfo UpdateReversePatch(ReversePatchData data, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+    private static MethodInfo UpdateReversePatch(ReversePatchData data, PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
         _ = Transpiler(null);
         throw new NotImplementedException();
 
@@ -169,7 +169,7 @@ public class JAPatcher : IDisposable {
                 new(OpCodes.Ldarg_0),
                 new(OpCodes.Ldarg_1),
                 new(OpCodes.Ldarg_2),
-                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(ReversePatchData), typeof(PatchInfo), typeof(JAPatchInfo)))
+                new(OpCodes.Newobj, typeof(JAMethodPatcher).Constructor(typeof(ReversePatchData), typeof(PatchInfo), typeof(JAInternalPatchInfo)))
             ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             while(enumerator.MoveNext()) {
@@ -193,7 +193,7 @@ public class JAPatcher : IDisposable {
 
     internal static bool GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, ref List<CodeInstruction> __result) {
         try {
-            if(method == null || generator == null || maxTranspilers < 1 || !_jaPatches.TryGetValue(method, out JAPatchInfo jaPatchInfo) || jaPatchInfo.replaces.Length == 0) return true;
+            if(method == null || generator == null || maxTranspilers < 1 || !JaPatches.TryGetValue(method, out JAInternalPatchInfo jaPatchInfo) || jaPatchInfo.replaces.Length == 0) return true;
             __result = JAMethodPatcher.GetInstructions(generator, method, maxTranspilers, jaPatchInfo);
             return false;
         } catch (Exception e) {
@@ -202,7 +202,7 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static PatchInfo GetPatchInfo(MethodBase method) => throw new NotImplementedException();
+    internal static PatchInfo GetPatchInfo(MethodBase method) => throw new NotImplementedException();
 
     private static PatchProcessor UnpatchPatch1(PatchProcessor __instance, MethodInfo patch, MethodBase ___original) {
         Unpatch(___original, patch);
@@ -224,68 +224,35 @@ public class JAPatcher : IDisposable {
 
     #endregion
 
-    public static PatchData GetPatchData(MethodBase method) {
-        PatchData patchData = new();
-        lock(_locker) {
-            PatchInfo patchInfo = GetPatchInfo(method);
-            if(patchInfo != null) {
-                MethodBase[] methodBases = new MethodBase[patchInfo.prefixes.Length];
-                for(int i = 0; i < patchInfo.prefixes.Length; i++) methodBases[i] = patchInfo.prefixes[i].PatchMethod;
-                patchData.Prefixes = methodBases;
-                methodBases = new MethodBase[patchInfo.postfixes.Length];
-                for(int i = 0; i < patchInfo.postfixes.Length; i++) methodBases[i] = patchInfo.postfixes[i].PatchMethod;
-                patchData.Postfixes = methodBases;
-                methodBases = new MethodBase[patchInfo.transpilers.Length];
-                for(int i = 0; i < patchInfo.transpilers.Length; i++) methodBases[i] = patchInfo.transpilers[i].PatchMethod;
-                patchData.Transpilers = methodBases;
-                methodBases = new MethodBase[patchInfo.finalizers.Length];
-                for(int i = 0; i < patchInfo.finalizers.Length; i++) methodBases[i] = patchInfo.finalizers[i].PatchMethod;
-                patchData.Finalizers = methodBases;
-            } else patchData.Prefixes = patchData.Postfixes = patchData.Transpilers = patchData.Finalizers = [];
-            if(_jaPatches.TryGetValue(method, out JAPatchInfo jaPatchInfo)) {
-                MethodBase[] methodBases = new MethodBase[jaPatchInfo.tryPrefixes.Length];
-                for(int i = 0; i < jaPatchInfo.tryPrefixes.Length; i++) methodBases[i] = jaPatchInfo.tryPrefixes[i].PatchMethod;
-                patchData.TryPrefixes = methodBases;
-                methodBases = new MethodBase[jaPatchInfo.tryPostfixes.Length];
-                for(int i = 0; i < jaPatchInfo.tryPostfixes.Length; i++) methodBases[i] = jaPatchInfo.tryPostfixes[i].PatchMethod;
-                patchData.TryPostfixes = methodBases;
-                methodBases = new MethodBase[jaPatchInfo.replaces.Length];
-                for(int i = 0; i < jaPatchInfo.replaces.Length; i++) methodBases[i] = jaPatchInfo.replaces[i].PatchMethod;
-                patchData.Replaces = methodBases;
-                methodBases = new MethodBase[jaPatchInfo.removes.Length];
-                for(int i = 0; i < jaPatchInfo.removes.Length; i++) methodBases[i] = jaPatchInfo.removes[i].PatchMethod;
-                patchData.Removes = methodBases;
-            } else patchData.TryPrefixes = patchData.TryPostfixes = patchData.Replaces = patchData.Removes = [];
-        }
-        return patchData;
-    }
+    [Obsolete("use JAPatchManager.GetPatchData")]
+    public static PatchData GetPatchData(MethodBase method) => JAPatchManager.GetPatchData(method);
 
     public static void Unpatch(MethodBase original, MethodInfo patch) {
-        lock(_locker) {
+        lock(HarmonyLocker) {
             PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
-            JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
+            JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(original) ?? new JAInternalPatchInfo();
             patchInfo.RemovePatch(patch);
-            jaPatchInfo.RemovePatch(patch);
-            MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+            jaInternalPatchInfo.RemovePatch(patch);
+            MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaInternalPatchInfo);
             MethodInfo updateMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Method("UpdatePatchInfo");
             updateMethod.Invoke(null, updateMethod.GetParameters().Length == 2 ? [original, patchInfo] : [original, replacement, patchInfo]);
         }
     }
 
     public static void Unpatch(MethodBase original, AllPatchType type, string id) {
-        lock(_locker) {
+        lock(HarmonyLocker) {
             PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
-            JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(original) ?? new JAPatchInfo();
+            JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(original) ?? new JAInternalPatchInfo();
             if(type.HasFlag(AllPatchType.Prefix)) patchInfo.RemovePrefix(id);
             if(type.HasFlag(AllPatchType.Postfix)) patchInfo.RemovePostfix(id);
             if(type.HasFlag(AllPatchType.Transpiler)) patchInfo.RemoveTranspiler(id);
             if(type.HasFlag(AllPatchType.Finalizer)) patchInfo.RemoveFinalizer(id);
-            if(type.HasFlag(AllPatchType.TryPrefix)) jaPatchInfo.RemoveTryPrefix(id);
-            if(type.HasFlag(AllPatchType.TryPostfix)) jaPatchInfo.RemoveTryPostfix(id);
-            if(type.HasFlag(AllPatchType.Replace)) jaPatchInfo.RemoveReplace(id);
-            if(type.HasFlag(AllPatchType.Remove)) jaPatchInfo.RemoveRemove(id);
-            if(type.HasFlag(AllPatchType.Override)) jaPatchInfo.RemoveOverridePatch(id);
-            MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+            if(type.HasFlag(AllPatchType.TryPrefix)) jaInternalPatchInfo.RemoveTryPrefix(id);
+            if(type.HasFlag(AllPatchType.TryPostfix)) jaInternalPatchInfo.RemoveTryPostfix(id);
+            if(type.HasFlag(AllPatchType.Replace)) jaInternalPatchInfo.RemoveReplace(id);
+            if(type.HasFlag(AllPatchType.Remove)) jaInternalPatchInfo.RemoveRemove(id);
+            if(type.HasFlag(AllPatchType.Override)) jaInternalPatchInfo.RemoveOverridePatch(id);
+            MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaInternalPatchInfo);
             MethodInfo updateMethod = typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Method("UpdatePatchInfo");
             updateMethod.Invoke(null, updateMethod.GetParameters().Length == 2 ? [original, patchInfo] : [original, replacement, patchInfo]);
         }
@@ -451,17 +418,17 @@ public class JAPatcher : IDisposable {
 #pragma warning disable CS0618
     private static void CustomPatch(MethodBase original, JAPatchAttribute attribute, JAMod mod) {
         if(!attribute.Method.IsStatic) throw new NotSupportedException("Patch Method is need to be Static");
-        lock(_locker) {
+        lock(HarmonyLocker) {
             PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
-            JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(original) ?? (_jaPatches[original] = new JAPatchInfo());
-            AddPatchInfo(attribute, patchInfo, jaPatchInfo, mod, out bool updateHarmonyPatchInfo);
+            JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(original) ?? (JaPatches[original] = new JAInternalPatchInfo());
+            AddPatchInfo(attribute, patchInfo, jaInternalPatchInfo, mod, out bool updateHarmonyPatchInfo);
             List<MethodBase> warningPatches = [];
             foreach(HarmonyLib.Patch prefix in patchInfo.prefixes) 
                 if(prefix.PatchMethod.ReturnType == typeof(bool)) warningPatches.Add(prefix.PatchMethod);
-            foreach(TriedPatchData tryPrefix in jaPatchInfo.tryPrefixes) 
+            foreach(TriedPatchData tryPrefix in jaInternalPatchInfo.tryPrefixes) 
                 if(tryPrefix.PatchMethod.ReturnType == typeof(bool)) warningPatches.Add(tryPrefix.PatchMethod);
-            foreach(HarmonyLib.Patch remove in jaPatchInfo.removes) warningPatches.Add(remove.PatchMethod);
-            foreach(HarmonyLib.Patch replace in jaPatchInfo.replaces) warningPatches.Add(replace.PatchMethod);
+            foreach(HarmonyLib.Patch remove in jaInternalPatchInfo.removes) warningPatches.Add(remove.PatchMethod);
+            foreach(HarmonyLib.Patch replace in jaInternalPatchInfo.replaces) warningPatches.Add(replace.PatchMethod);
             if(warningPatches.Count > 1) {
                 StringBuilder sb = new();
                 foreach(MethodBase method in warningPatches) sb.AppendLine(" - " + method.FullDescription());
@@ -473,11 +440,11 @@ public class JAPatcher : IDisposable {
             }
             if(_patchWaiter == null) {
                 try {
-                    MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+                    MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaInternalPatchInfo);
                     if(updateHarmonyPatchInfo) UpdatePatchInfo(original, replacement, patchInfo);
                     else UpdatePatchInfoOnlyReplacement(original, replacement);
                 } catch (Exception e) {
-                    throw new JAPatchException(original, patchInfo, jaPatchInfo, e);
+                    throw new JAPatchException(original, patchInfo, jaInternalPatchInfo, e);
                 }
             } else {
                 if(updateHarmonyPatchInfo) UpdatePatchInfoOnlyPatchInfo(original, patchInfo);
@@ -486,14 +453,14 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static void AddPatchInfo(JAPatchAttribute attribute, PatchInfo patchInfo, JAPatchInfo jaPatchInfo, JAMod mod, out bool updateHarmonyPatchInfo) {
+    private static void AddPatchInfo(JAPatchAttribute attribute, PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo, JAMod mod, out bool updateHarmonyPatchInfo) {
         string id = attribute.PatchId;
         HarmonyMethod patchMethod = new(attribute.Method, attribute.Priority, attribute.Before, attribute.After, attribute.Debug);
         updateHarmonyPatchInfo = false;
         switch(attribute.PatchType) {
             case PatchType.Prefix:
-                if(CheckRemove(patchMethod.method)) jaPatchInfo.AddRemoves(id, patchMethod);
-                else if(mod != null) jaPatchInfo.AddTryPrefixes(id, patchMethod, mod);
+                if(CheckRemove(patchMethod.method)) jaInternalPatchInfo.AddRemoves(id, patchMethod);
+                else if(mod != null) jaInternalPatchInfo.AddTryPrefixes(id, patchMethod, mod);
                 else {
                     if(_isOldHarmony) patchInfo.AddPrefix(patchMethod.method, id, attribute.Priority, attribute.Before, attribute.After, attribute.Debug);
                     else patchInfo.Invoke("AddPrefixes", id, new[] { patchMethod });
@@ -501,7 +468,7 @@ public class JAPatcher : IDisposable {
                 }
                 break;
             case PatchType.Postfix:
-                if(mod != null) jaPatchInfo.AddTryPostfixes(id, patchMethod, mod);
+                if(mod != null) jaInternalPatchInfo.AddTryPostfixes(id, patchMethod, mod);
                 else {
                     if(_isOldHarmony) patchInfo.AddPostfix(patchMethod.method, id, attribute.Priority, attribute.Before, attribute.After, attribute.Debug);
                     else patchInfo.Invoke("AddPostfixes", id, new[] { patchMethod });
@@ -519,7 +486,7 @@ public class JAPatcher : IDisposable {
                 updateHarmonyPatchInfo = true;
                 break;
             case PatchType.Replace:
-                jaPatchInfo.AddReplaces(id, patchMethod);
+                jaInternalPatchInfo.AddReplaces(id, patchMethod);
                 break;
         }
     }
@@ -586,24 +553,24 @@ public class JAPatcher : IDisposable {
 #pragma warning restore CS0618
 
     private static void CustomReversePatch(MethodBase original, MethodInfo patchMethod, JAReversePatchAttribute attribute, JAMod mod) {
-        lock(_locker) {
+        lock(HarmonyLocker) {
             PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
-            JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(original) ?? (_jaPatches[original] = new JAPatchInfo());
+            JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(original) ?? (JaPatches[original] = new JAInternalPatchInfo());
             attribute.Data ??= new ReversePatchData {
-                original = original,
-                patchMethod = patchMethod,
-                debug = attribute.Debug,
-                attribute = attribute,
-                mod = mod
+                Original = original,
+                PatchMethod = patchMethod,
+                Debug = attribute.Debug,
+                Attribute = attribute,
+                Mod = mod
             };
             if(_patchWaiter == null) {
                 try {
-                    UpdateReversePatch(attribute.Data, patchInfo, jaPatchInfo);
+                    UpdateReversePatch(attribute.Data, patchInfo, jaInternalPatchInfo);
                 } catch (Exception e) {
-                    throw new JAPatchException(original, patchInfo, jaPatchInfo, e);
+                    throw new JAPatchException(original, patchInfo, jaInternalPatchInfo, e);
                 }
             } else _patchWaiter.AddReversePatch(attribute.Data);
-            if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaPatchInfo.AddReversePatches(attribute.Data);
+            if(attribute.PatchType != ReversePatchType.Original && !attribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) jaInternalPatchInfo.AddReversePatches(attribute.Data);
         }
     }
 
@@ -617,17 +584,17 @@ public class JAPatcher : IDisposable {
         Type patchType = patchMethod.DeclaringType;
         if(originalType == patchType) throw new NotSupportedException("Same Type Override");
         if(attribute.checkType && !originalType.IsAssignableFrom(patchType) && !patchType.IsAssignableFrom(originalType) && !patchType.IsInterface && !originalType.IsInterface) throw new NotSupportedException("Incompatible Types");
-        lock(_locker) {
-            JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(original) ?? (_jaPatches[original] = new JAPatchInfo());
+        lock(HarmonyLocker) {
+            JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(original) ?? (JaPatches[original] = new JAInternalPatchInfo());
             attribute.targetType ??= attribute.targetTypeName == null ? patchMethod.DeclaringType : Type.GetType(attribute.targetTypeName);
-            AddOverridePatch(patchMethod, attribute, jaPatchInfo, mod);
+            AddOverridePatch(patchMethod, attribute, jaInternalPatchInfo, mod);
             if(_patchWaiter == null) {
                 PatchInfo patchInfo = GetPatchInfo(original) ?? new PatchInfo();
                 try {
-                    MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaPatchInfo);
+                    MethodInfo replacement = PatchUpdateWrapper(original, patchInfo, jaInternalPatchInfo);
                     UpdatePatchInfoOnlyReplacement(original, replacement);
                 } catch (Exception e) {
-                    throw new JAPatchException(original, patchInfo, jaPatchInfo, e);
+                    throw new JAPatchException(original, patchInfo, jaInternalPatchInfo, e);
                 }
             } else {
                 _patchWaiter.AddNormalPatch(original);
@@ -635,37 +602,28 @@ public class JAPatcher : IDisposable {
         }
     }
 
-    private static void AddOverridePatch(MethodInfo patchMethod, JAOverridePatchAttribute attribute, JAPatchInfo jaPatchInfo, JAMod mod) {
-        OverridePatchData data = new() {
-            patchMethod = patchMethod,
-            debug = attribute.Debug,
-            IgnoreBasePatch = attribute.IgnoreBasePatch,
-            targetType = attribute.targetType,
-            tryCatch = attribute.TryingCatch,
-            id = attribute.PatchId,
-            mod = mod
-        };
-        jaPatchInfo.AddOverridePatches(data);
+    private static void AddOverridePatch(MethodInfo patchMethod, JAOverridePatchAttribute attribute, JAInternalPatchInfo jaInternalPatchInfo, JAMod mod) {
+        jaInternalPatchInfo.AddOverridePatches(new OverridePatchData(patchMethod, attribute, mod));
     }
 
     public static void RunWaiterPatchForce() {
         if(_patchWaiter == null) return;
         try {
             PatchWaiter patchWaiter = _patchWaiter;
-            lock(_locker) {
+            lock(HarmonyLocker) {
                 MethodBase[] normalPatches = patchWaiter.NormalPatches.ToArray();
                 for(int i = 0; i < normalPatches.Length; i++) {
                     MethodBase method = normalPatches[i];
                     PatchInfo patchInfo = GetPatchInfo(method) ?? new PatchInfo();
-                    JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(method) ?? new JAPatchInfo();
+                    JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(method) ?? new JAInternalPatchInfo();
                     try {
-                        MethodInfo replacement = PatchUpdateWrapper(method, patchInfo, jaPatchInfo);
+                        MethodInfo replacement = PatchUpdateWrapper(method, patchInfo, jaInternalPatchInfo);
                         UpdatePatchInfoOnlyReplacement(method, replacement);
                     } catch (Exception e) {
                         try {
                             _doNotUnPatch = true;
-                            e = new JAPatchException(method, patchInfo, jaPatchInfo, e);
-                            (PatchInfo newPatch, JAPatchInfo newJaPatch) = ClonePatch(patchInfo, jaPatchInfo);
+                            e = new JAPatchException(method, patchInfo, jaInternalPatchInfo, e);
+                            (PatchInfo newPatch, JAInternalPatchInfo newJaPatch) = ClonePatch(patchInfo, jaInternalPatchInfo);
                             JAPatcher[] patchers = patchWaiter.PendingPatcher.ToArray();
                             int j;
                         
@@ -673,9 +631,9 @@ public class JAPatcher : IDisposable {
                             JAPatchBaseAttribute[][] errorPatchesArray = new JAPatchBaseAttribute[patchers.Length][];
                         
                             for(j = patchers.Length - 1; j >= 0; j--) {
-                                if(!patchers[j].FoundErrorPatch(method, ref patchInfo, jaPatchInfo, newPatch, newJaPatch, ref e, out errorPatchesArray[j])) continue;
+                                if(!patchers[j].FoundErrorPatch(method, ref patchInfo, jaInternalPatchInfo, newPatch, newJaPatch, ref e, out errorPatchesArray[j])) continue;
                                 try {
-                                    MethodInfo replacement = PatchUpdateWrapper(method, patchInfo, jaPatchInfo);
+                                    MethodInfo replacement = PatchUpdateWrapper(method, patchInfo, jaInternalPatchInfo);
                                     UpdatePatchInfo(method, replacement, patchInfo);
                                     goto Skip;
                                 } catch (Exception) {
@@ -684,14 +642,14 @@ public class JAPatcher : IDisposable {
                             }
                         
                             for(; j < patchers.Length; j++) {
-                                MethodInfo reverted = patchers[j].RevertErrorPatch(method, ref patchInfo, jaPatchInfo, newPatch, newJaPatch, errorPatchesArray[j]);
+                                MethodInfo reverted = patchers[j].RevertErrorPatch(method, ref patchInfo, jaInternalPatchInfo, newPatch, newJaPatch, errorPatchesArray[j]);
                                 if((object) reverted == null) continue;
                                 UpdatePatchInfoOnlyReplacement(method, reverted);
                                 goto Skip;
                             }
                         
                             UpdatePatchInfoOnlyPatchInfo(method, newPatch);
-                            _jaPatches[method] = newJaPatch;
+                            JaPatches[method] = newJaPatch;
                         
                             Skip:
                             patchWaiter.NormalPatches.Remove(method);
@@ -706,16 +664,16 @@ public class JAPatcher : IDisposable {
                 ReversePatchData[] reversePatches = patchWaiter.ReversePatches.ToArray();
                 for(int i = 0; i < reversePatches.Length; i++) {
                     ReversePatchData data = reversePatches[i];
-                    MethodBase method = data.original;
+                    MethodBase method = data.Original;
                     PatchInfo patchInfo = GetPatchInfo(method) ?? new PatchInfo();
-                    JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(method) ?? new JAPatchInfo();
+                    JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(method) ?? new JAInternalPatchInfo();
                     try {
-                        UpdateReversePatch(data, patchInfo, jaPatchInfo);
+                        UpdateReversePatch(data, patchInfo, jaInternalPatchInfo);
                     } catch (Exception e) {
                         foreach(JAPatcher patcher in patchWaiter.PendingPatcher) {
-                            if(patcher.patchData.Contains(data.attribute)) {
-                                if(patcher.PatchFailAction(data.attribute, new JAPatchException(data.patchMethod, patchInfo, jaPatchInfo, e))) {
-                                    data.mod.Error("Patch disabled is true, unpatching...");
+                            if(patcher.patchData.Contains(data.Attribute)) {
+                                if(patcher.PatchFailAction(data.Attribute, new JAPatchException(data.PatchMethod, patchInfo, jaInternalPatchInfo, e))) {
+                                    data.Mod.Error("Patch disabled is true, unpatching...");
                                     for(int j = 0; j < i; j++) patchWaiter.ReversePatches.Remove(reversePatches[j]);
                                     foreach(JAPatchBaseAttribute baseAttribute in patcher.patchData) {
                                         if(baseAttribute is not JAReversePatchAttribute reverse) continue;
@@ -744,23 +702,23 @@ public class JAPatcher : IDisposable {
         RunWaiterPatchForce();
     }
 
-    private static (PatchInfo, JAPatchInfo) ClonePatch(PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+    private static (PatchInfo, JAInternalPatchInfo) ClonePatch(PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
         return (new PatchInfo { 
                prefixes = patchInfo.prefixes.ToArray(),
                postfixes = patchInfo.postfixes.ToArray(),
                transpilers = patchInfo.transpilers.ToArray(),
                finalizers = patchInfo.finalizers.ToArray()
-           }, new JAPatchInfo {
-               tryPrefixes = jaPatchInfo.tryPrefixes.ToArray(),
-               tryPostfixes = jaPatchInfo.tryPostfixes.ToArray(),
-               replaces = jaPatchInfo.replaces.ToArray(),
-               removes = jaPatchInfo.removes.ToArray(),
-               reversePatches = jaPatchInfo.reversePatches.ToArray(),
-               overridePatches = jaPatchInfo.overridePatches.ToArray()
+           }, new JAInternalPatchInfo {
+               tryPrefixes = jaInternalPatchInfo.tryPrefixes.ToArray(),
+               tryPostfixes = jaInternalPatchInfo.tryPostfixes.ToArray(),
+               replaces = jaInternalPatchInfo.replaces.ToArray(),
+               removes = jaInternalPatchInfo.removes.ToArray(),
+               reversePatches = jaInternalPatchInfo.reversePatches.ToArray(),
+               overridePatches = jaInternalPatchInfo.overridePatches.ToArray()
            });
     }
 
-    private bool FoundErrorPatch(MethodBase method, ref PatchInfo patchInfo, JAPatchInfo jaPatchInfo, PatchInfo newPatch, JAPatchInfo newJaPatch,
+    private bool FoundErrorPatch(MethodBase method, ref PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo, PatchInfo newPatch, JAInternalPatchInfo newJaInternalPatch,
         ref Exception e, out JAPatchBaseAttribute[] result) {
         List<JAPatchBaseAttribute> errorPatches = [];
         foreach(JAPatchBaseAttribute attribute in patchData) 
@@ -770,11 +728,11 @@ public class JAPatcher : IDisposable {
             JAPatchAttribute patchAttribute = attribute as JAPatchAttribute;
             JAOverridePatchAttribute overridePatchAttribute = attribute as JAOverridePatchAttribute;
             if(patchAttribute != null) 
-                UnpatchPatchAttribute(patchAttribute, newPatch, newJaPatch);
+                UnpatchPatchAttribute(patchAttribute, newPatch, newJaInternalPatch);
             else if(overridePatchAttribute != null) 
-                newJaPatch.RemoveOverridePatch(overridePatchAttribute.PatchId);
+                newJaInternalPatch.RemoveOverridePatch(overridePatchAttribute.PatchId);
             try {
-                PatchUpdateWrapper(method, newPatch, newJaPatch);
+                PatchUpdateWrapper(method, newPatch, newJaInternalPatch);
                 if(PatchFailAction(attribute, e)) {
                     _doNotUnPatch = false;
                     UpdatePatchInfoOnlyPatchInfo(method, patchInfo);
@@ -784,34 +742,34 @@ public class JAPatcher : IDisposable {
                     patchInfo = GetPatchInfo(method) ?? new PatchInfo();
                     while(i-- > 0) {
                         patchAttribute = attribute as JAPatchAttribute;
-                        if(patchAttribute != null) UnpatchPatchAttribute(patchAttribute, newPatch, newJaPatch);
-                        else if((overridePatchAttribute = attribute as JAOverridePatchAttribute) != null) newJaPatch.RemoveOverridePatch(overridePatchAttribute.PatchId);
+                        if(patchAttribute != null) UnpatchPatchAttribute(patchAttribute, newPatch, newJaInternalPatch);
+                        else if((overridePatchAttribute = attribute as JAOverridePatchAttribute) != null) newJaInternalPatch.RemoveOverridePatch(overridePatchAttribute.PatchId);
                     }
                     result = [];
                     return true;
                 }
-                if(patchAttribute != null) UnpatchPatchAttribute(patchAttribute, patchInfo, jaPatchInfo);
-                else if(overridePatchAttribute != null) jaPatchInfo.RemoveOverridePatch(overridePatchAttribute.PatchId);
+                if(patchAttribute != null) UnpatchPatchAttribute(patchAttribute, patchInfo, jaInternalPatchInfo);
+                else if(overridePatchAttribute != null) jaInternalPatchInfo.RemoveOverridePatch(overridePatchAttribute.PatchId);
                 result = new JAPatchBaseAttribute[errorPatches.Count - i - 1];
                 for(int j = i + 1; j < errorPatches.Count; j++) result[j] = errorPatches[j];
                 return true;
             } catch (Exception ex) {
-                e = new JAPatchException(method, newPatch, newJaPatch, ex);
+                e = new JAPatchException(method, newPatch, newJaInternalPatch, ex);
             }
         }
         result = errorPatches.ToArray();
         return false;
     }
 
-    private MethodInfo RevertErrorPatch(MethodBase method, ref PatchInfo patchInfo, JAPatchInfo jaPatchInfo, PatchInfo newPatch, JAPatchInfo newJaPatch, JAPatchBaseAttribute[] errorPatches) {
+    private MethodInfo RevertErrorPatch(MethodBase method, ref PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo, PatchInfo newPatch, JAInternalPatchInfo newJaInternalPatch, JAPatchBaseAttribute[] errorPatches) {
         for(int i = 0; i < errorPatches.Length; i++) {
             JAOverridePatchAttribute overridePatchAttribute;
             if(errorPatches[i] is JAPatchAttribute patchAttribute) 
-                AddPatchInfo(patchAttribute, newPatch, newJaPatch, mod, out bool _);
+                AddPatchInfo(patchAttribute, newPatch, newJaInternalPatch, mod, out bool _);
             else if((overridePatchAttribute = errorPatches[i] as JAOverridePatchAttribute) != null)
-                AddOverridePatch(method.AsUnsafe<MethodInfo>(), overridePatchAttribute, newJaPatch, mod);
+                AddOverridePatch(method.AsUnsafe<MethodInfo>(), overridePatchAttribute, newJaInternalPatch, mod);
             try {
-                PatchUpdateWrapper(method, newPatch, newJaPatch);
+                PatchUpdateWrapper(method, newPatch, newJaInternalPatch);
             } catch (Exception e) {
                 if(PatchFailAction(errorPatches[i], e)) {
                     _doNotUnPatch = false;
@@ -822,12 +780,12 @@ public class JAPatcher : IDisposable {
                     patchInfo = GetPatchInfo(method) ?? new PatchInfo();
                     while(i-- > 0) {
                         patchAttribute = errorPatches[i] as JAPatchAttribute;
-                        if(patchAttribute != null) UnpatchPatchAttribute(patchAttribute, newPatch, newJaPatch);
-                        else if((overridePatchAttribute = errorPatches[i] as JAOverridePatchAttribute) != null) newJaPatch.RemoveOverridePatch(overridePatchAttribute.PatchId);
+                        if(patchAttribute != null) UnpatchPatchAttribute(patchAttribute, newPatch, newJaInternalPatch);
+                        else if((overridePatchAttribute = errorPatches[i] as JAOverridePatchAttribute) != null) newJaInternalPatch.RemoveOverridePatch(overridePatchAttribute.PatchId);
                     }
                 }
                 try {
-                    return PatchUpdateWrapper(method, patchInfo, jaPatchInfo);
+                    return PatchUpdateWrapper(method, patchInfo, jaInternalPatchInfo);
                 } catch (Exception) {
                     return null;
                 }
@@ -836,16 +794,16 @@ public class JAPatcher : IDisposable {
         return null;
     }
 
-    private static void UnpatchPatchAttribute(JAPatchAttribute patchAttribute, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+    private static void UnpatchPatchAttribute(JAPatchAttribute patchAttribute, PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
         string id = patchAttribute.PatchId;
         switch(patchAttribute.PatchType) {
             case PatchType.Prefix:
-                if(CheckRemove(patchAttribute.Method)) jaPatchInfo.RemoveRemove(id);
-                else if(patchAttribute.TryingCatch) jaPatchInfo.RemoveTryPrefix(id);
+                if(CheckRemove(patchAttribute.Method)) jaInternalPatchInfo.RemoveRemove(id);
+                else if(patchAttribute.TryingCatch) jaInternalPatchInfo.RemoveTryPrefix(id);
                 else patchInfo.RemovePrefix(id);
                 break;
             case PatchType.Postfix:
-                if(patchAttribute.TryingCatch) jaPatchInfo.RemoveTryPostfix(id);
+                if(patchAttribute.TryingCatch) jaInternalPatchInfo.RemoveTryPostfix(id);
                 else patchInfo.RemovePostfix(id);
                 break;
             case PatchType.Transpiler:
@@ -855,7 +813,7 @@ public class JAPatcher : IDisposable {
                 patchInfo.RemoveFinalizer(id);
                 break;
             case PatchType.Replace:
-                jaPatchInfo.RemoveReplace(id);
+                jaInternalPatchInfo.RemoveReplace(id);
                 break;
         }
     }
@@ -875,17 +833,17 @@ public class JAPatcher : IDisposable {
             if(baseAttribute is JAPatchAttribute patchAttribute) {
                 MethodInfo patch = patchAttribute.Method;
                 string id = patchAttribute.PatchId;
-                lock(_locker) {
+                lock(HarmonyLocker) {
                     PatchInfo patchInfo = GetPatchInfo(patchAttribute.MethodBase) ?? new PatchInfo();
-                    JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(patchAttribute.MethodBase) ?? new JAPatchInfo();
+                    JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(patchAttribute.MethodBase) ?? new JAInternalPatchInfo();
                     switch(patchAttribute.PatchType) {
                         case PatchType.Prefix:
-                            if(CheckRemove(patch)) RemovePatch(patch, id, ref jaPatchInfo.removes);
-                            else if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaPatchInfo.tryPrefixes);
+                            if(CheckRemove(patch)) RemovePatch(patch, id, ref jaInternalPatchInfo.removes);
+                            else if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPrefixes);
                             else RemovePatch(patch, id, ref patchInfo.prefixes);
                             break;
                         case PatchType.Postfix:
-                            if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaPatchInfo.tryPostfixes);
+                            if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPostfixes);
                             else RemovePatch(patch, id, ref patchInfo.postfixes);
                             break;
                         case PatchType.Transpiler:
@@ -895,22 +853,22 @@ public class JAPatcher : IDisposable {
                             RemovePatch(patch, id, ref patchInfo.finalizers);
                             break;
                         case PatchType.Replace:
-                            RemovePatch(patch, id, ref jaPatchInfo.replaces);
+                            RemovePatch(patch, id, ref jaInternalPatchInfo.replaces);
                             break;
                     }
-                    MethodInfo replacement = PatchUpdateWrapper(patchAttribute.MethodBase, patchInfo, jaPatchInfo);
+                    MethodInfo replacement = PatchUpdateWrapper(patchAttribute.MethodBase, patchInfo, jaInternalPatchInfo);
                     typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", patchAttribute.MethodBase, replacement, patchInfo);
-                    _jaPatches[patchAttribute.MethodBase] = jaPatchInfo;
+                    JaPatches[patchAttribute.MethodBase] = jaInternalPatchInfo;
                 }
             } else if(baseAttribute is JAReversePatchAttribute reversePatchAttribute) {
                 if(reversePatchAttribute.PatchType == ReversePatchType.Original || reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
-                JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(reversePatchAttribute.Data.original);
-                if(jaPatchInfo == null) continue;
-                jaPatchInfo.reversePatches = jaPatchInfo.reversePatches.Where(patch => patch != reversePatchAttribute.Data).ToArray();
+                JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(reversePatchAttribute.Data.Original);
+                if(jaInternalPatchInfo == null) continue;
+                jaInternalPatchInfo.reversePatches = jaInternalPatchInfo.reversePatches.Where(patch => patch != reversePatchAttribute.Data).ToArray();
             } else if(baseAttribute is JAOverridePatchAttribute overridePatchAttribute) {
-                JAPatchInfo jaPatchInfo = _jaPatches.GetValueOrDefault(overridePatchAttribute.MethodBase);
-                if(jaPatchInfo == null) continue;
-                jaPatchInfo.overridePatches = jaPatchInfo.overridePatches.Where(patch => patch.patchMethod != overridePatchAttribute.Method).ToArray();
+                JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(overridePatchAttribute.MethodBase);
+                if(jaInternalPatchInfo == null) continue;
+                jaInternalPatchInfo.overridePatches = jaInternalPatchInfo.overridePatches.Where(patch => patch.PatchMethod != overridePatchAttribute.Method).ToArray();
             }
         }
     }

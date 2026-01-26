@@ -27,30 +27,30 @@ class JAMethodPatcher {
     private readonly object originalPatcher;
     private readonly bool customReverse;
 
-    public JAMethodPatcher(MethodBase original, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
-        debug = patchInfo.Debugging || Harmony.DEBUG || jaPatchInfo.IsDebug();
-        SortPatchMethods(original, patchInfo.prefixes.Concat(jaPatchInfo.tryPrefixes).Concat(jaPatchInfo.removes).ToArray(), debug, out prefixes);
-        removes = jaPatchInfo.removes;
+    public JAMethodPatcher(MethodBase original, PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
+        debug = patchInfo.Debugging || Harmony.DEBUG || jaInternalPatchInfo.IsDebug();
+        SortPatchMethods(original, patchInfo.prefixes.Concat(jaInternalPatchInfo.tryPrefixes).Concat(jaInternalPatchInfo.removes).ToArray(), debug, out prefixes);
+        removes = jaInternalPatchInfo.removes;
         SetupPrefixRemove();
         List<MethodInfo> prefix = prefixes.Select(patch => patch.PatchMethod).ToList();
-        tryPrefixes = jaPatchInfo.tryPrefixes;
-        List<MethodInfo> postfix = SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
+        tryPrefixes = jaInternalPatchInfo.tryPrefixes;
+        List<MethodInfo> postfix = SortPatchMethods(original, patchInfo.postfixes.Concat(jaInternalPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
         List<MethodInfo> finalizer = SortPatchMethods(original, patchInfo.finalizers, debug, out finalizers);
         List<MethodInfo> transpiler;
-        tryPostfixes = jaPatchInfo.tryPostfixes;
-        overridePatches = jaPatchInfo.overridePatches;
+        tryPostfixes = jaInternalPatchInfo.tryPostfixes;
+        overridePatches = jaInternalPatchInfo.overridePatches;
         if(removes.Length > 0) {
             transpiler = [];
             transpilers = [];
             overridePatches = overridePatches.Where(patch => patch.IgnoreBasePatch).ToArray();
         } else {
             transpiler = SortPatchMethods(original, patchInfo.transpilers, debug, out transpilers);
-            SetupReplace(original, jaPatchInfo, transpiler);
+            SetupReplace(original, jaInternalPatchInfo, transpiler);
         }
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, null, prefix, postfix, transpiler, finalizer, debug);
     }
 
-    public JAMethodPatcher(HarmonyMethod standin, MethodBase source, JAPatchInfo jaPatchInfo, MethodInfo postTranspiler) {
+    public JAMethodPatcher(HarmonyMethod standin, MethodBase source, JAInternalPatchInfo jaInternalPatchInfo, MethodInfo postTranspiler) {
         MethodBase original = standin.method;
         Patches patchInfo = Harmony.GetPatchInfo(source);
         debug = standin.debug.GetValueOrDefault() || Harmony.DEBUG;
@@ -62,25 +62,25 @@ class JAMethodPatcher {
             transpiler.Add(postTranspiler);
             transpilers = transpilers.Concat([CreateEmptyPatch(postTranspiler)]).ToArray();
         }
-        SetupReplace(original, jaPatchInfo, transpiler);
+        SetupReplace(original, jaInternalPatchInfo, transpiler);
         originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, source, none, none, transpiler, none, debug);
     }
 
-    public JAMethodPatcher(ReversePatchData data, PatchInfo patchInfo, JAPatchInfo jaPatchInfo) {
+    public JAMethodPatcher(ReversePatchData data, PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
         customReverse = true;
-        MethodBase original = data.patchMethod;
-        debug = data.debug || Harmony.DEBUG;
-        JAReversePatchAttribute attribute = data.attribute;
-        JAMod mod = data.mod;
+        MethodBase original = data.PatchMethod;
+        debug = data.Debug || Harmony.DEBUG;
+        JAReversePatchAttribute attribute = data.Attribute;
+        JAMod mod = data.Mod;
         string customPatchMethodName = "<" + original.Name + ">";
         MethodInfo[] customPatchMethods = original.DeclaringType.Methods().Where(m => m.Name.Contains(customPatchMethodName)).ToArray();
         Func<MethodInfo, HarmonyLib.Patch> changeFunc = attribute.TryCatchChildren ? method => CreateEmptyTryPatch(method, mod) : CreateEmptyPatch;
         HarmonyLib.Patch[] children = customPatchMethods.Where(method => method.Name.Contains("Prefix")).Select(changeFunc).ToArray();
         if(attribute.PatchType.HasFlag(ReversePatchType.PrefixCombine)) {
-            SortPatchMethods(original, patchInfo.prefixes.Concat(jaPatchInfo.tryPrefixes).Concat(jaPatchInfo.removes).ToArray(), debug, out prefixes);
-            removes = jaPatchInfo.removes;
+            SortPatchMethods(original, patchInfo.prefixes.Concat(jaInternalPatchInfo.tryPrefixes).Concat(jaInternalPatchInfo.removes).ToArray(), debug, out prefixes);
+            removes = jaInternalPatchInfo.removes;
             SetupPrefixRemove();
-            tryPrefixes = jaPatchInfo.tryPrefixes;
+            tryPrefixes = jaInternalPatchInfo.tryPrefixes;
             if(attribute.TryCatchChildren) tryPrefixes = tryPrefixes.Concat(children.Select(patch => (TriedPatchData) patch)).ToArray();
             prefixes = prefixes.Concat(children).ToArray();
         } else {
@@ -90,8 +90,8 @@ class JAMethodPatcher {
         }
         children = customPatchMethods.Where(method => method.Name.Contains("Postfix")).Select(changeFunc).ToArray();
         if(attribute.PatchType.HasFlag(ReversePatchType.PostfixCombine)) {
-            SortPatchMethods(original, patchInfo.postfixes.Concat(jaPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
-            tryPostfixes = jaPatchInfo.tryPostfixes;
+            SortPatchMethods(original, patchInfo.postfixes.Concat(jaInternalPatchInfo.tryPostfixes).ToArray(), debug, out postfixes);
+            tryPostfixes = jaInternalPatchInfo.tryPostfixes;
             if(attribute.TryCatchChildren) tryPostfixes = tryPostfixes.Concat(children.Select(patch => (TriedPatchData) patch)).ToArray();
             postfixes = postfixes.Concat(children).ToArray();
         } else {
@@ -103,7 +103,7 @@ class JAMethodPatcher {
             SortPatchMethods(original, patchInfo.finalizers.ToArray(), debug, out finalizers);
             finalizers = finalizers.Concat(children).ToArray();
         } else finalizers = children;
-        overridePatches = attribute.PatchType.HasFlag(ReversePatchType.OverrideCombine) ? jaPatchInfo.overridePatches : [];
+        overridePatches = attribute.PatchType.HasFlag(ReversePatchType.OverrideCombine) ? jaInternalPatchInfo.overridePatches : [];
         if(removes.Length > 0) {
             transpilers = [];
             overridePatches = overridePatches.Where(patch => patch.IgnoreBasePatch).ToArray();
@@ -113,17 +113,17 @@ class JAMethodPatcher {
                 SortPatchMethods(original, patchInfo.transpilers.ToArray(), debug, out transpilers);
                 transpilers = transpilers.Concat(children).ToArray();
             } else transpilers = children;
-            if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) SetupReplace(original, jaPatchInfo, null);
+            if(attribute.PatchType.HasFlag(ReversePatchType.ReplaceCombine)) SetupReplace(original, jaInternalPatchInfo, null);
         }
-        originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, data.original,
+        originalPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher").New(original, data.Original,
             prefixes.Select(patch => patch.PatchMethod).ToList(),
             postfixes.Select(patch => patch.PatchMethod).ToList(),
             transpilers.Select(patch => patch.PatchMethod).ToList(),
             finalizers.Select(patch => patch.PatchMethod).ToList(), debug);
     }
 
-    private void SetupReplace(MethodBase original, JAPatchInfo jaPatchInfo, List<MethodInfo> transpiler) {
-        SortPatchMethods(original, jaPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
+    private void SetupReplace(MethodBase original, JAInternalPatchInfo jaInternalPatchInfo, List<MethodInfo> transpiler) {
+        SortPatchMethods(original, jaInternalPatchInfo.replaces, debug, out HarmonyLib.Patch[] replaces);
         replace = replaces.Length == 0 ? null : replaces.Last().PatchMethod;
         if(replace == null || customReverse) return;
         MethodInfo method = ((Delegate) ChangeParameter).Method;
@@ -166,7 +166,7 @@ class JAMethodPatcher {
             new CodeInstruction(OpCodes.Call, patchSorterType.Method("Sort")),
             new CodeInstruction(OpCodes.Ldarg_3),
             new CodeInstruction(OpCodes.Ldloc_0),
-            new CodeInstruction(OpCodes.Ldfld, patchSorterType.Field("sortedPatchArray")),
+            new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(patchSorterType, "sortedPatchArray")),
             new CodeInstruction(OpCodes.Stind_Ref),
             new CodeInstruction(OpCodes.Ret)
         ];
@@ -179,17 +179,17 @@ class JAMethodPatcher {
             if(patch.IgnoreBasePatch != ignore) continue;
             label ??= il.DefineLabel();
             Label endLabel = il.DefineLabel();
-            if(patch.tryCatch) emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock), out _);
+            if(patch.TryCatch) emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock), out _);
             emitter.Emit(OpCodes.Ldarg_0);
-            emitter.Emit(OpCodes.Isinst, patch.targetType);
+            emitter.Emit(OpCodes.Isinst, patch.TargetType);
             emitter.Emit(OpCodes.Brfalse, endLabel);
             emitter.Emit(OpCodes.Ldarg_0);
-            foreach(ParameterInfo parameter in patch.patchMethod.GetParameters()) {
+            foreach(ParameterInfo parameter in patch.PatchMethod.GetParameters()) {
                 ParameterInfo originalParameter = original.GetParameters().FirstOrDefault(p => p.Name == parameter.Name);
                 if(originalParameter == null && parameter.Name.StartsWith("__") && int.TryParse(parameter.Name[2..], out int i)) originalParameter = original.GetParameters()[i];
                 if(originalParameter != null) EmitArg(emitter, originalParameter.Position + (original.IsStatic ? 0 : 1));
                 else if(parameter.Name.StartsWith("___")) {
-                    FieldInfo field = patch.targetType.GetField(parameter.Name[3..]);
+                    FieldInfo field = patch.TargetType.GetField(parameter.Name[3..]);
                     if(field == null) throw new Exception("Field Not Found: " + parameter.Name);
                     if(field.IsStatic) emitter.Emit(parameter.ParameterType.IsByRef ? OpCodes.Ldsflda : OpCodes.Ldsfld, field);
                     else {
@@ -198,13 +198,13 @@ class JAMethodPatcher {
                     }
                 } else emitter.Emit(OpCodes.Ldnull);
             }
-            emitter.Emit(OpCodes.Call, patch.patchMethod);
+            emitter.Emit(OpCodes.Call, patch.PatchMethod);
             emitter.Emit(OpCodes.Br, label.Value);
             emitter.MarkLabel(endLabel);
-            if(patch.tryCatch) {
+            if(patch.TryCatch) {
                 emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock), out _);
-                emitter.Emit(OpCodes.Ldsfld, patch.mod.staticField);
-                emitter.Emit(OpCodes.Ldstr, patch.id);
+                emitter.Emit(OpCodes.Ldsfld, patch.Mod.staticField);
+                emitter.Emit(OpCodes.Ldstr, patch.ID);
                 emitter.Emit(OpCodes.Ldc_I4_2);
                 emitter.Emit(OpCodes.Call, ((Delegate) JAMod.LogPatchException).Method);
                 emitter.MarkBlockAfter(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
@@ -1250,7 +1250,7 @@ class JAMethodPatcher {
 
     private static void handleException(JAEmitter emitter, HarmonyLib.Patch patch, OpCode isPrefix) {
         emitter.MarkBlockBefore(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock), out _);
-        emitter.Emit(OpCodes.Ldsfld, ((TriedPatchData) patch).mod.staticField);
+        emitter.Emit(OpCodes.Ldsfld, ((TriedPatchData) patch).Mod.staticField);
         emitter.Emit(OpCodes.Ldstr, patch.owner);
         emitter.Emit(isPrefix);
         emitter.Emit(OpCodes.Call, ((Delegate) JAMod.LogPatchException).Method);
@@ -1484,9 +1484,9 @@ class JAMethodPatcher {
         };
     }
 
-    internal static List<CodeInstruction> GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, JAPatchInfo jaPatchInfo) {
+    internal static List<CodeInstruction> GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, JAInternalPatchInfo jaInternalPatchInfo) {
         Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
-        MethodInfo replace = SortPatchMethods(method, jaPatchInfo.replaces, false, out _).Last();
+        MethodInfo replace = SortPatchMethods(method, jaInternalPatchInfo.replaces, false, out _).Last();
         LocalBuilder[] existingVariables = method != null ? methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", generator, replace) : throw new ArgumentNullException(nameof (method));
         bool useShift = typeof(Harmony).Assembly.GetType("HarmonyLib.StructReturnBuffer").Invoke<bool>("NeedsFix", [method]);
         object methodCopier = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodCopier").New(replace, generator, existingVariables);
