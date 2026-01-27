@@ -224,7 +224,7 @@ public class JAPatcher : IDisposable {
 
     #endregion
 
-    [Obsolete("use JAPatchManager.GetPatchData")]
+    [Obsolete("Deprecated. Use JAPatchManager.GetPatchData instead.", true)]
     public static PatchData GetPatchData(MethodBase method) => JAPatchManager.GetPatchData(method);
 
     public static void Unpatch(MethodBase original, MethodInfo patch) {

@@ -45,7 +45,7 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             }
             if(CheckReDownload()) return;
             data.LoadState = ModLoadState.None;
-            ForceApplyMod.ApplyMod(path);
+            ModTools.ApplyMod(JALib.Instance, path);
         } else {
             UnityModManager.ModEntry modEntry = data.RawModData.info.ModEntry;
             string path = Path.Combine(modEntry.Path, "Info.json");

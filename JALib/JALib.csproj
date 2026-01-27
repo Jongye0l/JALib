@@ -597,6 +597,7 @@
         <Compile Include="Tools\ByteTool\StreamTool.cs"/>
         <Compile Include="Tools\ByteTool\VersionAttribute.cs"/>
         <Compile Include="Tools\ForceApplyMod.cs"/>
+        <Compile Include="Tools\ModTools.cs" />
         <Compile Include="Tools\SettingGUI.cs"/>
         <Compile Include="Tools\JAction.cs"/>
         <Compile Include="Tools\JARandom.cs"/>

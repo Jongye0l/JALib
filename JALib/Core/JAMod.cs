@@ -68,7 +68,7 @@ public abstract class JAMod {
 
     public JALocalization Localization { get; private set; }
 
-    [Obsolete]
+    [Obsolete("Deprecated. Use other constructor instead.", true)]
     protected JAMod(UnityModManager.ModEntry modEntry, bool localization, Type settingType = null, string settingPath = null, string discord = null, int gid = -1) : this(settingType) {
         ModEntry = modEntry;
         Discord = discord ?? Discord;

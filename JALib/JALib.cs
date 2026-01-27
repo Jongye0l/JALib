@@ -16,7 +16,7 @@ using UnityModManagerNet;
 namespace JALib;
 
 #pragma warning disable CS0649
-class JALib : JAMod {
+sealed class JALib : JAMod {
     internal const string ModId = nameof(JALib);
     internal static JALib Instance;
     internal static Harmony Harmony;
@@ -35,7 +35,7 @@ class JALib : JAMod {
         if(JaModInfo.IsBetaBranch) ModSetting.UnlockBeta = ModSetting.Beta = true;
         Setting = (JALibSetting) base.Setting;
         _settingGUI = new SettingGUI(this);
-        Patcher.AddPatch(JALocalization.RDStringPatch).AddPatch(JALocalization.RDStringSetup);
+        Patcher.AddPatch(JALocalization.RDStringPatch).AddPatch(JALocalization.RDStringSetup).AddPatch(ModTools.Load);
         JApi.Initialize();
         JATask.Run(Instance, Init);
         OnEnable();
