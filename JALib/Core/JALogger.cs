@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -223,7 +223,7 @@ static class JALogger {
         if((flag & 1) == 1) {
             sb.Append("\n  ⚡ ")
                 .Append(Thread.CurrentThread.Name ?? "Native Thread").Append('(').Append(Thread.CurrentThread.ManagedThreadId).Append(')');
-            if(Thread.CurrentThread.Name == "Thread Pool Worker") {
+            if(Thread.CurrentThread.IsThreadPoolThread) {
                 Task currentTask = GetCurrentTask();
                 sb.Append(NextInfo);
                 if(currentTask != null) sb.Append("Task #").Append(currentTask.Id);
@@ -315,11 +315,11 @@ static class JALogger {
         return codes;
     }
 
-    private static Task GetCurrentTask() => typeof(Task).GetField("t_currentTask", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue<Task>();
+    private static Task GetCurrentTask() => typeof(Task).GetProperty("InternalCurrent", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue<Task>();
 
     public static IEnumerable<CodeInstruction> GetCurrentTaskTranspiler(IEnumerable<CodeInstruction> instructions) {
         return [
-            new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(Task), "t_currentTask")),
+            new CodeInstruction(OpCodes.Call, typeof(Task).Getter("InternalCurrent")),
             new CodeInstruction(OpCodes.Ret)
         ];
     }
