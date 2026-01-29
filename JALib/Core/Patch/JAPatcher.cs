@@ -154,7 +154,7 @@ public class JAPatcher : IDisposable {
                 list.Add(code);
                 break;
             }
-            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement")));
+            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method(nameof(JAMethodPatcher.CreateReplacement))));
             while(enumerator.MoveNext()) list.Add(enumerator.Current);
             return list;
         }
@@ -181,10 +181,10 @@ public class JAPatcher : IDisposable {
                 list.Add(code);
                 break;
             }
-            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("CreateReplacement")));
+            list.Add(new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method(nameof(JAMethodPatcher.CreateReplacement))));
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
-                if(code.operand is FieldInfo { Name: "method" }) code.operand = SimpleReflect.Field(typeof(ReversePatchData), "patchMethod");
+                if(code.operand is FieldInfo { Name: "method" }) code.operand = SimpleReflect.Field(typeof(ReversePatchData), nameof(ReversePatchData.PatchMethod));
                 list.Add(code);
             }
             return list;

@@ -257,7 +257,7 @@ class JAMethodPatcher {
             ];
             using IEnumerator<CodeInstruction> enumerator = instructions.GetEnumerator();
             int state = 0;
-            FieldInfo replace = SimpleReflect.Field(typeof(JAMethodPatcher), "replace");
+            FieldInfo replace = SimpleReflect.Field(typeof(JAMethodPatcher), nameof(JAMethodPatcher.replace));
             Label removeLabel = generator.DefineLabel();
             while(enumerator.MoveNext()) {
                 CodeInstruction code = enumerator.Current;
@@ -269,7 +269,7 @@ class JAMethodPatcher {
                 // JAMethodPatcher.AddPrefixes(methodPatcher, privateVars, localBuilder, patcher);
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPrefixes" }) {
                     list.Add(new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels));
-                    code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method("AddPrefixes"));
+                    code = new CodeInstruction(OpCodes.Call, ((Delegate) AddPrefixes).Method);
                 }
                 // ---- original code C# ----
                 // this(methodPatcher).AddPostfixes(privateVars, localBuilder, false);
@@ -277,7 +277,7 @@ class JAMethodPatcher {
                 // JAMethodPatcher.AddPostfixes(methodPatcher, privateVars, localBuilder, false, patcher);
                 if(code.opcode == OpCodes.Call && code.operand is MethodInfo { Name: "AddPostfixes" } methodInfo) {
                     list.Add(new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels));
-                    code = new CodeInstruction(OpCodes.Call, typeof(JAMethodPatcher).Method(methodInfo.GetParameters().Length == 3 ? "AddPostfixes" : "AddPostfixes_old"));
+                    code = new CodeInstruction(OpCodes.Call, (methodInfo.GetParameters().Length == 3 ? (Delegate) AddPostfixes : AddPostfixes_old).Method);
                 }
                 switch(state) {
                     case 0:
@@ -335,7 +335,7 @@ class JAMethodPatcher {
                             // [Section 1]
                             list.AddRange([
                                 new CodeInstruction(OpCodes.Ldarg_0).WithLabels(oldCode.labels),
-                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes")),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(removes))),
                                 new CodeInstruction(OpCodes.Ldlen),
                                 new CodeInstruction(OpCodes.Brfalse, falseLabel),
                                 new CodeInstruction(OpCodes.Call, typeof(Array).Method("Empty").MakeGenericMethod(typeof(LocalBuilder))),
@@ -385,7 +385,7 @@ class JAMethodPatcher {
                             list.AddRange([
                                 code,
                                 new CodeInstruction(OpCodes.Ldarg_0),
-                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes")),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(removes))),
                                 new CodeInstruction(OpCodes.Ldlen),
                                 new CodeInstruction(OpCodes.Brtrue, removeLabel)
                             ]);
@@ -492,9 +492,9 @@ class JAMethodPatcher {
                                 new CodeInstruction(OpCodes.Call, typeof(MethodBase).Method("op_Inequality")),
                                 new CodeInstruction(OpCodes.Brtrue, notNullLabel),
                                 new CodeInstruction(OpCodes.Ldarg_0),
-                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "customReverse")),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(customReverse))),
                                 new CodeInstruction(OpCodes.Brfalse, notIf),
-                                new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap")).WithLabels(notNullLabel).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock)),
+                                new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(_parameterMap))).WithLabels(notNullLabel).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock)),
                                 new CodeInstruction(OpCodes.Ldloca, locking),
                                 new CodeInstruction(OpCodes.Call, typeof(Monitor).Method("Enter", typeof(object), locking.LocalType)),
                                 new CodeInstruction(OpCodes.Ldarg_0),
@@ -512,7 +512,7 @@ class JAMethodPatcher {
                                 originalArg0,
                                 new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(methodPatcher, "original")),
                                 new CodeInstruction(OpCodes.Ldarg_0).WithLabels(sourceIsSet),
-                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "customReverse")),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(customReverse))),
                                 new CodeInstruction(OpCodes.Call, ((Delegate) SetupParameter).Method)
                             ]);
                             List<CodeInstruction> finalInstructions = [];
@@ -530,7 +530,7 @@ class JAMethodPatcher {
                                 new CodeInstruction(OpCodes.Leave, tryLeave),
                                 new CodeInstruction(OpCodes.Ldloc, locking).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginFinallyBlock)),
                                 new CodeInstruction(OpCodes.Brfalse, lockFail),
-                                new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), "_parameterMap")),
+                                new CodeInstruction(OpCodes.Ldsfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(_parameterMap))),
                                 new CodeInstruction(OpCodes.Call, typeof(Monitor).Method("Exit")),
                                 new CodeInstruction(OpCodes.Endfinally).WithLabels(lockFail).WithBlocks(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock)),
                                 new CodeInstruction(OpCodes.Br, after).WithLabels(tryLeave),
@@ -636,7 +636,7 @@ class JAMethodPatcher {
                                 new CodeInstruction(OpCodes.Call, typeof(Label?).Method("get_HasValue")),
                                 new CodeInstruction(OpCodes.Brtrue, run),
                                 new CodeInstruction(OpCodes.Ldarg_0),
-                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "removes")),
+                                new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(removes))),
                                 new CodeInstruction(OpCodes.Ldlen),
                                 new CodeInstruction(OpCodes.Brfalse, skip),
                                 new CodeInstruction(OpCodes.Ldloca, gotoFinishLabel) {
@@ -744,7 +744,7 @@ class JAMethodPatcher {
             Assembly harmonyAssembly = typeof(Harmony).Assembly;
             Type emitterType = harmonyAssembly.GetType("HarmonyLib.Emitter");
             LocalBuilder fix = generator.DeclareLocal(typeof(MethodInfo));
-            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(originalPatcher)));
             LocalBuilder emitter = generator.DeclareLocal(emitterType);
             // ---- create code C# ----
             // MethodInfo fix = arg1.patchMethod;
@@ -1008,7 +1008,7 @@ class JAMethodPatcher {
                                 Label falseLabel = generator.DefineLabel();
                                 list.AddRange([
                                     new CodeInstruction(OpCodes.Ldarg_0).WithLabels(code.labels),
-                                    new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPrefixes")),
+                                    new CodeInstruction(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(tryPrefixes))),
                                     new CodeInstruction(OpCodes.Ldarg_1),
                                     new CodeInstruction(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch))),
                                     new CodeInstruction(OpCodes.Dup),
@@ -1100,7 +1100,7 @@ class JAMethodPatcher {
             Assembly harmonyAssembly = typeof(Harmony).Assembly;
             Type emitterType = harmonyAssembly.GetType("HarmonyLib.Emitter");
             LocalBuilder fix = generator.DeclareLocal(typeof(MethodInfo));
-            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "originalPatcher"));
+            CodeInstruction originalPatcher = new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(originalPatcher)));
             LocalBuilder emitter = generator.DeclareLocal(emitterType);
             LocalBuilder notUsingLocal = generator.DeclareLocal(typeof(Label?));
             LocalBuilder requireTry = generator.DeclareLocal(typeof(bool));
@@ -1114,7 +1114,7 @@ class JAMethodPatcher {
                 new(OpCodes.Ldfld, SimpleReflect.Field(harmonyAssembly.GetType("HarmonyLib.MethodPatcher"), "emitter")),
                 new(OpCodes.Stloc, emitter),
                 new(OpCodes.Ldarg_0),
-                new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), "tryPostfixes")),
+                new(OpCodes.Ldfld, SimpleReflect.Field(typeof(JAMethodPatcher), nameof(tryPostfixes))),
                 new(OpCodes.Ldarg_1),
                 new(OpCodes.Call, typeof(Enumerable).Methods().First(m => m.Name == "Contains").MakeGenericMethod(typeof(HarmonyLib.Patch))),
                 new(OpCodes.Dup),
