@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -214,8 +214,11 @@ static class JALogger {
         StringBuilder sb = new(((mod.Length + logType.Length + message.Length) / 16 + 5) * 16);
         sb.Append('[').Append(mod).Append(' ')
             .Append(logType).Append(' ')
-            .Append(now.Value.ToString("HH:mm:ss.fff")).Append(" #")
-            .Append(Time.frameCount).Append("] ").Append(message);
+            .Append(now.Value.ToString("HH:mm:ss.fff"))
+#if !TEST
+            .Append(" #").Append(Time.frameCount)
+#endif
+            .Append("] ").Append(message);
         int flag = JALib.Instance?.Setting?.loggerLogDetail ?? 7;
         if((flag & 1) == 1) {
             sb.Append("\n  ⚡ ")
