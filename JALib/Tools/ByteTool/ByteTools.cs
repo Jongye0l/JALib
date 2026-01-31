@@ -55,25 +55,31 @@ public static class ByteTools {
 
     public static float ToFloat(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 4);
-        // Use stackalloc to avoid heap allocation
-        if(BitConverter.IsLittleEndian) {
-            Span<byte> reversed = stackalloc byte[4] { bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] };
-            return BitConverter.ToSingle(reversed);
+        // Input bytes are in big-endian (network byte order)
+        // BitConverter expects native byte order
+        if(!BitConverter.IsLittleEndian) {
+            // On big-endian systems, no conversion needed
+            return BitConverter.ToSingle(bytes, start);
         }
-        return BitConverter.ToSingle(bytes, start);
+        // On little-endian systems, reverse bytes using stackalloc for zero allocation
+        Span<byte> reversed = stackalloc byte[4] { bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] };
+        return BitConverter.ToSingle(reversed);
     }
 
     public static double ToDouble(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 8);
-        // Use stackalloc to avoid heap allocation
-        if(BitConverter.IsLittleEndian) {
-            Span<byte> reversed = stackalloc byte[8] { 
-                bytes[start + 7], bytes[start + 6], bytes[start + 5], bytes[start + 4],
-                bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] 
-            };
-            return BitConverter.ToDouble(reversed);
+        // Input bytes are in big-endian (network byte order)
+        // BitConverter expects native byte order
+        if(!BitConverter.IsLittleEndian) {
+            // On big-endian systems, no conversion needed
+            return BitConverter.ToDouble(bytes, start);
         }
-        return BitConverter.ToDouble(bytes, start);
+        // On little-endian systems, reverse bytes using stackalloc for zero allocation
+        Span<byte> reversed = stackalloc byte[8] { 
+            bytes[start + 7], bytes[start + 6], bytes[start + 5], bytes[start + 4],
+            bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] 
+        };
+        return BitConverter.ToDouble(reversed);
     }
 
     public static decimal ToDecimal(this byte[] bytes, int start = 0) {

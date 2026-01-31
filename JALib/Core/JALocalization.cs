@@ -148,9 +148,14 @@ public class JALocalization {
                 if(mod != null) {
                     exists = true;
                     // Optimize string operations - use Substring instead of multiple Replace calls
+                    // We know key starts with either "jamod." or "jalib." from the outer if condition
                     string prefix = key.StartsWith("jamod.") ? "jamod." : "jalib.";
                     int prefixLength = prefix.Length + split[1].Length + 1; // +1 for the dot
-                    __result = mod.Localization[key.Substring(prefixLength)];
+                    if(prefixLength < key.Length) {
+                        __result = mod.Localization[key.Substring(prefixLength)];
+                    } else {
+                        __result = string.Empty; // Edge case: key is exactly "jamod.modname." or "jalib.modname."
+                    }
                     return false;
                 }
             }

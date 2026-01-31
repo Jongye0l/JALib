@@ -58,6 +58,8 @@ public static class MainThread {
                 completeLoadTask = null;
             }
             // Limit actions per frame to prevent frame drops in Unity
+            // Actions exceeding the budget remain queued and are processed in subsequent frames
+            // This prevents long-running action queues from causing visible frame stutter
             int processedCount = 0;
             while(processedCount < MaxActionsPerFrame && queue.TryDequeue(out JAction action)) {
                 action.Invoke();
