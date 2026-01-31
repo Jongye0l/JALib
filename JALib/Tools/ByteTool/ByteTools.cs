@@ -54,16 +54,23 @@ public static class ByteTools {
 
     public static float ToFloat(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 4);
-        byte[] buffer = new byte[4];
-        Array.Copy(bytes, start, buffer, 0, 4);
-        return BitConverter.ToSingle(buffer.Reverse(), 0);
+        // Avoid intermediate array allocation by reversing in-place
+        if(BitConverter.IsLittleEndian) {
+            return BitConverter.ToSingle(new[] { bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] }, 0);
+        }
+        return BitConverter.ToSingle(bytes, start);
     }
 
     public static double ToDouble(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 8);
-        byte[] buffer = new byte[8];
-        Array.Copy(bytes, start, buffer, 0, 8);
-        return BitConverter.ToDouble(buffer.Reverse(), 0);
+        // Avoid intermediate array allocation by reversing in-place
+        if(BitConverter.IsLittleEndian) {
+            return BitConverter.ToDouble(new[] { 
+                bytes[start + 7], bytes[start + 6], bytes[start + 5], bytes[start + 4],
+                bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] 
+            }, 0);
+        }
+        return BitConverter.ToDouble(bytes, start);
     }
 
     public static decimal ToDecimal(this byte[] bytes, int start = 0) {

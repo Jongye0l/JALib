@@ -147,7 +147,10 @@ public class JALocalization {
                 JAMod mod = JAMod.GetMods(split[1]);
                 if(mod != null) {
                     exists = true;
-                    __result = mod.Localization[key.Replace("jamod." + split[1] + ".", "").Replace("jalib." + split[1] + ".", "")];
+                    // Optimize string operations - use Substring instead of multiple Replace calls
+                    string prefix = key.StartsWith("jamod.") ? "jamod." : "jalib.";
+                    int prefixLength = prefix.Length + split[1].Length + 1; // +1 for the dot
+                    __result = mod.Localization[key.Substring(prefixLength)];
                     return false;
                 }
             }

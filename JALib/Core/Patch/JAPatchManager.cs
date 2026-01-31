@@ -14,38 +14,29 @@ public static class JAPatchManager {
         lock(JAPatcher.HarmonyLocker) {
             PatchInfo patchInfo = JAPatcher.GetPatchInfo(method);
             if(patchInfo != null) {
-                MethodBase[] methodBases = new MethodBase[patchInfo.prefixes.Length];
-                for(int i = 0; i < patchInfo.prefixes.Length; i++) methodBases[i] = patchInfo.prefixes[i].PatchMethod;
-                patchData.Prefixes = methodBases;
-                methodBases = new MethodBase[patchInfo.postfixes.Length];
-                for(int i = 0; i < patchInfo.postfixes.Length; i++) methodBases[i] = patchInfo.postfixes[i].PatchMethod;
-                patchData.Postfixes = methodBases;
-                methodBases = new MethodBase[patchInfo.transpilers.Length];
-                for(int i = 0; i < patchInfo.transpilers.Length; i++) methodBases[i] = patchInfo.transpilers[i].PatchMethod;
-                patchData.Transpilers = methodBases;
-                methodBases = new MethodBase[patchInfo.finalizers.Length];
-                for(int i = 0; i < patchInfo.finalizers.Length; i++) methodBases[i] = patchInfo.finalizers[i].PatchMethod;
-                patchData.Finalizers = methodBases;
+                // Directly extract PatchMethod to avoid array allocation overhead
+                patchData.Prefixes = ExtractPatchMethods(patchInfo.prefixes);
+                patchData.Postfixes = ExtractPatchMethods(patchInfo.postfixes);
+                patchData.Transpilers = ExtractPatchMethods(patchInfo.transpilers);
+                patchData.Finalizers = ExtractPatchMethods(patchInfo.finalizers);
             } else patchData.Prefixes = patchData.Postfixes = patchData.Transpilers = patchData.Finalizers = [];
             if(JAPatcher.JaPatches.TryGetValue(method, out JAInternalPatchInfo jaPatchInfo)) {
-                MethodBase[] methodBases = new MethodBase[jaPatchInfo.tryPrefixes.Length];
-                for(int i = 0; i < jaPatchInfo.tryPrefixes.Length; i++) methodBases[i] = jaPatchInfo.tryPrefixes[i].PatchMethod;
-                patchData.TryPrefixes = methodBases;
-                methodBases = new MethodBase[jaPatchInfo.tryPostfixes.Length];
-                for(int i = 0; i < jaPatchInfo.tryPostfixes.Length; i++) methodBases[i] = jaPatchInfo.tryPostfixes[i].PatchMethod;
-                patchData.TryPostfixes = methodBases;
-                methodBases = new MethodBase[jaPatchInfo.replaces.Length];
-                for(int i = 0; i < jaPatchInfo.replaces.Length; i++) methodBases[i] = jaPatchInfo.replaces[i].PatchMethod;
-                patchData.Replaces = methodBases;
-                methodBases = new MethodBase[jaPatchInfo.removes.Length];
-                for(int i = 0; i < jaPatchInfo.removes.Length; i++) methodBases[i] = jaPatchInfo.removes[i].PatchMethod;
-                patchData.Removes = methodBases;
-                methodBases = new MethodBase[jaPatchInfo.overridePatches.Length];
-                for(int i = 0; i < jaPatchInfo.overridePatches.Length; i++) methodBases[i] = jaPatchInfo.overridePatches[i].PatchMethod;
-                patchData.Overrides = methodBases;
+                patchData.TryPrefixes = ExtractPatchMethods(jaPatchInfo.tryPrefixes);
+                patchData.TryPostfixes = ExtractPatchMethods(jaPatchInfo.tryPostfixes);
+                patchData.Replaces = ExtractPatchMethods(jaPatchInfo.replaces);
+                patchData.Removes = ExtractPatchMethods(jaPatchInfo.removes);
+                patchData.Overrides = ExtractPatchMethods(jaPatchInfo.overridePatches);
             } else patchData.TryPrefixes = patchData.TryPostfixes = patchData.Replaces = patchData.Removes = patchData.Overrides = [];
         }
         return patchData;
+    }
+    
+    // Helper method to extract PatchMethod from patch array
+    private static MethodBase[] ExtractPatchMethods(Patch[] patches) {
+        if(patches == null || patches.Length == 0) return [];
+        MethodBase[] methods = new MethodBase[patches.Length];
+        for(int i = 0; i < patches.Length; i++) methods[i] = patches[i].PatchMethod;
+        return methods;
     }
     
     public static JAPatchInfo GetPatchInfo(MethodBase method) {
