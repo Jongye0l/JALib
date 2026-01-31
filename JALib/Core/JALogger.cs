@@ -198,7 +198,10 @@ static class JALogger {
                 isColored = false;
                 break;
         }
-        sb.Append('[').Append(modName).Append(' ').Append(logType).Append(' ').Append(now.ToString("HH:mm:ss")).Append("] ").Append(message);
+        sb.Append('[').Append(modName).Append(' ').Append(logType).Append(' ')
+            .Append(now.Hour.ToString("D2")).Append(':')
+            .Append(now.Minute.ToString("D2")).Append(':')
+            .Append(now.Second.ToString("D2")).Append("] ").Append(message);
         if(isColored) sb.Append("</color>");
         if(repeatCount > 1) sb.Append(" <color=gray>[").Append(repeatCount).Append("]</color>");
         return sb.ToString();
@@ -214,7 +217,10 @@ static class JALogger {
         StringBuilder sb = new(((mod.Length + logType.Length + message.Length) / 16 + 5) * 16);
         sb.Append('[').Append(mod).Append(' ')
             .Append(logType).Append(' ')
-            .Append(now.Value.ToString("HH:mm:ss.fff"))
+            .Append(now.Value.Hour.ToString("D2")).Append(':')
+            .Append(now.Value.Minute.ToString("D2")).Append(':')
+            .Append(now.Value.Second.ToString("D2")).Append('.')
+            .Append(now.Value.Millisecond.ToString("D3"))
 #if !TEST
             .Append(" #").Append(Time.frameCount)
 #endif
