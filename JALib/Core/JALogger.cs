@@ -65,19 +65,19 @@ static class JALogger {
                 cancellationToken.Dispose();
                 cancellationToken = null;
             }
-            List<(LogCache, int)> removeIndices = [];
+            HashSet<LogCache> removeIndices = [];
             for(int i = 0; i < _logCache.Count; i++) {
                 LogCache cache = _logCache[i];
                 if(!_history.Contains(cache.FullString)) 
-                    removeIndices.Add((cache, cache.RepeatCount));
+                    removeIndices.Add(cache);
             }
             int count = 0;
-            lock(_logCache) 
-                foreach((LogCache cache, int repeatCount) in removeIndices)
-                    if(repeatCount == cache.RepeatCount) {
-                        _logCache.Remove(cache);
-                        count++;
-                    }
+            lock(_logCache)
+                for(int i = 0; i < _logCache.Count; i++) {
+                    if(!removeIndices.Contains(_logCache[i])) continue;
+                    _logCache.RemoveAt(i--);
+                    count++;
+                }
             if(count > 0) LogInternal($"JALogger cache removed {count} entries, current cache size: {_logCache.Count}");
             cancellationToken = new CancellationTokenSource();
             Task.Delay(1000, cancellationToken.Token).OnCompleted(CacheAutoRemover);
