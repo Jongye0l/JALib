@@ -1,9 +1,11 @@
 ﻿using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using JALib.Tools.ByteTool;
+using UnityEngine;
 
 namespace JALib.Tools;
 
@@ -39,6 +41,12 @@ public static class SimpleHttp {
             ReadBytes(httpClient.SendAsync(request, cancellationToken));
         public Task<string> SendString(HttpRequestMessage request, CancellationToken cancellationToken) =>
             ReadString(httpClient.SendAsync(request, cancellationToken));
+        public void SetupUserAgent(string appName, string appVersion) {
+            string userAgent = $"{appName}/{appVersion} ({GetOSInfo()})";
+            if(httpClient.DefaultRequestHeaders.UserAgent.ToString() == userAgent) return;
+            httpClient.DefaultRequestHeaders.UserAgent.Clear();
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+        }
     }
 
     extension(WebClient webClient) {
@@ -58,11 +66,60 @@ public static class SimpleHttp {
         public Task<string> SendString(string method, string url, byte[] data) => webClient.UploadDataTaskAsync(url, method, data).ContinueWith(buffer => Encoding.UTF8.GetString(buffer.Result));
         public Task<byte[]> Send(string method, string url, string data) => webClient.UploadStringTaskAsync(url, method, data).ContinueWith(buffer => buffer.Result.ToBytes());
         public Task<string> SendString(string method, string url, string data) => webClient.UploadStringTaskAsync(url, method, data);
+        public void SetupUserAgent(string appName, string appVersion) {
+            string userAgent = $"{appName}/{appVersion} ({GetOSInfo()})";
+            webClient.Headers[HttpRequestHeader.UserAgent] = userAgent;
+        }
     }
 
     extension(Task<HttpResponseMessage> task) {
         public Task<byte[]> ReadBytes() => task.ContinueWith(t => t.Result.Content.ReadAsByteArrayAsync()).Unwrap();
         public Task<string> ReadString() => task.ContinueWith(t => t.Result.Content.ReadAsStringAsync()).Unwrap();
+    }
+    
+    public static string GetOSInfo() {
+#if TEST
+        return "Windows NT 10.0; Win64; x64";
+#else
+        string os = SystemInfo.operatingSystem;
+        Match m;
+        string ver;
+        Version version;
+
+        if(os.Contains("Windows")) {
+            m = Regex.Match(os, @"\(([\d\.]+)\) (\d+)bit");
+            if(m.Success) {
+                version = new Version(m.Groups[1].Value);
+                ver = version.Major + "." + version.Minor;
+            } else ver = "10.0";
+            int bit = m.Success && int.TryParse(m.Groups[2].Value, out int b) ? b : 64;
+            return $"Windows NT {ver}; " + (bit == 64 ? "Win64; x64" : "WOW64");
+        }
+        if(os.Contains("Linux")) {
+            m = Regex.Match(os, @"Linux\s+([\d\.]+)");
+            if(m.Success) {
+                version = new Version(m.Groups[1].Value);
+                ver = version.Major + "." + version.Minor;
+            } else ver = "5.0";
+            return $"X11; Linux {ver} x86_64";
+        }
+        if(os.Contains("Mac OS")) {
+            m = Regex.Match(os, @"Mac OS X (\d+[\._]\d+[\._]?\d*)");
+            ver = m.Success ? m.Groups[1].Value.Replace('_', '.') : "10.15.7";
+            return $"Macintosh; Intel Mac OS X {ver}";
+        }
+        if(os.Contains("Android")) {
+            m = Regex.Match(os, @"Android OS (\d+)");
+            ver = m.Success ? m.Groups[1].Value : "10";
+            return $"Linux; Android {ver}";
+        }
+        if(os.Contains("iOS")) {
+            m = Regex.Match(os, @"iOS (\d+(\.\d+)*)");
+            ver = m.Success ? m.Groups[1].Value : "16.0";
+            return $"iPhone; CPU iPhone OS {ver.Replace('.', '_')} like Mac OS X";
+        }
+        return "Unknown";
+#endif
     }
 
 }

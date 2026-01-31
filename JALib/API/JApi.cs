@@ -31,53 +31,8 @@ class JApi {
     public static void Initialize() {
         HttpClient.Timeout = TimeSpan.FromSeconds(10);
         HttpClient.DefaultRequestHeaders.ExpectContinue = false;
-        HttpClient.DefaultRequestHeaders.Add("User-Agent", $"JALib/{typeof(JApi).Assembly.GetName().Version} ({GetOSInfo()})");
+        HttpClient.SetupUserAgent("JALib", typeof(JApi).Assembly.GetName().Version.ToString());
         _instance ??= new JApi();
-    }
-
-    private static string GetOSInfo() {
-#if TEST
-        return "Windows NT 10.0; Win64; x64";
-#else
-        string os = SystemInfo.operatingSystem;
-        Match m;
-        string ver;
-        Version version;
-
-        if(os.Contains("Windows")) {
-            m = Regex.Match(os, @"\(([\d\.]+)\) (\d+)bit");
-            if(m.Success) {
-                version = new Version(m.Groups[1].Value);
-                ver = version.Major + "." + version.Minor;
-            } else ver = "10.0";
-            int bit = m.Success && int.TryParse(m.Groups[2].Value, out int b) ? b : 64;
-            return $"Windows NT {ver}; " + (bit == 64 ? "Win64; x64" : "WOW64");
-        }
-        if(os.Contains("Linux")) {
-            m = Regex.Match(os, @"Linux\s+([\d\.]+)");
-            if(m.Success) {
-                version = new Version(m.Groups[1].Value);
-                ver = version.Major + "." + version.Minor;
-            } else ver = "5.0";
-            return $"X11; Linux {ver} x86_64";
-        }
-        if(os.Contains("Mac OS")) {
-            m = Regex.Match(os, @"Mac OS X (\d+[\._]\d+[\._]?\d*)");
-            ver = m.Success ? m.Groups[1].Value.Replace('_', '.') : "10.15.7";
-            return $"Macintosh; Intel Mac OS X {ver}";
-        }
-        if(os.Contains("Android")) {
-            m = Regex.Match(os, @"Android OS (\d+)");
-            ver = m.Success ? m.Groups[1].Value : "10";
-            return $"Linux; Android {ver}";
-        }
-        if(os.Contains("iOS")) {
-            m = Regex.Match(os, @"iOS (\d+(\.\d+)*)");
-            ver = m.Success ? m.Groups[1].Value : "16.0";
-            return $"iPhone; CPU iPhone OS {ver.Replace('.', '_')} like Mac OS X";
-        }
-        return "Unknown";
-#endif
     }
 
     public static Task<bool> CompleteLoadTask() {
