@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -54,21 +55,23 @@ public static class ByteTools {
 
     public static float ToFloat(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 4);
-        // Avoid intermediate array allocation by reversing in-place
+        // Use stackalloc to avoid heap allocation
         if(BitConverter.IsLittleEndian) {
-            return BitConverter.ToSingle(new[] { bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] }, 0);
+            Span<byte> reversed = stackalloc byte[4] { bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] };
+            return BitConverter.ToSingle(reversed);
         }
         return BitConverter.ToSingle(bytes, start);
     }
 
     public static double ToDouble(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 8);
-        // Avoid intermediate array allocation by reversing in-place
+        // Use stackalloc to avoid heap allocation
         if(BitConverter.IsLittleEndian) {
-            return BitConverter.ToDouble(new[] { 
+            Span<byte> reversed = stackalloc byte[8] { 
                 bytes[start + 7], bytes[start + 6], bytes[start + 5], bytes[start + 4],
                 bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] 
-            }, 0);
+            };
+            return BitConverter.ToDouble(reversed);
         }
         return BitConverter.ToDouble(bytes, start);
     }
