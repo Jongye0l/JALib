@@ -52,7 +52,7 @@ class JApi {
                 Domain1 => Domain2,
                 _ => throw new Exception("Failed to connect to the server")
             };
-            HttpClient.GetAsync($"https://{domain}/ping").ContinueWith(Connect);
+            HttpClient.GetAsync($"https://{domain}/ping").OnCompleted(Connect);
         } catch (Exception e) {
             JALib.Instance.LogReportException("Failed to connect to the server: " + domain, e);
             _instance.completeLoadTask.TrySetResult(false);
@@ -116,7 +116,7 @@ class JApi {
                     else Error(new Exception("Failed to connect server"));
                     return;
                 }
-                HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}").ContinueWith(Response);
+                HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}").OnCompleted(Response);
             } catch (HttpRequestException e) {
                 if(!wait) Queue();
                 else Error(e);
