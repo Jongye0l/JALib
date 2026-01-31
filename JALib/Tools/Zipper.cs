@@ -20,7 +20,15 @@ public static class Zipper {
         Dictionary<string, RawFile> folders = new();
         foreach(ZipArchiveEntry entry in archive.Entries) {
             byte[] buffer = new byte[entry.Length];
-            using(Stream st = entry.Open()) st.Read(buffer, 0, buffer.Length);
+            // Use ReadExactly to ensure full buffer is read (Stream.Read may return less than requested)
+            using(Stream st = entry.Open()) {
+                int totalRead = 0;
+                while(totalRead < buffer.Length) {
+                    int read = st.Read(buffer, totalRead, buffer.Length - totalRead);
+                    if(read == 0) break; // End of stream
+                    totalRead += read;
+                }
+            }
             string[] path = entry.FullName.Split('/');
             if(path.Length > 1) {
                 string folder = string.Join("/", path[..^1]);
@@ -56,7 +64,15 @@ public static class Zipper {
         Dictionary<string, RawFile> folders = new();
         foreach(ZipArchiveEntry entry in archive.Entries) {
             byte[] buffer = new byte[entry.Length];
-            using(Stream st = entry.Open()) st.Read(buffer, 0, buffer.Length);
+            // Use proper read pattern to ensure full buffer is read
+            using(Stream st = entry.Open()) {
+                int totalRead = 0;
+                while(totalRead < buffer.Length) {
+                    int read = st.Read(buffer, totalRead, buffer.Length - totalRead);
+                    if(read == 0) break;
+                    totalRead += read;
+                }
+            }
             buffer = dataChanger(buffer);
             string[] path = nameChanger(entry.FullName).Split('/');
             if(path.Length > 1) {
@@ -141,7 +157,15 @@ public static class Zipper {
                         fileStream = new FileStream(entryPath, FileMode.Open, FileAccess.Write, FileShare.None);
                     }
                     byte[] buffer = new byte[entry.Length];
-                    using(Stream st = entry.Open()) st.Read(buffer, 0, buffer.Length);
+                    // Fix: Ensure full buffer is read from stream
+                    using(Stream st = entry.Open()) {
+                        int totalRead = 0;
+                        while(totalRead < buffer.Length) {
+                            int read = st.Read(buffer, totalRead, buffer.Length - totalRead);
+                            if(read == 0) break;
+                            totalRead += read;
+                        }
+                    }
                     buffer = dataChanger(buffer);
                     fileStream.Write(buffer, 0, buffer.Length);
                     int left = (int) (fileStream.Length - fileStream.Position);
