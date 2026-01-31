@@ -4,6 +4,7 @@ using System.IO;
 namespace JALib.Data;
 
 public class RawFile : IDisposable {
+    private const int MaxRecursionDepth = 100; // Prevent stack overflow on deep directory trees
     public string Name { get; private set; }
     public byte[] Data { get; private set; }
     public List<RawFile> Files { get; private set; }
@@ -14,7 +15,11 @@ public class RawFile : IDisposable {
         Data = data;
     }
 
-    public RawFile(string filePath) {
+    public RawFile(string filePath) : this(filePath, 0) { }
+
+    private RawFile(string filePath, int depth) {
+        if(depth > MaxRecursionDepth) throw new InvalidOperationException($"Directory depth exceeds maximum of {MaxRecursionDepth} levels");
+        
         Name = Path.GetFileName(filePath);
         if(File.Exists(filePath)) {
             Data = File.ReadAllBytes(filePath);
@@ -23,7 +28,7 @@ public class RawFile : IDisposable {
         if(!Directory.Exists(filePath)) throw new FileNotFoundException();
         string[] paths = Directory.GetFiles(filePath);
         Files = new List<RawFile>();
-        foreach(string path in paths) Files.Add(new RawFile(path));
+        foreach(string path in paths) Files.Add(new RawFile(path, depth + 1));
     }
 
     public RawFile(string name, RawFile[] files) {
@@ -34,12 +39,10 @@ public class RawFile : IDisposable {
     public void Save(string path) {
         path = Path.Combine(path, Name);
         if(IsFolder) {
-            ;
             Directory.CreateDirectory(path);
             foreach(RawFile file in Files) file.Save(path);
             return;
         }
-        File.Create(path);
         File.WriteAllBytes(path, Data);
     }
 

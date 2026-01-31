@@ -16,6 +16,7 @@ public static class MainThread {
     private static ConcurrentQueue<JAction> queue = new();
     private static StaticCoroutine staticCoroutine;
     private static TaskCompletionSource<bool> completeLoadTask;
+    private const int MaxActionsPerFrame = 100; // Prevent frame stutter from processing too many actions
 
     internal static void Initialize() {
         queue ??= new ConcurrentQueue<JAction>();
@@ -56,7 +57,14 @@ public static class MainThread {
                 completeLoadTask.TrySetResult(true);
                 completeLoadTask = null;
             }
-            while(queue.TryDequeue(out JAction action)) action.Invoke();
+            // Limit actions per frame to prevent frame drops in Unity
+            // Actions exceeding the budget remain queued and are processed in subsequent frames
+            // This prevents long-running action queues from causing visible frame stutter
+            int processedCount = 0;
+            while(processedCount < MaxActionsPerFrame && queue.TryDequeue(out JAction action)) {
+                action.Invoke();
+                processedCount++;
+            }
         } finally {
             _isRunningOnMainThreadUpdate = false;
         }

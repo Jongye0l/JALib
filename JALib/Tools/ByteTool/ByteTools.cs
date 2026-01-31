@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -54,16 +55,35 @@ public static class ByteTools {
 
     public static float ToFloat(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 4);
-        byte[] buffer = new byte[4];
-        Array.Copy(bytes, start, buffer, 0, 4);
-        return BitConverter.ToSingle(buffer.Reverse(), 0);
+        // This library uses big-endian (network byte order) for serialized data
+        // BitConverter.ToSingle expects native byte order (little-endian on x86/x64, big-endian on rare architectures)
+        // On little-endian systems (most common): need to reverse big→little
+        // On big-endian systems (rare): no conversion needed, already big→big
+        if(!BitConverter.IsLittleEndian) {
+            // Big-endian system: input is big-endian, BitConverter expects big-endian → direct use
+            return BitConverter.ToSingle(bytes, start);
+        }
+        // Little-endian system: input is big-endian, BitConverter expects little-endian → reverse with stackalloc
+        Span<byte> reversed = stackalloc byte[4] { bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] };
+        return BitConverter.ToSingle(reversed);
     }
 
     public static double ToDouble(this byte[] bytes, int start = 0) {
         CheckArgument(bytes.Length - start, 8);
-        byte[] buffer = new byte[8];
-        Array.Copy(bytes, start, buffer, 0, 8);
-        return BitConverter.ToDouble(buffer.Reverse(), 0);
+        // This library uses big-endian (network byte order) for serialized data
+        // BitConverter.ToDouble expects native byte order (little-endian on x86/x64, big-endian on rare architectures)
+        // On little-endian systems (most common): need to reverse big→little
+        // On big-endian systems (rare): no conversion needed, already big→big
+        if(!BitConverter.IsLittleEndian) {
+            // Big-endian system: input is big-endian, BitConverter expects big-endian → direct use
+            return BitConverter.ToDouble(bytes, start);
+        }
+        // Little-endian system: input is big-endian, BitConverter expects little-endian → reverse with stackalloc
+        Span<byte> reversed = stackalloc byte[8] { 
+            bytes[start + 7], bytes[start + 6], bytes[start + 5], bytes[start + 4],
+            bytes[start + 3], bytes[start + 2], bytes[start + 1], bytes[start] 
+        };
+        return BitConverter.ToDouble(reversed);
     }
 
     public static decimal ToDecimal(this byte[] bytes, int start = 0) {

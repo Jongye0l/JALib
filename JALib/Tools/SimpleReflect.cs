@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
@@ -10,19 +11,30 @@ using UnityModManagerNet;
 namespace JALib.Tools;
 
 public static class SimpleReflect {
+    // Cache for reflection lookups to improve performance
+    private static readonly ConcurrentDictionary<(Type, string), FieldInfo> _fieldCache = new();
+    private static readonly ConcurrentDictionary<(Type, string), MethodInfo> _methodCache = new();
+    private static readonly ConcurrentDictionary<(Type, string, string), MethodInfo> _methodWithTypesCache = new();
+    private static readonly ConcurrentDictionary<(Type, string), PropertyInfo> _propertyCache = new();
+    
     public static object GetValue(this FieldInfo field) => field.GetValue(null);
 
     public static T GetValue<T>(this FieldInfo field, object o = null) => (T) field.GetValue(o);
 
     public static void SetValue(this FieldInfo field, object o) => field.SetValue(null, o);
 
-    public static FieldInfo Field(this Type type, [NotNull] string name) => type.GetField(name, AccessTools.all);
+    public static FieldInfo Field(this Type type, [NotNull] string name) => 
+        _fieldCache.GetOrAdd((type, name), key => key.Item1.GetField(key.Item2, AccessTools.all));
 
     public static FieldInfo[] Fields(this Type type) => type.GetFields(AccessTools.all);
 
-    public static MethodInfo Method(this Type type, [NotNull] string name) => type.GetMethod(name, AccessTools.all);
+    public static MethodInfo Method(this Type type, [NotNull] string name) => 
+        _methodCache.GetOrAdd((type, name), key => key.Item1.GetMethod(key.Item2, AccessTools.all));
 
-    public static MethodInfo Method(this Type type, [NotNull] string name, [NotNull] params Type[] types) => type.GetMethod(name, AccessTools.all, null, types, null);
+    public static MethodInfo Method(this Type type, [NotNull] string name, [NotNull] params Type[] types) {
+        string typesKey = string.Join(",", types.Select(t => t.FullName));
+        return _methodWithTypesCache.GetOrAdd((type, name, typesKey), key => key.Item1.GetMethod(key.Item2, AccessTools.all, null, types, null));
+    }
 
     public static MethodInfo[] Methods(this Type type) => type.GetMethods(AccessTools.all);
 
@@ -145,7 +157,8 @@ public static class SimpleReflect {
 
     public static T GetValue<T>(this object obj, [NotNull] string name, Type[] types, object o, [NotNull] params object[] objects) => obj.Method(name, types).Invoke<T>(o, objects);
 
-    public static PropertyInfo Property(this Type type, [NotNull] string name) => type.GetProperty(name, AccessTools.all);
+    public static PropertyInfo Property(this Type type, [NotNull] string name) => 
+        _propertyCache.GetOrAdd((type, name), key => key.Item1.GetProperty(key.Item2, AccessTools.all));
 
     public static PropertyInfo[] Properties(this Type type) => type.GetProperties(AccessTools.all);
 
