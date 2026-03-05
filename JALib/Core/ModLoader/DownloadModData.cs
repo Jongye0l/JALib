@@ -53,6 +53,7 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             UnityModManager.ModInfo modInfo = File.ReadAllText(path).FromJson<UnityModManager.ModInfo>();
             modEntry.SetValue("Info", modInfo);
             bool beta = typeof(JABootstrap).Invoke<bool>("InitializeVersion", [modEntry]);
+            modInfo.Version = (data.RawModData.apiModInfo.LatestVersion > modEntry.Version ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
             data.RawModData.info = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modEntry, beta);
             if(CheckReDownload()) return;
             data.RawModData.InstallFinish();
