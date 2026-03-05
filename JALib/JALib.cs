@@ -65,10 +65,10 @@ sealed class JALib : JAMod {
             if(key.GetValue("URL Protocol") == null) {
                 key.SetValue("", "URL Protocol");
                 key.SetValue("URL Protocol", "");
-                key.SetValue("AdofaiPath", Environment.CurrentDirectory);
                 using RegistryKey key2 = Registry.CurrentUser.CreateSubKey(@"Software\Classes\JALib\shell\open\command");
                 key2.SetValue("", $"\"{applicationPath}\" \"%1\"");
             }
+            key.SetValue("AdofaiPath", Environment.CurrentDirectory);
             key.SetValue("Port", portTask.Result);
         }
         if(File.Exists(applicationPath)) {
