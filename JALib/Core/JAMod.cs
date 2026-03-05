@@ -135,7 +135,7 @@ public abstract class JAMod {
     }
 
     internal void SetupOldBootstrap(GetModInfo apiInfo) {
-        Gid = apiInfo?.Gid ?? 0;
+        Gid = apiInfo?.Gid ?? -1;
         Discord = ModSetting.Discord ?? Discord;
     }
 
