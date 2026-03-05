@@ -1,14 +1,12 @@
-﻿using System.IO;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
-using JALib.Core;
 using JALib.Tools;
 using UnityModManagerNet;
 
 namespace JALib.API.Packets;
 
 class DownloadMod : GetRequest {
-
     private string ModName;
     private Version ModVersion;
     private string ModPath;

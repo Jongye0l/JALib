@@ -1,11 +1,9 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using JALib.JAException;
 using JALib.Tools;
-using UnityEngine;
 
 namespace JALib.API;
 
@@ -18,7 +16,9 @@ class JApi {
     }
 
     private static JApi _instance;
-    private static readonly HttpClient HttpClient = new();
+    public static readonly HttpClient HttpClient = new(new HttpClientHandler {
+        AllowAutoRedirect = false
+    });
     private static ConcurrentQueue<Action> _queue = new();
     //private const string Domain1 = "jalibtest.jongyeol.kr";
     //private const string Domain2 = "jalibtest.jongyeol.kr";
@@ -81,13 +81,13 @@ class JApi {
     internal static Task<T> Send<T>(T packet, bool wait) where T : GetRequest {
         if(_instance == null && !wait)
             return Task.FromException<T>(new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server")));
-        return new SendHandler<T>(packet, wait).tcs.Task;
+        return new SendHandler<T>(packet, wait).Tcs.Task;
     }
 
     private class SendHandler<T> where T : GetRequest {
         private readonly T packet;
         private readonly bool wait;
-        internal readonly TaskCompletionSource<T> tcs = new();
+        internal readonly TaskCompletionSource<T> Tcs = new();
         private Task<bool> loadTask;
         private HttpResponseMessage response;
 
@@ -127,9 +127,17 @@ class JApi {
 
         private void Response(Task<HttpResponseMessage> t) {
             try {
-                if(t.Exception != null) throw t.Exception.InnerException ?? t.Exception;
+                if(t.Exception != null) {
+                    Error(t.Exception.InnerException ?? t.Exception);
+                    return;
+                }
                 response = t.Result;
-                if(response.IsSuccessStatusCode) {
+                if((uint) response.StatusCode >= 200 && (uint) response.StatusCode < 400) {
+                    if((uint) response.StatusCode >= 300 && (uint) response.StatusCode < 400 && (object) response.Headers.Location != null) {
+                        JALib.Instance.Log("Received redirect response for " + packet.GetType().Name + ": " + response.Headers.Location);
+                        HttpClient.GetAsync(response.Headers.Location).OnCompleted(Response);
+                        return;
+                    }
                     Task.Run(Run).GetAwaiter().OnCompleted(Complete);
                     return;
                 }
@@ -147,9 +155,9 @@ class JApi {
             }
         }
 
-        private void Run() {
+        private async Task Run() {
             try {
-                packet.Run(response);
+                await packet.Run(response);
             } catch (Exception e) {
                 JALib.Instance.Log("Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name);
                 Error(e);
@@ -157,8 +165,8 @@ class JApi {
         }
 
         private void Queue() => _queue.Enqueue(Setup);
-        private void Complete() => tcs.SetResult(packet);
-        private void Error(Exception e) => tcs.SetException(new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e));
+        private void Complete() => Tcs.SetResult(packet);
+        private void Error(Exception e) => Tcs.SetException(new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e));
     }
 
     private void OnConnect() {
