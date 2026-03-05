@@ -220,11 +220,12 @@ static class JALogger {
             .Append(now.Value.Hour.ToString("D2")).Append(':')
             .Append(now.Value.Minute.ToString("D2")).Append(':')
             .Append(now.Value.Second.ToString("D2")).Append('.')
-            .Append(now.Value.Millisecond.ToString("D3"))
+            .Append(now.Value.Millisecond.ToString("D3"));
 #if !TEST
-            .Append(" #").Append(Time.frameCount)
+        if(JALib.Quitting) sb.Append(" Disposing");
+        else sb.Append(" #").Append(Time.frameCount);
 #endif
-            .Append("] ").Append(message);
+        sb.Append("] ").Append(message);
         int flag = JALib.Instance?.Setting?.loggerLogDetail ?? 7;
         if((flag & 1) == 1) {
             sb.Append("\n  ⚡ ")

@@ -21,6 +21,7 @@ sealed class JALib : JAMod {
     internal static JALib Instance;
     internal static Harmony Harmony;
     internal new JALibSetting Setting;
+    internal static bool Quitting;
     private static SettingGUI _settingGUI;
     private static bool enableInit;
 
@@ -41,6 +42,7 @@ sealed class JALib : JAMod {
         OnEnable();
         SetupEvent();
         MainThread.Run(Instance, SetupEventMain);
+        Application.quitting += () => Quitting = true;
     }
 
     private void Init() {
