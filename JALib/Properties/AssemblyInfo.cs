@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Jongyeol")]
 [assembly: AssemblyProduct(JALib.JALib.ModId)]
-[assembly: AssemblyCopyright("Copyright ©Jongyeol 2024-2025")]
+[assembly: AssemblyCopyright("Copyright © Jongyeol 2024-2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

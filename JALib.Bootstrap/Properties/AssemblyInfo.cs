@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-[assembly: InternalsVisibleTo("JALib")]
+[assembly: InternalsVisibleTo("JALib, PublicKey=002400000480000094000000060200000024000052534131000400000100010021617d4108df971310fa22ae8214c4de2c36f039c09e091fc04452991bfd0088ded8cf03f95acd2b20cc5557fa3a521d8f72d73609209bea79be5c06d55d7d14507656b04af031effd0f077e00765e06c90407596272e426182b9d810a6db0550ce0918e3380a5bb32e3d589ca3323a9dda734dcfaa91897fab66a6b54c759c0")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 

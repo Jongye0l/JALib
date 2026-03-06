@@ -12,3 +12,6 @@ obj/
 
 # Library
 packages/
+
+# Signed Assembly
+*.snk

@@ -13,6 +13,8 @@
         <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <LangVersion>latest</LangVersion>
+        <SignAssembly Condition="Exists('..\JALib.snk')">true</SignAssembly>
+        <AssemblyOriginatorKeyFile Condition="Exists('..\JALib.snk')">..\JALib.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
