@@ -30,7 +30,11 @@ sealed class JALib : JAMod {
         try {
             JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
         } catch (Exception) {
-            // ignored
+            try {
+                JaModInfo = modEntry.Assembly.GetType("JALib.Bootstrap.JABootstrap").GetValue<JAModInfo>("jalibModInfo");
+            } catch (Exception) {
+                // ignored
+            }
         }
         Setup(modEntry, JaModInfo, null, new JAModSetting(System.IO.Path.Combine(modEntry.Path, "Settings.json")));
         if(JaModInfo.IsBetaBranch) ModSetting.UnlockBeta = ModSetting.Beta = true;
