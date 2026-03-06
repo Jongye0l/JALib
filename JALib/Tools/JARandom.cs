@@ -1,6 +1,4 @@
-﻿using JALib.Tools.ByteTool;
-
-namespace JALib.Tools;
+﻿namespace JALib.Tools;
 
 public class JARandom : Random {
 
@@ -18,27 +16,40 @@ public class JARandom : Random {
 
     public int NextInt() => Next();
 
-    public uint NextUInt() => Next().AsUnsafe<int, uint>();
+    public uint NextUInt() => (uint) Next();
 
-    public long NextLong() => NextBytes(8).ToLong();
+    public long NextLong() => (long) Next() << 32 | (uint) Next();
 
-    public ulong NextULong() => NextBytes(8).ToULong();
+    public ulong NextULong() => (ulong) NextLong();
 
     public float NextFloat() => (float) NextDouble();
 
     public float NextAllFloat() => Next().AsUnsafe<int, float>();
 
-    public double NextAllDouble() => NextBytes(8).ToDouble();
+    public unsafe double NextAllDouble() {
+        long value = NextLong();
+        return *(double*) &value;
+    }
 
     public decimal NextDecimal() => new([Next(), Next(), Next(), Next()]);
 
-    public override void NextBytes(byte[] buffer) {
+    public override unsafe void NextBytes(byte[] buffer) {
         int i = 0;
-        while(i + 4 <= buffer.Length) {
-            Next().ToBytes(buffer, i);
-            i += 4;
+        fixed(byte* ptr = buffer) {
+            while(i + 4 <= buffer.Length) {
+                int* i1 = (int*) ptr[i];
+                *i1 = Next();
+                i += 4;
+            }
+            if(i >= buffer.Length) return;
+            int temp = Next();
+            byte* b1 = (byte*) &temp;
+            while(i < buffer.Length) {
+                ptr[i] = *b1;
+                b1++;
+                i++;
+            }
         }
-        if(i < buffer.Length) Array.Copy(Next().ToBytes(), 0, buffer, i, buffer.Length - i);
     }
 
     public byte[] NextBytes(int count) {
