@@ -287,7 +287,7 @@ static class JALogger {
             foreach(ParameterInfo parameter in parameters) {
                 AddType(sb, parameter.ParameterType, false);
                 if(!parameter.Name.IsNullOrEmpty()) {
-                    sb.Append(" ");
+                    sb.Append(' ');
                     sb.Append(parameter.Name);
                 }
                 sb.Append(", ");
@@ -332,20 +332,21 @@ static class JALogger {
     }
 
     private static void AddType(StringBuilder sb, Type type, bool fullName) {
+        if((object) type == null) return;
         if(type.IsNested) {
             AddType(sb, type.DeclaringType!, fullName);
             fullName = false;
-            sb.Append("+");
+            sb.Append('+');
         }
         sb.Append(fullName ? type.FullName : type.Name);
         if(type.IsGenericType) {
-            sb.Append("[");
+            sb.Append('[');
             foreach(Type genericType in type.GetGenericArguments()) {
                 AddType(sb, genericType, false);
                 sb.Append(", ");
             }
             sb.Length -= 2;
-            sb.Append("]");
+            sb.Append(']');
         }
     }
 
