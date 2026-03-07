@@ -4,7 +4,7 @@ namespace JALib.Core.Patch;
 
 [AttributeUsage(AttributeTargets.Method)]
 public class JAReversePatchAttribute : JAPatchBaseAttribute {
-    internal ReversePatchType PatchType;
+    public readonly ReversePatchType PatchType;
     public bool TryCatchChildren = true;
     internal ReversePatchData Data;
 
