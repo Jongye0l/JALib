@@ -1,5 +1,9 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using HarmonyLib;
 using JALib.API;
@@ -7,6 +11,7 @@ using JALib.API.Packets;
 using JALib.Bootstrap;
 using JALib.Core;
 using JALib.Core.ModLoader;
+using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
 using Microsoft.Win32;
@@ -27,15 +32,25 @@ sealed class JALib : JAMod {
 
     private JALib(UnityModManager.ModEntry modEntry) : base(typeof(JALibSetting)) {
         Instance = this;
+        Type bootstrapType = typeof(JABootstrap);
         try {
-            JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo");
-        } catch (Exception) {
-            try {
-                JaModInfo = modEntry.Assembly.GetType("JALib.Bootstrap.JABootstrap").GetValue<JAModInfo>("jalibModInfo");
-            } catch (Exception) {
-                // ignored
-            }
+            JaModInfo = typeof(JABootstrap).GetValue<JAModInfo>("jalibModInfo") ?? 
+                        MigrateModInfo((bootstrapType = modEntry.Assembly.GetType("JALib.Bootstrap.JABootstrap"))?.GetValue("jalibModInfo"));
+        } catch (Exception e) {
+            LogReportException("Fail to get mod info from JABootstrap.", e);
         }
+        if((object) bootstrapType != null && bootstrapType.Assembly.GetName().Version < new Version(1, 0, 0, 8)) {
+            JAPatcher patcher = new(this);
+            foreach(Type nestedType in bootstrapType.GetNestedTypes(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic)) {
+                foreach(Type nestedType2 in nestedType.GetNestedTypes(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic)) {
+                    if(!nestedType2.Name.Contains("<Load>")) continue;
+                    patcher.AddPatch(BootstrapLoaderTranspiler, new JAPatchAttribute(nestedType2.GetMethod("MoveNext", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic), PatchType.Transpiler, false));
+                    break;
+                }
+            }
+            patcher.Patch();
+        }
+        
         Setup(modEntry, JaModInfo, null, new JAModSetting(System.IO.Path.Combine(modEntry.Path, "Settings.json")));
         if(JaModInfo.IsBetaBranch) ModSetting.UnlockBeta = ModSetting.Beta = true;
         Setting = (JALibSetting) base.Setting;
@@ -47,6 +62,36 @@ sealed class JALib : JAMod {
         SetupEvent();
         MainThread.Run(Instance, SetupEventMain);
         Application.quitting += () => Quitting = true;
+    }
+
+    private static IEnumerable<CodeInstruction> BootstrapLoaderTranspiler(IEnumerable<CodeInstruction> instructions) {
+        List<CodeInstruction> codes = instructions.ToList();
+        for(int i = 0; i < codes.Count; i++) {
+            if(codes[i].opcode == OpCodes.Ldstr && " <color=red>[Error Loading JALib]</color>" == codes[i].operand.AsUnsafe<string>()) {
+                int start = 0;
+                for(int j = i; j >= 0; j--) {
+                    if(codes[j].opcode == OpCodes.Pop) {
+                        start = j + 1;
+                        break;
+                    }
+                }
+                while(codes[++i].opcode != OpCodes.Leave);
+                Label label = (Label) codes[i].operand;
+                codes[i + 1].labels.Add(label);
+                codes.RemoveRange(start, i - start + 1);
+                i = start;
+                while(++i < codes.Count) {
+                    CodeInstruction code = codes[i];
+                    if(code.labels.Remove(label)) break;
+                    if(code.opcode == OpCodes.Ldsfld && code.operand is FieldInfo { Name: "LoadJAMod" }) {
+                        codes.RemoveAt(i);
+                        codes[i + 2] = new CodeInstruction(OpCodes.Call, ((Delegate) LoadModInfo2).Method);
+                    }
+                }
+                break;
+            }
+        }
+        return codes;
     }
 
     private void Init() {
@@ -93,12 +138,30 @@ sealed class JALib : JAMod {
         Zipper.Unzip(System.IO.Path.Combine(Instance.Path, "ModApplicator.zip"), applicationFolderPath);
     }
 
+    private static JAModInfo MigrateModInfo(object modInfo) {
+        try {
+            if(modInfo == null) return null;
+            if(modInfo is JAModInfo info) return info;
+            info = new JAModInfo();
+            foreach(FieldInfo field in modInfo.GetType().Fields()) 
+                info.SetValue(field.Name, field.GetValue(modInfo));
+            return info;
+        } catch (Exception e) {
+            Instance.LogReportException("Fail to migrate mod info.", e);
+            return null;
+        }
+    }
+
     private static void LoadModInfo(JAModInfo modInfo) {
         try {
             JAModLoader.AddMod(modInfo, 0);
         } catch (Exception e) {
             modInfo.ModEntry.Logger.LogException(e);
         }
+    }
+
+    private static void LoadModInfo2(object modInfo) {
+        LoadModInfo(MigrateModInfo(modInfo));
     }
 
     private void LoadInfo() {

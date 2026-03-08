@@ -202,12 +202,7 @@ class RawModData {
         }
         if(!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
         string assemblyPath = info.AssemblyRequireModPath ? Path.Combine(info.ModEntry.Path, info.AssemblyPath) : info.AssemblyPath;
-        bool noChangeAssemblyName;
-        try {
-            noChangeAssemblyName = GetNoChangeAssemblyName(info);
-        } catch (Exception) {
-            noChangeAssemblyName = GetNoChangeAssemblyNameOld();
-        }
+        bool noChangeAssemblyName = info.NoChangeAssemblyName;
         string cacheAssemblyPath = Path.Combine(cachePath, Path.GetFileNameWithoutExtension(assemblyPath) + "-" + new FileInfo(assemblyPath).LastWriteTimeUtc.GetHashCode() + (noChangeAssemblyName ? "_" : "") + ".dll");
         if(!File.Exists(cacheAssemblyPath)) {
             if(noChangeAssemblyName) File.Copy(assemblyPath, cacheAssemblyPath);

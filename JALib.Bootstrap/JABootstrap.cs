@@ -9,13 +9,13 @@ using UnityModManagerNet;
 namespace JALib.Bootstrap;
 
 public static class JABootstrap {
-    public const int BootstrapVersion = 1;
+    public const int BootstrapVersion = 2;
     private static AppDomain domain;
-    private static Action<JAModInfo> LoadJAMod;
+    internal static Action<object> LoadJAMod;
     private static Task _task;
     [Obsolete] internal static Harmony harmony;
-    private static JAModInfo jalibModInfo;
-    private static int LoadCount;
+    internal static JAModInfo jalibModInfo;
+    internal static int LoadCount;
 
     private static void Setup(UnityModManager.ModEntry modEntry) {
         _task = Task.Run(async () => {
@@ -45,7 +45,7 @@ public static class JABootstrap {
 
     private static void SetupJALib(JAModInfo modInfo) {
         jalibModInfo = modInfo;
-        LoadJAMod = (Action<JAModInfo>) Delegate.CreateDelegate(typeof(Action<JAModInfo>), LoadMod(modInfo).GetMethod("LoadModInfo", BindingFlags.NonPublic | BindingFlags.Static));
+        LoadJAMod = (Action<object>) Delegate.CreateDelegate(typeof(Action<object>), LoadMod(modInfo).GetMethod("LoadModInfo2", BindingFlags.NonPublic | BindingFlags.Static));
     }
 
     private static JAModInfo LoadModInfo(UnityModManager.ModEntry modEntry, bool beta) {
@@ -67,7 +67,10 @@ public static class JABootstrap {
             }
             modInfo = data.FromJson<JAModInfo>();
         }
-        if(modInfo.BootstrapVersion > BootstrapVersion) throw new Exception("Bootstrap version is too low.");
+        if(modInfo.BootstrapVersion > BootstrapVersion) {
+            modInfo.ModEntry.Info.DisplayName = modInfo.ModEntry.Info.Id + " <color=red>[Need Update JALib And Restart]</color>";
+            throw new Exception("Bootstrap version is too low.");
+        }
         modInfo.ModEntry = modEntry;
         modInfo.IsBetaBranch = beta;
         modEntry.Logger.Log("Successfully loaded JAModInfo");
