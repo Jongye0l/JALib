@@ -1,6 +1,9 @@
-﻿namespace JALib.Core.Patch;
+﻿using System.Reflection;
+
+namespace JALib.Core.Patch;
 
 public class JAPatchInfo {
+    public MethodBase Original;
     public HarmonyLib.Patch[] Prefixes;
     public HarmonyLib.Patch[] Postfixes;
     public HarmonyLib.Patch[] Transpilers;
@@ -12,6 +15,7 @@ public class JAPatchInfo {
     public ReversePatchData[] ReversePatches;
     public OverridePatchData[] OverridePatches;
 
-    internal JAPatchInfo() {
+    internal JAPatchInfo(MethodBase original) {
+        Original = original;
     }
 }

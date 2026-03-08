@@ -49,7 +49,7 @@ public static class JAPatchManager {
     }
     
     public static JAPatchInfo GetPatchInfo(MethodBase method) {
-        JAPatchInfo result = new();
+        JAPatchInfo result = new(method);
         lock(JAPatcher.HarmonyLocker) {
             PatchInfo patchInfo = JAPatcher.GetPatchInfo(method);
             if(patchInfo != null) {
