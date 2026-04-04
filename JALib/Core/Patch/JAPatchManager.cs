@@ -63,11 +63,13 @@ public static class JAPatchManager {
                 result.TryPostfixes = jaPatchInfo.tryPostfixes;
                 result.Replaces = jaPatchInfo.replaces;
                 result.Removes = jaPatchInfo.removes;
+                result.ReversePatches = jaPatchInfo.reversePatches;
                 result.OverridePatches = jaPatchInfo.overridePatches;
             } else {
                 result.TryPrefixes = result.TryPostfixes = [];
                 result.Replaces = [];
                 result.Removes = [];
+                result.ReversePatches = [];
                 result.OverridePatches = [];
             }
         }
