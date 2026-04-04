@@ -1487,7 +1487,7 @@ class JAMethodPatcher {
     internal static List<CodeInstruction> GetInstructions(ILGenerator generator, MethodBase method, int maxTranspilers, JAInternalPatchInfo jaInternalPatchInfo) {
         Type methodPatcher = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodPatcher");
         MethodInfo replace = SortPatchMethods(method, jaInternalPatchInfo.replaces, false, out _).Last();
-        LocalBuilder[] existingVariables = method != null ? methodPatcher.Invoke<LocalBuilder[]>("DeclareLocalVariables", generator, replace) : throw new ArgumentNullException(nameof (method));
+        LocalBuilder[] existingVariables = method != null ? methodPatcher.Invoke<LocalBuilder[]>("DeclareOriginalLocalVariables", generator, replace) : throw new ArgumentNullException(nameof (method));
         bool useShift = typeof(Harmony).Assembly.GetType("HarmonyLib.StructReturnBuffer").Invoke<bool>("NeedsFix", [method]);
         object methodCopier = typeof(Harmony).Assembly.GetType("HarmonyLib.MethodCopier").New(replace, generator, existingVariables);
         methodCopier.Invoke("SetArgumentShift", useShift);
