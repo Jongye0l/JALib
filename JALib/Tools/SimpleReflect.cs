@@ -70,15 +70,21 @@ public static class SimpleReflect {
 
     public static void SetValue(this Type type, [NotNull] string name, object value, object o = null) => type.Field(name).SetValue(o, value);
 
-    public static ConstructorInfo Constructor(this Type type) {
-        ConstructorInfo[] constructors = type.GetConstructors(AccessTools.all);
+    public static ConstructorInfo Constructor(this Type type) => type.Constructor(AccessTools.all);
+
+    public static ConstructorInfo Constructor(this Type type, BindingFlags flags) {
+        ConstructorInfo[] constructors = type.GetConstructors(flags);
         if(constructors.Length != 1) throw new Exception("Constructor count is not 1");
         return constructors[0];
     }
 
     public static ConstructorInfo Constructor(this Type type, [NotNull] params Type[] types) => type.GetConstructor(AccessTools.all, null, types, null);
+    
+    public static ConstructorInfo Constructor(this Type type, BindingFlags flags, [NotNull] params Type[] types) => type.GetConstructor(flags, null, types, null);
 
     public static ConstructorInfo GetConstructor(this Type type) => type.Constructor();
+
+    public static ConstructorInfo GetConstructor(this Type type, BindingFlags flags) => type.Constructor(flags);
 
     public static ConstructorInfo[] Constructors(this Type type) => type.GetConstructors(AccessTools.all);
 
