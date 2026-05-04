@@ -225,7 +225,7 @@ class RawModData {
         Assembly modAssembly = AssemblyLoader.LoadAssembly(cacheAssemblyPath, noChangeAssemblyName);
         Type modType = modAssembly.GetType(info.ClassName);
         if(modType == null) throw new TypeLoadException("Type not found.");
-        ConstructorInfo constructor = modType.Constructor([]) ?? modType.Constructor(typeof(UnityModManager.ModEntry));
+        ConstructorInfo constructor = modType.Constructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, []) ?? modType.Constructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, typeof(UnityModManager.ModEntry));
         data.mod = (JAMod) constructor.Invoke(constructor.GetParameters().Length == 0 ? [] : [info.ModEntry]);
         data.mod.reloadCount = repeatCount;
         data.mod.Setup(info.ModEntry, info, apiModInfo, setting);
