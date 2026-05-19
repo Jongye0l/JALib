@@ -203,7 +203,7 @@ static class JALogger {
             .Append(now.Minute.ToString("D2")).Append(':')
             .Append(now.Second.ToString("D2")).Append("] ").Append(message);
         if(isColored) sb.Append("</color>");
-        if(repeatCount > 1) sb.Append(" <color=gray>[").Append(repeatCount).Append("]</color>");
+        if(repeatCount > 1) sb.Append(" <color=grey>[").Append(repeatCount).Append("]</color>");
         return sb.ToString();
     }
     

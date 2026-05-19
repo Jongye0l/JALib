@@ -26,7 +26,7 @@ static class Installer {
         string domain = Domain1;
         Exception exception;
         try {
-            modEntry.Info.DisplayName = modName + "<color=gray> [Check Update...]</color>";
+            modEntry.Info.DisplayName = modName + "<color=grey> [Check Update...]</color>";
             HttpResponseMessage response = null;
             string version = modEntry.Info.Version.Split(" ")[0];
             for(int i = 0; i < 2; i++) {
@@ -39,7 +39,7 @@ static class Installer {
                 domain = Domain2;
             }
             response.EnsureSuccessStatusCode();
-            modEntry.Info.DisplayName = modName + "<color=gray> [Updating...]</color>";
+            modEntry.Info.DisplayName = modName + "<color=grey> [Updating...]</color>";
             await using Stream stream = await response.Content.ReadAsStreamAsync();
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
             foreach(ZipArchiveEntry entry in archive.Entries) {

@@ -584,7 +584,7 @@ public abstract class JAMod {
     internal void ForceReloadMod() {
         try {
             string modName = ModEntry.Info.Id;
-            ModEntry.Info.DisplayName = modName + " <color=gray>[Force Reload...]</color>";
+            ModEntry.Info.DisplayName = modName + " <color=grey>[Force Reload...]</color>";
             Log("Force Reload: Unloading...");
             UnityModManager.ModEntry modEntry = ModEntry;
             OnUnload0(ModEntry);

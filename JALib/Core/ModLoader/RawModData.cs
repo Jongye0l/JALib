@@ -31,7 +31,7 @@ class RawModData {
         this.repeatCount = repeatCount;
         modInfo = info.ModEntry.Info;
         name = modInfo.Id;
-        modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
+        modInfo.DisplayName = name + " <color=grey>[Loading Info...]</color>";
         setting = new JAModSetting((typeof(JABootstrap).Assembly.GetName().Version != new Version(1, 0,0, 0) ? GetSettingPath() : null) ?? Path.Combine(info.ModEntry.Path, "Settings.json"));
         if(info.IsBetaBranch) setting.UnlockBeta = setting.Beta = true;
         JApi.Send(new GetModInfo(info, setting.Beta), false).OnCompleted(CheckUpdate);
@@ -106,7 +106,7 @@ class RawModData {
 
     public void RecheckDependencies() {
         if(data.LoadState is ModLoadState.Loaded or ModLoadState.NeedRestart) return;
-        modInfo.DisplayName = name + " <color=gray>[Waiting Dependency]</color>";
+        modInfo.DisplayName = name + " <color=grey>[Waiting Dependency]</color>";
         if(waitingLoad != null) foreach(JAModLoader loadData in waitingLoad)
             switch(loadData.LoadState) {
                 case ModLoadState.None:
@@ -243,7 +243,7 @@ class RawModData {
     public void InstallFinish() {
         loadDependencies = false;
         data.LoadState = ModLoadState.Initializing;
-        modInfo.DisplayName = name + " <color=gray>[Loading Info...]</color>";
+        modInfo.DisplayName = name + " <color=grey>[Loading Info...]</color>";
         GetModInfo apiInfo = apiModInfo;
         if(apiInfo != null) {
             bool notLatest = (setting.Beta ? apiInfo.LatestBetaVersion : apiInfo.LatestVersion) > info.ModEntry.Version;

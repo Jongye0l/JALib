@@ -33,7 +33,7 @@ public static class Installer {
         string domain = Domain1;
         Exception exception;
         try {
-            foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=gray> [JALib Install : Check Server...]</color>");
+            foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=grey> [JALib Install : Check Server...]</color>");
             UnityModManager.Logger.Log("Checking server...", prefix);
             for(int i = 0; i < 2; i++) {
                 HttpResponseMessage response = client.GetAsync($"https://{domain}/ping").GetAwaiter().GetResult();

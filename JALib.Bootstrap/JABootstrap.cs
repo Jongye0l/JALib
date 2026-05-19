@@ -123,7 +123,7 @@ public static class JABootstrap {
         LoadCount++;
         try {
             modEntry.Logger.Log("JABootstrap Load called. Count: " + LoadCount);
-            modEntry.Info.DisplayName = modEntry.Info.Id + " <color=gray>[Waiting JALib...]</color>";
+            modEntry.Info.DisplayName = modEntry.Info.Id + " <color=grey>[Waiting JALib...]</color>";
             Task.Run(async () => {
                 try {
                     bool beta = InitializeVersion(modEntry);
