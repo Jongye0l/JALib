@@ -70,7 +70,7 @@ public static class SimpleReflect {
 
     public static void SetValue(this Type type, [NotNull] string name, object value, object o = null) => type.Field(name).SetValue(o, value);
 
-    public static ConstructorInfo Constructor(this Type type) => type.Constructor(AccessTools.all);
+    public static ConstructorInfo Constructor(this Type type) => type.Constructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
     public static ConstructorInfo Constructor(this Type type, BindingFlags flags) {
         ConstructorInfo[] constructors = type.GetConstructors(flags);
@@ -78,7 +78,7 @@ public static class SimpleReflect {
         return constructors[0];
     }
 
-    public static ConstructorInfo Constructor(this Type type, [NotNull] params Type[] types) => type.GetConstructor(AccessTools.all, null, types, null);
+    public static ConstructorInfo Constructor(this Type type, [NotNull] params Type[] types) => type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
     
     public static ConstructorInfo Constructor(this Type type, BindingFlags flags, [NotNull] params Type[] types) => type.GetConstructor(flags, null, types, null);
 
@@ -86,7 +86,7 @@ public static class SimpleReflect {
 
     public static ConstructorInfo GetConstructor(this Type type, BindingFlags flags) => type.Constructor(flags);
 
-    public static ConstructorInfo[] Constructors(this Type type) => type.GetConstructors(AccessTools.all);
+    public static ConstructorInfo[] Constructors(this Type type) => type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
     public static object New(this Type type) => Activator.CreateInstance(type, true);
 
