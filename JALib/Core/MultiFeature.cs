@@ -4,33 +4,44 @@ using JALib.Core.Patch;
 
 namespace JALib.Core;
 
-public abstract class MultiFeaturePatch {
+public abstract class MultiFeature {
     public readonly JAPatcher Patcher;
     public readonly JAMod Mod;
-    private HashSet<Feature> _enabledFeatures = [];
+    private readonly HashSet<Feature> _enabledFeatures = [];
     
-    protected MultiFeaturePatch(JAMod mod) {
+    protected MultiFeature(JAMod mod) {
         Patcher = new JAPatcher(mod);
         Patcher.OnFailPatch += OnFailPatch;
         Mod = mod;
     }
 
-    internal static MultiFeaturePatch GetMultiFeaturePatch(JAMod mod, Type type) {
-        if(mod._multiFeaturePatches.TryGetValue(type, out MultiFeaturePatch patch)) return patch;
-        if(type.IsSubclassOf(typeof(MultiFeaturePatch))) patch = (MultiFeaturePatch) Activator.CreateInstance(type);
+    internal static MultiFeature GetMultiFeaturePatch(JAMod mod, Type type) {
+        if(mod.MultiFeatures.TryGetValue(type, out MultiFeature patch)) return patch;
+        if(type.IsSubclassOf(typeof(MultiFeature))) patch = (MultiFeature) Activator.CreateInstance(type);
         else patch = new DefaultTypeMultiPatch(mod, type);
-        mod._multiFeaturePatches[type] = patch;
+        mod.MultiFeatures[type] = patch;
         return patch;
     }
 
-    public void Patch(Feature feature) {
-        _enabledFeatures.Add(feature);
-        Patcher.Patch();
+    protected virtual void OnEnable() {
     }
 
-    public void Unpatch(Feature feature) {
+    protected virtual void OnDisable() {
+    }
+
+    public void ActiveFeature(Feature feature) {
+        bool first = _enabledFeatures.Count == 0;
+        _enabledFeatures.Add(feature);
+        if(!first) return;
+        Patcher.Patch();
+        OnEnable();
+    }
+
+    public void InactiveFeature(Feature feature) {
         _enabledFeatures.Remove(feature);
-        if(_enabledFeatures.Count == 0) Patcher.Unpatch();
+        if(_enabledFeatures.Count != 0) return;
+        Patcher.Unpatch();
+        OnDisable();
     }
 
     private void OnFailPatch(string name, bool disabled) {
@@ -43,7 +54,7 @@ public abstract class MultiFeaturePatch {
         }
     }
 
-    private class DefaultTypeMultiPatch : MultiFeaturePatch {
+    private class DefaultTypeMultiPatch : MultiFeature {
         public DefaultTypeMultiPatch(JAMod mod, Type type) : base(mod) {
             Patcher.AddPatch(type);
         }

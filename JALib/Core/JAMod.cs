@@ -53,7 +53,7 @@ public abstract class JAMod {
     internal bool Initialized;
     internal List<JAMod> usedMods = [];
     internal List<JAMod> usingMods = [];
-    internal Dictionary<Type, MultiFeaturePatch> _multiFeaturePatches = new();
+    internal readonly Dictionary<Type, MultiFeature> MultiFeatures = new();
     protected JAPatcher Patcher { get; private set; }
     private readonly Type SettingType;
     private Task<DownloadMod> downloadTask;

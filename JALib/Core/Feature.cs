@@ -32,7 +32,7 @@ public abstract class Feature {
     public JAMod Mod { get; private set; }
     public string Name { get; private set; }
     protected JAPatcher Patcher { get; private set; }
-    protected readonly List<MultiFeaturePatch> MultiPatches = [];
+    protected readonly List<MultiFeature> MultiFeatures = [];
     private byte _critical;
 
     protected Feature(JAMod mod, string name, bool canEnable = true, Type patchClass = null, Type settingType = null) {
@@ -57,9 +57,12 @@ public abstract class Feature {
             if(Active) return;
             Patcher.Patch();
             OnEnable();
+            foreach(MultiFeature multiFeature in MultiFeatures) multiFeature.ActiveFeature(this);
             Active = true;
         } catch (Exception e) {
             Mod.LogReportException("Fail Enable Feature '" + Name + '\'', e);
+            Active = true;
+            Disable();
         }
     }
 
@@ -68,9 +71,11 @@ public abstract class Feature {
             if(!Active) return;
             Patcher.Unpatch();
             OnDisable();
+            foreach(MultiFeature multiFeature in MultiFeatures) multiFeature.InactiveFeature(this);
             Active = false;
         } catch (Exception e) {
             Mod.LogReportException("Fail Disable Feature '" + Name + '\'', e);
+            Active = false;
         }
     }
 
@@ -184,14 +189,14 @@ public abstract class Feature {
 
     protected void Inactive() => Disable();
 
-    protected void AddMultiPatches(params Type[] multiPatchType) {
-        MultiPatches.Capacity = MultiPatches.Count + multiPatchType.Length;
-        foreach(Type type in multiPatchType) {
-            AddMultiPatches(type);
+    protected void AddMultiFeatures(params Type[] multiFeatureType) {
+        MultiFeatures.Capacity = MultiFeatures.Count + multiFeatureType.Length;
+        foreach(Type type in multiFeatureType) {
+            AddMultiFeatures(type);
         }
     }
 
-    protected void AddMultiPatches(Type multiPatchType) {
-        MultiPatches.Add(MultiFeaturePatch.GetMultiFeaturePatch(Mod, multiPatchType));
+    protected void AddMultiFeatures(Type multiFeatureType) {
+        MultiFeatures.Add(MultiFeature.GetMultiFeaturePatch(Mod, multiFeatureType));
     }
 }
