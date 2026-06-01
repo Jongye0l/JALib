@@ -830,45 +830,53 @@ public class JAPatcher : IDisposable {
         if(!patched || _doNotUnPatch) return;
         patched = false;
         foreach(JAPatchBaseAttribute baseAttribute in patchData) {
-            if(baseAttribute is JAPatchAttribute patchAttribute) {
-                MethodInfo patch = patchAttribute.Method;
-                string id = patchAttribute.PatchId;
-                lock(HarmonyLocker) {
-                    PatchInfo patchInfo = GetPatchInfo(patchAttribute.MethodBase) ?? new PatchInfo();
-                    JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(patchAttribute.MethodBase) ?? new JAInternalPatchInfo();
-                    switch(patchAttribute.PatchType) {
-                        case PatchType.Prefix:
-                            if(CheckRemove(patch)) RemovePatch(patch, id, ref jaInternalPatchInfo.removes);
-                            else if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPrefixes);
-                            else RemovePatch(patch, id, ref patchInfo.prefixes);
-                            break;
-                        case PatchType.Postfix:
-                            if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPostfixes);
-                            else RemovePatch(patch, id, ref patchInfo.postfixes);
-                            break;
-                        case PatchType.Transpiler:
-                            RemovePatch(patch, id, ref patchInfo.transpilers);
-                            break;
-                        case PatchType.Finalizer:
-                            RemovePatch(patch, id, ref patchInfo.finalizers);
-                            break;
-                        case PatchType.Replace:
-                            RemovePatch(patch, id, ref jaInternalPatchInfo.replaces);
-                            break;
-                    }
-                    MethodInfo replacement = PatchUpdateWrapper(patchAttribute.MethodBase, patchInfo, jaInternalPatchInfo);
-                    typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", patchAttribute.MethodBase, replacement, patchInfo);
-                    JaPatches[patchAttribute.MethodBase] = jaInternalPatchInfo;
+            try {
+                if(baseAttribute.MethodBase == null) {
+                    mod.Warning("MethodBase of patch '" + baseAttribute.PatchId + "' is null, skipped unpatching.");
+                    continue;
                 }
-            } else if(baseAttribute is JAReversePatchAttribute reversePatchAttribute) {
-                if(reversePatchAttribute.PatchType == ReversePatchType.Original || reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
-                JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(reversePatchAttribute.Data.Original);
-                if(jaInternalPatchInfo == null) continue;
-                jaInternalPatchInfo.reversePatches = jaInternalPatchInfo.reversePatches.Where(patch => patch != reversePatchAttribute.Data).ToArray();
-            } else if(baseAttribute is JAOverridePatchAttribute overridePatchAttribute) {
-                JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(overridePatchAttribute.MethodBase);
-                if(jaInternalPatchInfo == null) continue;
-                jaInternalPatchInfo.overridePatches = jaInternalPatchInfo.overridePatches.Where(patch => patch.PatchMethod != overridePatchAttribute.Method).ToArray();
+                if(baseAttribute is JAPatchAttribute patchAttribute) {
+                    MethodInfo patch = patchAttribute.Method;
+                    string id = patchAttribute.PatchId;
+                    lock(HarmonyLocker) {
+                        PatchInfo patchInfo = GetPatchInfo(patchAttribute.MethodBase) ?? new PatchInfo();
+                        JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(patchAttribute.MethodBase) ?? new JAInternalPatchInfo();
+                        switch(patchAttribute.PatchType) {
+                            case PatchType.Prefix:
+                                if(CheckRemove(patch)) RemovePatch(patch, id, ref jaInternalPatchInfo.removes);
+                                else if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPrefixes);
+                                else RemovePatch(patch, id, ref patchInfo.prefixes);
+                                break;
+                            case PatchType.Postfix:
+                                if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPostfixes);
+                                else RemovePatch(patch, id, ref patchInfo.postfixes);
+                                break;
+                            case PatchType.Transpiler:
+                                RemovePatch(patch, id, ref patchInfo.transpilers);
+                                break;
+                            case PatchType.Finalizer:
+                                RemovePatch(patch, id, ref patchInfo.finalizers);
+                                break;
+                            case PatchType.Replace:
+                                RemovePatch(patch, id, ref jaInternalPatchInfo.replaces);
+                                break;
+                        }
+                        MethodInfo replacement = PatchUpdateWrapper(patchAttribute.MethodBase, patchInfo, jaInternalPatchInfo);
+                        typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", patchAttribute.MethodBase, replacement, patchInfo);
+                        JaPatches[patchAttribute.MethodBase] = jaInternalPatchInfo;
+                    }
+                } else if(baseAttribute is JAReversePatchAttribute reversePatchAttribute) {
+                    if(reversePatchAttribute.PatchType == ReversePatchType.Original || reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
+                    JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(reversePatchAttribute.Data.Original);
+                    if(jaInternalPatchInfo == null) continue;
+                    jaInternalPatchInfo.reversePatches = jaInternalPatchInfo.reversePatches.Where(patch => patch != reversePatchAttribute.Data).ToArray();
+                } else if(baseAttribute is JAOverridePatchAttribute overridePatchAttribute) {
+                    JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(overridePatchAttribute.MethodBase);
+                    if(jaInternalPatchInfo == null) continue;
+                    jaInternalPatchInfo.overridePatches = jaInternalPatchInfo.overridePatches.Where(patch => patch.PatchMethod != overridePatchAttribute.Method).ToArray();
+                }
+            } catch (Exception e) {
+                mod.LogReportException("Failed to unpatch patch '" + baseAttribute.PatchId + "'.", e);
             }
         }
     }
