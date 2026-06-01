@@ -56,9 +56,9 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
             modInfo.Version = (data.RawModData.apiModInfo.LatestVersion > modEntry.Version ? "<color=red>" : "<color=cyan>") + modInfo.Version + "</color>";
             data.RawModData.info = typeof(JABootstrap).Invoke<JAModInfo>("LoadModInfo", modEntry, beta);
             if(CheckReDownload()) return;
+            data.DownloadModData = null;
             data.RawModData.InstallFinish();
         }
-        data.DownloadModData = null;
     }
 
     public bool CheckReDownload() {
