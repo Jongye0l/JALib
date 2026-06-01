@@ -1,4 +1,5 @@
-﻿using JALib.Core.Patch;
+﻿using System.Collections.Generic;
+using JALib.Core.Patch;
 using JALib.Core.Setting;
 using JALib.Tools;
 using UnityEngine;
@@ -6,7 +7,6 @@ using UnityEngine;
 namespace JALib.Core;
 
 public abstract class Feature {
-
     private static GUIStyle _expandStyle;
     private static GUIStyle _enableStyle;
     private static GUIStyle _enableLabelStyle;
@@ -32,6 +32,7 @@ public abstract class Feature {
     public JAMod Mod { get; private set; }
     public string Name { get; private set; }
     protected JAPatcher Patcher { get; private set; }
+    protected readonly List<MultiFeaturePatch> MultiPatches = [];
     private byte _critical;
 
     protected Feature(JAMod mod, string name, bool canEnable = true, Type patchClass = null, Type settingType = null) {
@@ -45,7 +46,7 @@ public abstract class Feature {
         _canExpand = IsExistMethod(nameof(OnGUI)) || IsExistMethod(nameof(OnShowGUI)) || IsExistMethod(nameof(OnHideGUI));
     }
 
-    private void OnFailPatch(string name, bool disabled) {
+    internal void OnFailPatch(string name, bool disabled) {
         if(disabled) Disable();
     }
 
@@ -182,4 +183,15 @@ public abstract class Feature {
     }
 
     protected void Inactive() => Disable();
+
+    protected void AddMultiPatches(params Type[] multiPatchType) {
+        MultiPatches.Capacity = MultiPatches.Count + multiPatchType.Length;
+        foreach(Type type in multiPatchType) {
+            AddMultiPatches(type);
+        }
+    }
+
+    protected void AddMultiPatches(Type multiPatchType) {
+        MultiPatches.Add(MultiFeaturePatch.GetMultiFeaturePatch(Mod, multiPatchType));
+    }
 }
