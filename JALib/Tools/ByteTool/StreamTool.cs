@@ -7,7 +7,12 @@ public static class StreamTool {
     public static byte[] ReadBytes(this Stream stream, int count) {
         if(count == -1) return null;
         byte[] buffer = new byte[count];
-        for(int i = 0; i < count; i++) buffer[i] = stream.ReadByteSafe();
+        int current = 0;
+        while(current < count) {
+            int read = stream.Read(buffer, current, count - current);
+            if(read == 0) throw new EndOfStreamException();
+            current += read;
+        }
         return buffer;
     }
 
@@ -53,15 +58,13 @@ public static class StreamTool {
         ((ulong) (stream.ReadByteSafe() & 255) << 0);
 
     public static float ReadFloat(this Stream stream) {
-        byte[] data = new byte[4];
-        for(int i = 0; i < 4; i++) data[i] = stream.ReadByteSafe();
+        byte[] data = stream.ReadBytes(4);
         Array.Reverse(data);
         return BitConverter.ToSingle(data, 0);
     }
 
     public static double ReadDouble(this Stream stream) {
-        byte[] data = new byte[8];
-        for(int i = 0; i < 8; i++) data[i] = stream.ReadByteSafe();
+        byte[] data = stream.ReadBytes(8);
         Array.Reverse(data);
         return BitConverter.ToDouble(data, 0);
     }
