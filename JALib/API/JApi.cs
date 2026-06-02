@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -25,7 +26,7 @@ class JApi {
     //private const string Domain2 = "jalibtest.jongyeol.kr";
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
-    private const int HeaderTimeoutSeconds = 5;
+    private const int HeaderTimeoutSeconds = 10;
     private string _domain;
     private TaskCompletionSource<bool> _completeLoadTask = new();
     private int _retryCount;
@@ -53,8 +54,7 @@ class JApi {
                 Domain1 => Domain2,
                 _ => throw new Exception("Failed to connect to the server")
             };
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
-            HttpClient.GetAsync($"https://{_domain}/ping", HttpCompletionOption.ResponseHeadersRead, cts.Token).OnCompleted(Connect);
+            GetResponse($"https://{_domain}/ping").OnCompleted(Connect);
         } catch (Exception e) {
             JALib.Instance.LogReportException("Failed to connect to the server: " + _domain, e);
             _instance._completeLoadTask.TrySetResult(false);
@@ -84,6 +84,25 @@ class JApi {
         if(_instance == null && !wait)
             return Task.FromException<T>(new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", new Exception("Failed to connect server")));
         return new SendHandler<T>(packet, wait).Tcs.Task;
+    }
+    
+    private static async Task<HttpResponseMessage> GetResponse(string url, bool wait = false) {
+        Uri uri = new(url, UriKind.RelativeOrAbsolute);
+        Stopwatch stopwatch = new();
+        while(true) {
+            using CancellationTokenSource cts = wait ? new CancellationTokenSource(TimeSpan.FromSeconds(HeaderTimeoutSeconds)) : null;
+            stopwatch.Restart();
+            HttpResponseMessage response;
+            try {
+                response = await HttpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cts?.Token ?? CancellationToken.None);
+            } catch (OperationCanceledException) {
+                JALib.Instance.Log($"Request timeout: {uri} ({stopwatch.ElapsedMilliseconds}ms)");
+                throw;
+            }
+            JALib.Instance.Log($"Request completed: {uri} ({stopwatch.ElapsedMilliseconds}ms)");
+            if((uint) response.StatusCode < 300 || (uint) response.StatusCode >= 400 || (object) response.Headers.Location == null) return response;
+            uri = response.Headers.Location;
+        }
     }
 
     private class SendHandler<T> where T : GetRequest {
@@ -118,8 +137,7 @@ class JApi {
                     else Error(new Exception("Failed to connect server"));
                     return;
                 }
-                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
-                HttpClient.GetAsync($"https://{_instance._domain}/{_packet.UrlBehind}", HttpCompletionOption.ResponseHeadersRead, cts.Token).OnCompleted(Response);
+                GetResponse($"https://{_instance._domain}/{_packet.UrlBehind}", true).OnCompleted(Response);
             } catch (HttpRequestException e) {
                 if(!_wait) Enqueue();
                 else Error(e);
@@ -136,12 +154,6 @@ class JApi {
                 }
                 _response = t.Result;
                 if((uint) _response.StatusCode >= 200 && (uint) _response.StatusCode < 400) {
-                    if((uint) _response.StatusCode >= 300 && (uint) _response.StatusCode < 400 && (object) _response.Headers.Location != null) {
-                        JALib.Instance.Log("Received redirect response for " + _packet.GetType().Name + ": " + _response.Headers.Location);
-                        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
-                        HttpClient.GetAsync(_response.Headers.Location, HttpCompletionOption.ResponseHeadersRead, cts.Token).OnCompleted(Response);
-                        return;
-                    }
                     Task.Run(Run).GetAwaiter().OnCompleted(Complete);
                     return;
                 }

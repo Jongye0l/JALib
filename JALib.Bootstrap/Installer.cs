@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -20,7 +21,9 @@ static class Installer {
 
     internal static async Task<bool> CheckMod(UnityModManager.ModEntry modEntry) {
         string modName = modEntry.Info.Id;
-        using HttpClient client = new();
+        using HttpClient client = new(new HttpClientHandler {
+            AllowAutoRedirect = false
+        });
         client.DefaultRequestHeaders.ExpectContinue = false;
         client.DefaultRequestHeaders.Add("User-Agent", $"JALib Bootstrap/{typeof(Installer).Assembly.GetName().Version} ({GetOSInfo()})");
         string domain = Domain1;
@@ -31,9 +34,9 @@ static class Installer {
             string version = modEntry.Info.Version.Split(" ")[0];
             for(int i = 0; i < 2; i++) {
                 try {
-                    using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
-                    response = await client.GetAsync($"https://{domain}/autoInstaller/{version}", HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                    response = await GetResponse(client, $"https://{domain}/autoInstaller/{version}");
                 } catch (OperationCanceledException) {
+                    UnityModManager.Logger.Log(domain + " request timed out. Retrying with another domain...");
                     domain = Domain2;
                     continue;
                 }
@@ -70,6 +73,25 @@ static class Installer {
         modEntry.Logger.LogException(exception);
         modEntry.Info.DisplayName = modName;
         return false;
+    }
+    
+    private static async Task<HttpResponseMessage> GetResponse(HttpClient client, string url) {
+        Uri uri = new(url);
+        Stopwatch stopwatch = new();
+        while(true) {
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
+            stopwatch.Restart();
+            HttpResponseMessage response;
+            try {
+                response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+            } catch (OperationCanceledException) {
+                UnityModManager.Logger.Log($"Request timeout: {uri} ({stopwatch.ElapsedMilliseconds}ms)", "[JALib Bootstrap] ");
+                throw;
+            }
+            UnityModManager.Logger.Log($"Request completed: {uri} ({stopwatch.ElapsedMilliseconds}ms)", "[JALib Bootstrap] ");
+            if((uint) response.StatusCode < 300 || (uint) response.StatusCode >= 400 || (object) response.Headers.Location == null) return response;
+            uri = response.Headers.Location;
+        }
     }
 
     private static string GetOSInfo() {

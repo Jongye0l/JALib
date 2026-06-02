@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -14,6 +15,7 @@ using HarmonyLib;
 using TinyJson;
 using UnityEngine;
 using UnityModManagerNet;
+using Debug = UnityEngine.Debug;
 
 namespace JAMod.Bootstrap;
 
@@ -22,7 +24,7 @@ public static class Installer {
     public const string Domain2 = "jalib2.jongyeol.kr";
     private static bool setupCookieDomain;
 
-    internal static async Task InstallMod() {
+    internal static async void InstallMod() {
         try {
             const string prefix = "[JAMod] ";
             const string exceptionPrefix = "[JAMod] [Exception] ";
@@ -36,19 +38,17 @@ public static class Installer {
                 UnityModManager.Logger.Log("Checking server...", prefix);
                 for(int i = 0; i < 2; i++) {
                     try {
-                        using CancellationTokenSource cts1 = new(TimeSpan.FromSeconds(5));
-                        HttpResponseMessage response = await client.GetAsync($"https://{domain}/ping", HttpCompletionOption.ResponseHeadersRead, cts1.Token);
+                        HttpResponseMessage response = await GetResponse(client, $"https://{domain}/ping");
                         if(response.IsSuccessStatusCode) break;
                         if(i == 1) response.EnsureSuccessStatusCode();
-                    } catch (TaskCanceledException) {
+                    } catch (OperationCanceledException) {
                         // ignored
                     }
                     domain = Domain2;
                 }
                 foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=green> [JALib Installing...]</color>");
                 UnityModManager.Logger.Log("Installing JALib...", prefix);
-                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
-                HttpResponseMessage message = await client.GetAsync($"https://{domain}/downloadMod/JALib/latest", HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                HttpResponseMessage message = await GetResponse(client, $"https://{domain}/downloadMod/JALib/latest");
                 long contentLength = message.Content.Headers.ContentLength ?? -1;
                 await using Stream stream = new InstallStream(await message.Content.ReadAsStreamAsync(), contentLength);
                 string path = Path.Combine(UnityModManager.modsPath, "JALib");
@@ -84,6 +84,25 @@ public static class Installer {
             foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Install Failed]</color>");
         } catch (Exception e) {
             UnityModManager.Logger.LogException("Unexpected error during installation", e, "[JAMod] [Exception] ");
+        }
+    }
+    
+    private static async Task<HttpResponseMessage> GetResponse(HttpClient client, string url) {
+        Uri uri = new(url);
+        Stopwatch stopwatch = new();
+        while(true) {
+            using CancellationTokenSource cts = new(10);
+            stopwatch.Restart();
+            HttpResponseMessage response;
+            try {
+                response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+            } catch (OperationCanceledException) {
+                UnityModManager.Logger.Log($"Request timeout: {uri} ({stopwatch.ElapsedMilliseconds}ms)", "[JAMod Bootstrap] ");
+                throw;
+            }
+            UnityModManager.Logger.Log($"Request completed: {uri} ({stopwatch.ElapsedMilliseconds}ms)", "[JAMod Bootstrap] ");
+            if((uint) response.StatusCode < 300 || (uint) response.StatusCode >= 400 || (object) response.Headers.Location == null) return response;
+            uri = response.Headers.Location;
         }
     }
 
