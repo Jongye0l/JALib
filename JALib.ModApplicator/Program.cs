@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using JALib.ModApplicator.Resources;
@@ -178,13 +179,25 @@ End:
             }
         }
     }
+    
+    private static async Task<HttpResponseMessage> GetResponse(string url) {
+        Uri uri = new(url);
+        Stopwatch stopwatch = new();
+        while(true) {
+            using CancellationTokenSource cts = new(10);
+            stopwatch.Restart();
+            HttpResponseMessage response = await Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+            if((uint) response.StatusCode < 300 || (uint) response.StatusCode >= 400 || (object) response.Headers.Location == null) return response;
+            uri = response.Headers.Location;
+        }
+    }
 
     public static async Task ApplyMod(string modName, string version, bool core) {
         try {
             HttpResponseMessage response = null;
             string domain = Domain1;
             for(int i = 0; i < 2; i++) {
-                response = await Client.GetAsync($"https://{domain}/downloadMod/{modName}/{version}");
+                response = await GetResponse($"https://{domain}/downloadMod/{modName}/{version}");
                 if(response.IsSuccessStatusCode) break;
                 domain = Domain2;
             }
