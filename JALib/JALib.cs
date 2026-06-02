@@ -223,6 +223,7 @@ sealed class JALib : JAMod {
         JALocalization localization = Instance.Localization;
         settingGUI.AddSettingToggle(ref Setting.logPatches, localization["Setting.LogPatches"]);
         settingGUI.AddSettingToggle(ref Setting.logPrefixWarn, localization["Setting.LogPrefixWarn"]);
+        settingGUI.AddSettingToggle(ref Setting.LogApiRequests, localization["Setting.LogApiRequests"]);
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
         int current = Setting.loggerLogDetail;

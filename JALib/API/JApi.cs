@@ -96,10 +96,10 @@ class JApi {
             try {
                 response = await HttpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cts?.Token ?? CancellationToken.None);
             } catch (OperationCanceledException) {
-                JALib.Instance.Log($"Request timeout: {uri} ({stopwatch.ElapsedMilliseconds}ms)");
+                if(JALib.Instance.Setting.LogApiRequests) JALib.Instance.Log($"Request timeout: {uri} ({stopwatch.ElapsedMilliseconds}ms)");
                 throw;
             }
-            JALib.Instance.Log($"Request completed: {uri} ({stopwatch.ElapsedMilliseconds}ms)");
+            if(JALib.Instance.Setting.LogApiRequests) JALib.Instance.Log($"Request completed: {uri} ({stopwatch.ElapsedMilliseconds}ms)");
             if((uint) response.StatusCode < 300 || (uint) response.StatusCode >= 400 || (object) response.Headers.Location == null) return response;
             uri = response.Headers.Location;
         }
