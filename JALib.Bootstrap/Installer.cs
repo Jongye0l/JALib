@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using TinyJson;
 using UnityEngine;
@@ -20,7 +21,6 @@ static class Installer {
     internal static async Task<bool> CheckMod(UnityModManager.ModEntry modEntry) {
         string modName = modEntry.Info.Id;
         using HttpClient client = new();
-        client.Timeout = TimeSpan.FromSeconds(10);
         client.DefaultRequestHeaders.ExpectContinue = false;
         client.DefaultRequestHeaders.Add("User-Agent", $"JALib Bootstrap/{typeof(Installer).Assembly.GetName().Version} ({GetOSInfo()})");
         string domain = Domain1;
@@ -30,7 +30,13 @@ static class Installer {
             HttpResponseMessage response = null;
             string version = modEntry.Info.Version.Split(" ")[0];
             for(int i = 0; i < 2; i++) {
-                response = await client.GetAsync($"https://{domain}/autoInstaller/{version}");
+                try {
+                    using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+                    response = await client.GetAsync($"https://{domain}/autoInstaller/{version}", HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                } catch (OperationCanceledException) {
+                    domain = Domain2;
+                    continue;
+                }
                 if(response.StatusCode == HttpStatusCode.NotModified) {
                     modEntry.Info.DisplayName = modName;
                     return false;
@@ -40,7 +46,8 @@ static class Installer {
             }
             response.EnsureSuccessStatusCode();
             modEntry.Info.DisplayName = modName + "<color=grey> [Updating...]</color>";
-            await using Stream stream = await response.Content.ReadAsStreamAsync();
+            long contentLength = response.Content.Headers.ContentLength ?? -1;
+            await using Stream stream = new InstallStream(await response.Content.ReadAsStreamAsync(), contentLength, modEntry.Info);
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
             foreach(ZipArchiveEntry entry in archive.Entries) {
                 string entryPath = Path.Combine(modEntry.Path, entry.FullName);
@@ -51,7 +58,7 @@ static class Installer {
             string path = Path.Combine(modEntry.Path, "Info.json");
             if(!File.Exists(path)) path = Path.Combine(modEntry.Path, "info.json");
             UnityModManager.ModInfo modInfo = (await File.ReadAllTextAsync(path)).FromJson<UnityModManager.ModInfo>();
-            typeof(UnityModManager.ModEntry).GetField("Info", BindingFlags.Public | BindingFlags.Instance).SetValue(modEntry, modInfo);
+            typeof(UnityModManager.ModEntry).GetField("Info", BindingFlags.Public | BindingFlags.Instance)!.SetValue(modEntry, modInfo);
             return true;
         } catch (ArgumentException e) {
             if(JAMod.Bootstrap.Installer.PatchCookieDomain()) return await CheckMod(modEntry);
@@ -108,5 +115,62 @@ static class Installer {
         }
         return "Unknown";
 #endif
+    }
+
+    private class InstallStream(Stream baseStream, long length, UnityModManager.ModInfo modInfo) : Stream {
+        private long _position;
+        private int _lastPercent;
+
+        private void CheckUpdate() {
+            if(Length == -1) return;
+            int percent = (int) (100 * _position / Length);
+            if(percent != _lastPercent) {
+                _lastPercent = percent;
+                modInfo.DisplayName = modInfo.Id + "<color=grey> [Updating... 0%]</color>";
+            }
+        }
+
+        public override void Flush() => baseStream.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        
+        public override int Read(byte[] buffer, int offset, int count) {
+            int read = baseStream.Read(buffer, offset, count);
+            _position += read;
+            CheckUpdate();
+            return read;
+        }
+
+        public override int ReadByte() {
+            int read = baseStream.ReadByte();
+            if(read != -1) {
+                _position++;
+                CheckUpdate();
+            }
+            return read;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
+            int read = await baseStream.ReadAsync(buffer, offset, count, cancellationToken);
+            _position += read;
+            CheckUpdate();
+            return read;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length { get; } = length;
+
+        public override long Position {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        protected override void Dispose(bool disposing) {
+            if(!disposing) return;
+            baseStream.Dispose();
+        }
     }
 }

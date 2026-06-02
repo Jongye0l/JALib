@@ -138,7 +138,7 @@ class JApi {
                 if((uint) _response.StatusCode >= 200 && (uint) _response.StatusCode < 400) {
                     if((uint) _response.StatusCode >= 300 && (uint) _response.StatusCode < 400 && (object) _response.Headers.Location != null) {
                         JALib.Instance.Log("Received redirect response for " + _packet.GetType().Name + ": " + _response.Headers.Location);
-                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
+                        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
                         HttpClient.GetAsync(_response.Headers.Location, HttpCompletionOption.ResponseHeadersRead, cts.Token).OnCompleted(Response);
                         return;
                     }

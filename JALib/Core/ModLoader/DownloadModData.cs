@@ -12,6 +12,7 @@ namespace JALib.Core.ModLoader;
 class DownloadModData(JAModLoader data, Version targetVersion) {
     public Task<DownloadMod> downloadTask;
     private bool redownload;
+    private ProgressStream _progressStream;
 
     public void DownloadRequest(Version version) {
         if(targetVersion >= version) return;
@@ -23,8 +24,21 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
         if(data.LoadState == ModLoadState.Downloading) return;
         JALib.Instance.Log("Downloading " + data.name + " V" + targetVersion);
         data.LoadState = ModLoadState.Downloading;
-        downloadTask = JApi.Send(new DownloadMod(data.name, targetVersion, data.RawModData?.info.ModEntry.Path), data.RawModData == null);
+        downloadTask = JApi.Send(new DownloadMod(data.name, targetVersion, data.RawModData?.info.ModEntry.Path) { OnProgressNeed = OnProgressNeed }, data.RawModData == null);
         downloadTask.GetAwaiter().UnsafeOnCompleted(DownloadComplete);
+    }
+
+    private void OnProgressNeed(ProgressStream ps) {
+        if(data.RawModData == null) return;
+        _progressStream = ps;
+        MainThread.Run(JALib.Instance, CheckUpdateProgress);
+    }
+
+    private void CheckUpdateProgress() {
+        if(data.LoadState != ModLoadState.Downloading) return;
+        if(_progressStream.NeedUpdate(out double value)) 
+            data.RawModData.modInfo.DisplayName = data.RawModData.name + " <color=aqua>[Updating... " + (int) value * 100 + "%]</color>";
+        Task.Yield().OnCompleted(CheckUpdateProgress);
     }
 
     public void DownloadComplete() {

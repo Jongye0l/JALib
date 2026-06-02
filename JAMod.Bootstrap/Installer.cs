@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using HarmonyLib;
 using TinyJson;
@@ -23,58 +22,69 @@ public static class Installer {
     public const string Domain2 = "jalib2.jongyeol.kr";
     private static bool setupCookieDomain;
 
-    internal static void InstallMod() {
-        const string prefix = "[JAMod] ";
-        const string exceptionPrefix = "[JAMod] [Exception] ";
-        using HttpClient client = new();
-        client.Timeout = TimeSpan.FromSeconds(10);
-        client.DefaultRequestHeaders.ExpectContinue = false;
-        client.DefaultRequestHeaders.Add("User-Agent", $"JAMod Bootstrap/{typeof(Installer).Assembly.GetName().Version} ({GetOSInfo()})");
-        string domain = Domain1;
-        Exception exception;
+    internal static async Task InstallMod() {
         try {
-            foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=grey> [JALib Install : Check Server...]</color>");
-            UnityModManager.Logger.Log("Checking server...", prefix);
-            for(int i = 0; i < 2; i++) {
-                HttpResponseMessage response = client.GetAsync($"https://{domain}/ping").GetAwaiter().GetResult();
-                if(response.IsSuccessStatusCode) break;
-                if(i == 1) response.EnsureSuccessStatusCode();
-                domain = Domain2;
-            }
-            foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=green> [JALib Installing...]</color>");
-            UnityModManager.Logger.Log("Installing JALib...", prefix);
-            using Stream stream = client.GetStreamAsync($"https://{domain}/downloadMod/JALib/latest").GetAwaiter().GetResult();
-            string path = Path.Combine(UnityModManager.modsPath, "JALib");
-            using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
-            foreach(ZipArchiveEntry entry in archive.Entries) {
-                string entryPath = Path.Combine(path, entry.FullName);
-                if(entryPath.EndsWith("/")) {
-                    if(!Directory.Exists(entryPath)) Directory.CreateDirectory(entryPath);
-                } else CopyFile(entryPath, entry);
-            }
-            foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=green> [JALib Applying...]</color>");
-            UnityModManager.Logger.Log("Applying JALib...", prefix);
-            UnityModManager.ModEntry modEntry = ApplyMod(path);
-            UnityModManager.Logger.Log("Apply Complete JALib", prefix);
+            const string prefix = "[JAMod] ";
+            const string exceptionPrefix = "[JAMod] [Exception] ";
+            using HttpClient client = new();
+            client.DefaultRequestHeaders.ExpectContinue = false;
+            client.DefaultRequestHeaders.Add("User-Agent", $"JAMod Bootstrap/{typeof(Installer).Assembly.GetName().Version} ({GetOSInfo()})");
+            string domain = Domain1;
+            Exception exception;
             try {
-                Action<UnityModManager.ModEntry> action = BootModData.CreateSetupAction(modEntry);
-                foreach(BootModData modData in BootModData.bootModDataList) modData.Run(action);
-            } catch (Exception e) {
-                UnityModManager.Logger.LogException("Failed to run setup action", e, exceptionPrefix);
-                foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Setup Failed]</color>");
-            }
-            return;
-        } catch (ArgumentException e) {
-            if(PatchCookieDomain()) {
-                InstallMod();
+                foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=grey> [JALib Install : Check Server...]</color>");
+                UnityModManager.Logger.Log("Checking server...", prefix);
+                for(int i = 0; i < 2; i++) {
+                    try {
+                        using CancellationTokenSource cts1 = new(TimeSpan.FromSeconds(5));
+                        HttpResponseMessage response = await client.GetAsync($"https://{domain}/ping", HttpCompletionOption.ResponseHeadersRead, cts1.Token);
+                        if(response.IsSuccessStatusCode) break;
+                        if(i == 1) response.EnsureSuccessStatusCode();
+                    } catch (TaskCanceledException) {
+                        // ignored
+                    }
+                    domain = Domain2;
+                }
+                foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=green> [JALib Installing...]</color>");
+                UnityModManager.Logger.Log("Installing JALib...", prefix);
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+                HttpResponseMessage message = await client.GetAsync($"https://{domain}/downloadMod/JALib/latest", HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                long contentLength = message.Content.Headers.ContentLength ?? -1;
+                await using Stream stream = new InstallStream(await message.Content.ReadAsStreamAsync(), contentLength);
+                string path = Path.Combine(UnityModManager.modsPath, "JALib");
+                using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
+                foreach(ZipArchiveEntry entry in archive.Entries) {
+                    string entryPath = Path.Combine(path, entry.FullName);
+                    if(entryPath.EndsWith("/")) {
+                        if(!Directory.Exists(entryPath)) Directory.CreateDirectory(entryPath);
+                    } else CopyFile(entryPath, entry);
+                }
+                foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=green> [JALib Applying...]</color>");
+                UnityModManager.Logger.Log("Applying JALib...", prefix);
+                UnityModManager.ModEntry modEntry = ApplyMod(path);
+                UnityModManager.Logger.Log("Apply Complete JALib", prefix);
+                try {
+                    Action<UnityModManager.ModEntry> action = BootModData.CreateSetupAction(modEntry);
+                    foreach(BootModData modData in BootModData.bootModDataList) modData.Run(action);
+                } catch (Exception e) {
+                    UnityModManager.Logger.LogException("Failed to run setup action", e, exceptionPrefix);
+                    foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Setup Failed]</color>");
+                }
                 return;
+            } catch (ArgumentException e) {
+                if(PatchCookieDomain()) {
+                    InstallMod();
+                    return;
+                }
+                exception = e;
+            } catch (Exception e) {
+                exception = e;
             }
-            exception = e;
+            UnityModManager.Logger.LogException("Failed to install JALib", exception, exceptionPrefix);
+            foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Install Failed]</color>");
         } catch (Exception e) {
-            exception = e;
+            UnityModManager.Logger.LogException("Unexpected error during installation", e, "[JAMod] [Exception] ");
         }
-        UnityModManager.Logger.LogException("Failed to install JALib", exception, exceptionPrefix);
-        foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix("<color=red> [JALib Install Failed]</color>");
     }
 
     private static string GetOSInfo() {
@@ -186,6 +196,63 @@ public static class Installer {
                 instruction = enumerator.Current;
             }
             yield return instruction;
+        }
+    }
+
+    private class InstallStream(Stream baseStream, long length) : Stream {
+        private long _position;
+        private int _lastPercent;
+
+        private void CheckUpdate() {
+            if(Length == -1) return;
+            int percent = (int) (100 * _position / Length);
+            if(percent != _lastPercent) {
+                _lastPercent = percent;
+                foreach(BootModData modData in BootModData.bootModDataList) modData.SetPostfix($"<color=grey> [JALib Installing... {percent}%]</color>");
+            }
+        }
+
+        public override void Flush() => baseStream.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        
+        public override int Read(byte[] buffer, int offset, int count) {
+            int read = baseStream.Read(buffer, offset, count);
+            _position += read;
+            CheckUpdate();
+            return read;
+        }
+
+        public override int ReadByte() {
+            int read = baseStream.ReadByte();
+            if(read != -1) {
+                _position++;
+                CheckUpdate();
+            }
+            return read;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
+            int read = await baseStream.ReadAsync(buffer, offset, count, cancellationToken);
+            _position += read;
+            CheckUpdate();
+            return read;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length { get; } = length;
+
+        public override long Position {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        protected override void Dispose(bool disposing) {
+            if(!disposing) return;
+            baseStream.Dispose();
         }
     }
 }

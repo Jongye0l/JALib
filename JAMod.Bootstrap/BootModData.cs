@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using HarmonyLib;
 using UnityModManagerNet;
 
@@ -44,9 +45,7 @@ struct BootModData {
         }
         action = 2;
         UnityModManager.Logger.Error("JALib is not found", "[JAMod] ");
-        new Thread(Installer.InstallMod) {
-            Name = "JALib Installer"
-        }.Start();
+        Task.Run(Installer.InstallMod);
     }
 
     private static void OnLoad(UnityModManager.ModEntry __instance, bool __result) {
