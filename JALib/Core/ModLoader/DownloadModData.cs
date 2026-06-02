@@ -29,15 +29,17 @@ class DownloadModData(JAModLoader data, Version targetVersion) {
     }
 
     private void OnProgressNeed(ProgressStream ps) {
-        if(data.RawModData == null) return;
         _progressStream = ps;
         MainThread.Run(JALib.Instance, CheckUpdateProgress);
     }
 
     private void CheckUpdateProgress() {
         if(data.LoadState != ModLoadState.Downloading) return;
-        if(_progressStream.NeedUpdate(out double value)) 
-            data.RawModData.modInfo.DisplayName = data.RawModData.name + " <color=aqua>[Updating... " + (int) value * 100 + "%]</color>";
+        if(_progressStream.NeedUpdate(out double value)) {
+            data.RawModData?.modInfo.DisplayName = data.name + " <color=aqua>[Updating... " + (int) (value * 100) + "%]</color>";
+            JALib.Instance.Log($"Downloading {data.name}: {(int) (value * 100)}% ({_progressStream.Position}/{_progressStream.Length})" );
+            if(_progressStream.Position == _progressStream.Length) return;
+        }
         Task.Yield().OnCompleted(CheckUpdateProgress);
     }
 

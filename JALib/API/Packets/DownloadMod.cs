@@ -24,7 +24,7 @@ class DownloadMod : GetRequest {
         long contentLength = message.Content.Headers.ContentLength ?? -1;
         Stream stream = await message.Content.ReadAsStreamAsync();
         try {
-            if(contentLength == -1) {
+            if(contentLength != -1) {
                 stream = new ProgressStream(stream, contentLength);
                 OnProgressNeed?.Invoke(stream.AsUnsafe<ProgressStream>());
             }
