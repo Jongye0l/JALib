@@ -199,7 +199,7 @@ public class JATcpClient : TcpClient {
 
     public Task WriteAsyncBytes(byte[] data) {
         CheckConnect();
-        return stream.WriteAsync(data).AsTask();
+        return stream.WriteAsync(data, 0, data.Length);
     }
 
     public Task WriteAsyncBytesAndCount(byte[] data) => WriteAsyncBytes(data.Length.ToBytes().Concat(data).ToArray());

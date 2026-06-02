@@ -1,6 +1,7 @@
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using JALib.JAException;
 using JALib.Tools;
@@ -19,17 +20,17 @@ class JApi {
     public static readonly HttpClient HttpClient = new(new HttpClientHandler {
         AllowAutoRedirect = false
     });
-    private static ConcurrentQueue<Action> _queue = new();
+    private static readonly Queue<Action> Queue = new();
     //private const string Domain1 = "jalibtest.jongyeol.kr";
     //private const string Domain2 = "jalibtest.jongyeol.kr";
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
-    private string domain;
-    private TaskCompletionSource<bool> completeLoadTask = new();
-    private int retryCount;
+    private const int HeaderTimeoutSeconds = 5;
+    private string _domain;
+    private TaskCompletionSource<bool> _completeLoadTask = new();
+    private int _retryCount;
 
     public static void Initialize() {
-        HttpClient.Timeout = TimeSpan.FromSeconds(10);
         HttpClient.DefaultRequestHeaders.ExpectContinue = false;
         HttpClient.SetupUserAgent("JALib", typeof(JApi).Assembly.GetName().Version.ToString());
         _instance ??= new JApi();
@@ -37,7 +38,7 @@ class JApi {
 
     public static Task<bool> CompleteLoadTask() {
         _instance ??= new JApi();
-        return _instance.completeLoadTask?.Task ?? Task.FromResult(true);
+        return _instance._completeLoadTask?.Task ?? Task.FromResult(true);
     }
 
     private JApi() {
@@ -47,15 +48,16 @@ class JApi {
     private void Connect() {
         if(_instance != this) return;
         try {
-            domain = domain switch {
+            _domain = _domain switch {
                 null => Domain1,
                 Domain1 => Domain2,
                 _ => throw new Exception("Failed to connect to the server")
             };
-            HttpClient.GetAsync($"https://{domain}/ping").OnCompleted(Connect);
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
+            HttpClient.GetAsync($"https://{_domain}/ping", HttpCompletionOption.ResponseHeadersRead, cts.Token).OnCompleted(Connect);
         } catch (Exception e) {
-            JALib.Instance.LogReportException("Failed to connect to the server: " + domain, e);
-            _instance.completeLoadTask.TrySetResult(false);
+            JALib.Instance.LogReportException("Failed to connect to the server: " + _domain, e);
+            _instance._completeLoadTask.TrySetResult(false);
             Restart();
         }
     }
@@ -72,8 +74,8 @@ class JApi {
             JALib.Instance.LogException(e);
             Connect();
         } catch (Exception e) {
-            JALib.Instance.LogReportException("Failed to connect to the server: " + domain, e);
-            _instance.completeLoadTask.TrySetResult(false);
+            JALib.Instance.LogReportException("Failed to connect to the server: " + _domain, e);
+            _instance._completeLoadTask.TrySetResult(false);
             Restart();
         }
     }
@@ -85,25 +87,25 @@ class JApi {
     }
 
     private class SendHandler<T> where T : GetRequest {
-        private readonly T packet;
-        private readonly bool wait;
+        private readonly T _packet;
+        private readonly bool _wait;
         internal readonly TaskCompletionSource<T> Tcs = new();
-        private Task<bool> loadTask;
-        private HttpResponseMessage response;
+        private Task<bool> _loadTask;
+        private HttpResponseMessage _response;
 
         internal SendHandler(T packet, bool wait) {
-            this.packet = packet;
-            this.wait = wait;
+            _packet = packet;
+            _wait = wait;
             Setup();
         }
 
         private void Setup() {
             try {
                 if(_instance != null) {
-                    loadTask = CompleteLoadTask();
-                    if(loadTask.IsCompleted) CheckConnect();
-                    else loadTask.GetAwaiter().OnCompleted(CheckConnect);
-                } else Queue();
+                    _loadTask = CompleteLoadTask();
+                    if(_loadTask.IsCompleted) CheckConnect();
+                    else _loadTask.GetAwaiter().OnCompleted(CheckConnect);
+                } else Enqueue();
             } catch (Exception e) {
                 Error(e);
             }
@@ -111,14 +113,15 @@ class JApi {
 
         private void CheckConnect() {
             try {
-                if(!loadTask.Result) {
-                    if(wait) Queue();
+                if(!_loadTask.Result) {
+                    if(_wait) Enqueue();
                     else Error(new Exception("Failed to connect server"));
                     return;
                 }
-                HttpClient.GetAsync($"https://{_instance.domain}/{packet.UrlBehind}").OnCompleted(Response);
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
+                HttpClient.GetAsync($"https://{_instance._domain}/{_packet.UrlBehind}", HttpCompletionOption.ResponseHeadersRead, cts.Token).OnCompleted(Response);
             } catch (HttpRequestException e) {
-                if(!wait) Queue();
+                if(!_wait) Enqueue();
                 else Error(e);
             } catch (Exception e) {
                 Error(e);
@@ -131,24 +134,25 @@ class JApi {
                     Error(t.Exception.InnerException ?? t.Exception);
                     return;
                 }
-                response = t.Result;
-                if((uint) response.StatusCode >= 200 && (uint) response.StatusCode < 400) {
-                    if((uint) response.StatusCode >= 300 && (uint) response.StatusCode < 400 && (object) response.Headers.Location != null) {
-                        JALib.Instance.Log("Received redirect response for " + packet.GetType().Name + ": " + response.Headers.Location);
-                        HttpClient.GetAsync(response.Headers.Location).OnCompleted(Response);
+                _response = t.Result;
+                if((uint) _response.StatusCode >= 200 && (uint) _response.StatusCode < 400) {
+                    if((uint) _response.StatusCode >= 300 && (uint) _response.StatusCode < 400 && (object) _response.Headers.Location != null) {
+                        JALib.Instance.Log("Received redirect response for " + _packet.GetType().Name + ": " + _response.Headers.Location);
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(HeaderTimeoutSeconds));
+                        HttpClient.GetAsync(_response.Headers.Location, HttpCompletionOption.ResponseHeadersRead, cts.Token).OnCompleted(Response);
                         return;
                     }
                     Task.Run(Run).GetAwaiter().OnCompleted(Complete);
                     return;
                 }
-                string errorLog = "Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name;
-                if(!wait) {
+                string errorLog = "Error: " + _response.StatusCode + " " + _response.ReasonPhrase;
+                if(!_wait) {
                     Error(new Exception(errorLog));
                     return;
                 }
-                if(response.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout or HttpStatusCode.ServiceUnavailable or (HttpStatusCode) 522)) {
+                if(_response.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout or HttpStatusCode.ServiceUnavailable or (HttpStatusCode) 522)) {
                     JALib.Instance.Error(errorLog);
-                    Queue();
+                    Enqueue();
                 }
             } catch (Exception e) {
                 Error(e);
@@ -157,33 +161,33 @@ class JApi {
 
         private async Task Run() {
             try {
-                await packet.Run(response);
+                await _packet.Run(_response);
             } catch (Exception e) {
-                JALib.Instance.Log("Error: " + response.StatusCode + " " + response.ReasonPhrase + " " + packet.GetType().Name);
+                JALib.Instance.Log("Error: " + _response.StatusCode + " " + _response.ReasonPhrase + " " + _packet.GetType().Name);
                 Error(e);
             }
         }
 
-        private void Queue() => _queue.Enqueue(Setup);
-        private void Complete() => Tcs.SetResult(packet);
-        private void Error(Exception e) => Tcs.SetException(new PacketRunningException($"Failed Running Request Job {packet.GetType().Name}(URL Behind: {packet.UrlBehind})", e));
+        private void Enqueue() => Queue.Enqueue(Setup);
+        private void Complete() => Tcs.SetResult(_packet);
+        private void Error(Exception e) => Tcs.SetException(new PacketRunningException($"Failed Running Request Job {_packet.GetType().Name}(URL Behind: {_packet.UrlBehind})", e));
     }
 
     private void OnConnect() {
-        completeLoadTask.TrySetResult(true);
-        retryCount = 0;
-        while(_queue.TryDequeue(out Action handler)) Task.Run(handler);
+        _completeLoadTask.TrySetResult(true);
+        _retryCount = 0;
+        while(Queue.TryDequeue(out Action handler)) Task.Run(handler);
     }
 
     internal void Restart() {
-        domain = null;
-        Task.Delay(10000 * ++retryCount).OnCompleted(Connect);
+        _domain = null;
+        Task.Delay(10000 * ++_retryCount).OnCompleted(Connect);
     }
 
     internal void Dispose() {
         _instance = null;
-        completeLoadTask?.SetCanceled();
-        completeLoadTask = null;
+        _completeLoadTask?.SetCanceled();
+        _completeLoadTask = null;
         GC.SuppressFinalize(this);
     }
 }
