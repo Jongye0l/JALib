@@ -147,7 +147,7 @@ public class JALocalization {
                 JAMod mod = JAMod.GetMods(split[1]);
                 if(mod != null) {
                     exists = true;
-                    __result = mod.Localization[key.Replace("jamod." + split[1] + ".", "").Replace("jalib." + split[1] + ".", "")];
+                    __result = mod.Localization[key[(split[1].Length + 7)..]];
                     return false;
                 }
             }
