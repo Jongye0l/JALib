@@ -10,6 +10,8 @@ public enum ReversePatchType {
     ReplaceCombine = 16,
     OverrideCombine = 32,
     ReplaceTranspilerCombine = 64,
-    AllCombine = PrefixCombine | PostfixCombine | TranspilerCombine | FinalizerCombine | ReplaceCombine | OverrideCombine | ReplaceTranspilerCombine,
+    ILManipulateCombine = 128,
+    AllInsidePatchCombine = TranspilerCombine | ReplaceCombine | ReplaceTranspilerCombine | ILManipulateCombine,
+    AllCombine = PrefixCombine | PostfixCombine | FinalizerCombine | OverrideCombine | AllInsidePatchCombine,
     DontUpdate = 0x40000000
 }
