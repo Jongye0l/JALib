@@ -19,4 +19,9 @@ class PatchWaiter {
     public void AddPatcher(JAPatcher patcher) {
         PendingPatcher.Add(patcher);
     }
+
+    public void RemoveFrom(PatchWaiter waiter) {
+        foreach(MethodBase method in waiter.NormalPatches) NormalPatches.Remove(method);
+        foreach(ReversePatchData patchData in waiter.ReversePatches) waiter.ReversePatches.Remove(patchData);
+    }
 }

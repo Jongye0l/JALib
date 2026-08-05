@@ -20,6 +20,7 @@ public class JAPatcher : IDisposable {
 
     #region CustomPatchPatching
     internal static Dictionary<MethodBase, JAInternalPatchInfo> JaPatches = new();
+    [ThreadStatic]
     private static PatchWaiter _patchWaiter;
     internal static object HarmonyLocker = typeof(PatchProcessor).GetValue("locker");
 
@@ -267,8 +268,8 @@ public class JAPatcher : IDisposable {
     public void Patch() {
         if(patched) return;
         patched = true;
-        bool addedPatchWaiter = _patchWaiter == null;
-        if(addedPatchWaiter) _patchWaiter = new PatchWaiter();
+        PatchWaiter originalWaiter = _patchWaiter;
+        if(originalWaiter == null || !usingWaiting) _patchWaiter = new PatchWaiter();
         _patchWaiter.AddPatcher(this);
         foreach(JAPatchBaseAttribute attribute in patchData) {
             try {
@@ -277,8 +278,12 @@ public class JAPatcher : IDisposable {
                 break;
             }
         }
-        if(!usingWaiting || !addedPatchWaiter && !MainThread.IsMainThread()) RunWaiterPatchForce(false);
-        else if(addedPatchWaiter) RunWaiterPatch();
+        if(!usingWaiting || !MainThread.IsRunningOnMainThreadUpdate) RunWaiterPatchForce();
+        else if(originalWaiter == null) RunWaiterPatch();
+        if(!usingWaiting && originalWaiter != null) {
+            _patchWaiter = originalWaiter;
+            _patchWaiter.RemoveFrom(originalWaiter);
+        }
     }
 
     private static void FindMethod(List<MethodBase> list, Type type, string name, Type[] argumentTypes) {
@@ -606,7 +611,7 @@ public class JAPatcher : IDisposable {
         jaInternalPatchInfo.AddOverridePatches(new OverridePatchData(patchMethod, attribute, mod));
     }
 
-    public static void RunWaiterPatchForce(bool setNull) {
+    public static void RunWaiterPatchForce() {
         if(_patchWaiter == null) return;
         try {
             PatchWaiter patchWaiter = _patchWaiter;
@@ -660,7 +665,7 @@ public class JAPatcher : IDisposable {
                         }
                     }
                 }
-                _patchWaiter = setNull ? null : new PatchWaiter();
+                _patchWaiter = null;
                 ReversePatchData[] reversePatches = patchWaiter.ReversePatches.ToArray();
                 for(int i = 0; i < reversePatches.Length; i++) {
                     ReversePatchData data = reversePatches[i];
@@ -699,7 +704,7 @@ public class JAPatcher : IDisposable {
             MainThread.ForceQueue(JALib.Instance, RunWaiterPatch);
             return;
         }
-        RunWaiterPatchForce(true);
+        RunWaiterPatchForce();
     }
 
     private static (PatchInfo, JAInternalPatchInfo) ClonePatch(PatchInfo patchInfo, JAInternalPatchInfo jaInternalPatchInfo) {
