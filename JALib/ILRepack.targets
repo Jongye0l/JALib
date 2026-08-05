@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project>
+    <Target Name="ILRepacker" AfterTargets="Build">
+        <ItemGroup>
+            <InputAssemblies Include="$(OutputPath)JALib.dll"/>
+            <InputAssemblies Include="$(OutputPath)JALib-IL.dll"/>
+        </ItemGroup>
+
+        <ItemGroup>
+            <LibraryPaths Include="$(OutputPath)"/>
+            <LibraryPaths Include="$(GameManagedPath)"/>
+        </ItemGroup>
+
+        <ILRepack
+                Parallel="true"
+                Internalize="false"
+                InputAssemblies="@(InputAssemblies)"
+                OutputFile="$(OutputPath)JALib.dll"
+                KeyFile="$(AssemblyOriginatorKeyFile)"
+                LibraryPath="@(LibraryPaths)"/>
+    </Target>
+</Project>

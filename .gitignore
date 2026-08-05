@@ -15,3 +15,6 @@ packages/
 
 # Signed Assembly
 *.snk
+
+# User Settings
+Directory.Build.props.user
