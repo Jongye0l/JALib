@@ -469,12 +469,12 @@
         <Exec Command="$(ILAsmCmd) @(ILSource->'&quot;%(Identity)&quot;', ' ') /dll /output:lib/JALib-IL.dll"/>
     </Target>
 
-    <Target Name="AfterBuild" Condition="'$(ModPath)' != ''">
-        <Copy SourceFiles="$(OutputPath)JALib.dll" DestinationFolder="$(ModPath)/JALib"/>
-        <Copy SourceFiles="$(OutputPath)JALib.pdb" DestinationFolder="$(ModPath)/JALib"/>
+    <Target Name="CopyToModPath" AfterTargets="ILRepacker" Condition="'$(ModPath)' != ''">
+        <Copy SourceFiles="$(OutputPath)JALib.dll" DestinationFolder="$(ModPath)/JALib" SkipUnchangedFiles="true" />
+        <Copy SourceFiles="$(OutputPath)JALib.pdb" DestinationFolder="$(ModPath)/JALib" Condition="Exists('$(OutputPath)JALib.pdb')" SkipUnchangedFiles="true" />
     </Target>
 
-    <Target Name="AfterBuild" Condition="'$(ReleasePath)' != '' and '$(Configuration)' == 'Release'">
-        <Copy SourceFiles="bin/Release/JALib.dll" DestinationFolder="$(ReleasePath)/JALib"/>
+    <Target Name="CopyToReleasePath" AfterTargets="ILRepacker" Condition="'$(ReleasePath)' != '' and '$(Configuration)' == 'Release'">
+        <Copy SourceFiles="$(OutputPath)JALib.dll" DestinationFolder="$(ReleasePath)/JALib" SkipUnchangedFiles="true" />
     </Target>
 </Project>

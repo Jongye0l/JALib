@@ -55,12 +55,12 @@
         </Reference>
     </ItemGroup>
 
-    <Target Name="AfterBuild" Condition="'$(ModPath)' != ''">
+    <Target Name="CopyToModPath" AfterTargets="Build" Condition="'$(ModPath)' != ''">
         <Copy SourceFiles="$(OutputPath)JALib.Bootstrap.dll" DestinationFolder="$(ModPath)/JALib"/>
         <Copy SourceFiles="$(OutputPath)JALib.Bootstrap.pdb" DestinationFolder="$(ModPath)/JALib"/>
     </Target>
 
-    <Target Name="AfterBuild" Condition="'$(ReleasePath)' != '' and '$(Configuration)' == 'Release'">
+    <Target Name="CopyToReleasePath" AfterTargets="Build" Condition="'$(ReleasePath)' != '' and '$(Configuration)' == 'Release'">
         <Copy SourceFiles="bin/Release/JALib.Bootstrap.dll" DestinationFolder="$(ReleasePath)/JALib"/>
     </Target>
 </Project>
