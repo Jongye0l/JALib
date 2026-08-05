@@ -3,6 +3,8 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using HarmonyLib;
 using JALib.Tools;
 
@@ -613,17 +615,41 @@ public class JAPatcher : IDisposable {
 
     public static void RunWaiterPatchForce() {
         if(_patchWaiter == null) return;
+        PatchWaiter patchWaiter = _patchWaiter;
+        Task task = Task.Run(patchWaiter.RunWaiterPatchForce); // = RunWaiterPatchForce0(patchWaiter)
+
+        int lastState = 0;
+        int waitingTimout = 0;
+        while(!task.Wait(1000)) {
+            int currentState = Volatile.Read(ref _patchWaiter.State);
+            if(lastState != currentState) {
+                lastState = currentState;
+                waitingTimout = 0;
+            } else if(++waitingTimout >= 5) {
+                JALib.Instance.Warning("The patch hasn't progressed for " + waitingTimout + " seconds.");
+                if(waitingTimout >= 10) {
+                    _patchWaiter = null;
+                    throw new TimeoutException("The patch hasn't progressed for 10 seconds.");
+                }
+            }
+        }
+
+        _patchWaiter = null;
+    }
+
+    internal static void RunWaiterPatchForce0(PatchWaiter patchWaiter) {
         try {
-            PatchWaiter patchWaiter = _patchWaiter;
             lock(HarmonyLocker) {
                 MethodBase[] normalPatches = patchWaiter.NormalPatches.ToArray();
                 for(int i = 0; i < normalPatches.Length; i++) {
+                    patchWaiter.State++;
                     MethodBase method = normalPatches[i];
                     PatchInfo patchInfo = GetPatchInfo(method) ?? new PatchInfo();
                     JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(method) ?? new JAInternalPatchInfo();
                     try {
                         MethodInfo replacement = PatchUpdateWrapper(method, patchInfo, jaInternalPatchInfo);
                         UpdatePatchInfoOnlyReplacement(method, replacement);
+                        patchWaiter.State++;
                     } catch (Exception e) {
                         try {
                             _doNotUnPatch = true;
@@ -636,6 +662,7 @@ public class JAPatcher : IDisposable {
                             JAPatchBaseAttribute[][] errorPatchesArray = new JAPatchBaseAttribute[patchers.Length][];
                         
                             for(j = patchers.Length - 1; j >= 0; j--) {
+                                patchWaiter.State++;
                                 if(!patchers[j].FoundErrorPatch(method, ref patchInfo, jaInternalPatchInfo, newPatch, newJaPatch, ref e, out errorPatchesArray[j])) continue;
                                 try {
                                     MethodInfo replacement = PatchUpdateWrapper(method, patchInfo, jaInternalPatchInfo);
@@ -647,6 +674,7 @@ public class JAPatcher : IDisposable {
                             }
                         
                             for(; j < patchers.Length; j++) {
+                                patchWaiter.State++;
                                 MethodInfo reverted = patchers[j].RevertErrorPatch(method, ref patchInfo, jaInternalPatchInfo, newPatch, newJaPatch, errorPatchesArray[j]);
                                 if((object) reverted == null) continue;
                                 UpdatePatchInfoOnlyReplacement(method, reverted);
@@ -665,15 +693,16 @@ public class JAPatcher : IDisposable {
                         }
                     }
                 }
-                _patchWaiter = null;
                 ReversePatchData[] reversePatches = patchWaiter.ReversePatches.ToArray();
                 for(int i = 0; i < reversePatches.Length; i++) {
+                    patchWaiter.State++;
                     ReversePatchData data = reversePatches[i];
                     MethodBase method = data.Original;
                     PatchInfo patchInfo = GetPatchInfo(method) ?? new PatchInfo();
                     JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(method) ?? new JAInternalPatchInfo();
                     try {
                         UpdateReversePatch(data, patchInfo, jaInternalPatchInfo);
+                        patchWaiter.State++;
                     } catch (Exception e) {
                         foreach(JAPatcher patcher in patchWaiter.PendingPatcher) {
                             if(patcher.patchData.Contains(data.Attribute)) {
