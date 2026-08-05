@@ -834,6 +834,8 @@ public class JAPatcher : IDisposable {
     public void Unpatch() {
         if(!patched || _doNotUnPatch) return;
         patched = false;
+        PatchWaiter originalWaiter = _patchWaiter;
+        if(originalWaiter == null || !usingWaiting) originalWaiter = _patchWaiter;
         foreach(JAPatchBaseAttribute baseAttribute in patchData) {
             try {
                 if(baseAttribute.MethodBase == null) {
@@ -845,30 +847,40 @@ public class JAPatcher : IDisposable {
                     string id = patchAttribute.PatchId;
                     lock(HarmonyLocker) {
                         PatchInfo patchInfo = GetPatchInfo(patchAttribute.MethodBase) ?? new PatchInfo();
-                        JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(patchAttribute.MethodBase) ?? new JAInternalPatchInfo();
+                        JAInternalPatchInfo jaInternalPatchInfo = JaPatches.GetValueOrDefault(patchAttribute.MethodBase);
+                        if(jaInternalPatchInfo == null) continue;
+                        bool updateHarmonyPatchInfo = false;
                         switch(patchAttribute.PatchType) {
                             case PatchType.Prefix:
                                 if(CheckRemove(patch)) RemovePatch(patch, id, ref jaInternalPatchInfo.removes);
                                 else if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPrefixes);
-                                else RemovePatch(patch, id, ref patchInfo.prefixes);
+                                else {
+                                    RemovePatch(patch, id, ref patchInfo.prefixes);
+                                    updateHarmonyPatchInfo = true;
+                                }
                                 break;
                             case PatchType.Postfix:
                                 if(patchAttribute.TryingCatch) RemovePatch(patch, id, ref jaInternalPatchInfo.tryPostfixes);
-                                else RemovePatch(patch, id, ref patchInfo.postfixes);
+                                else {
+                                    RemovePatch(patch, id, ref patchInfo.postfixes);
+                                    updateHarmonyPatchInfo = true;
+                                }
                                 break;
                             case PatchType.Transpiler:
                                 RemovePatch(patch, id, ref patchInfo.transpilers);
+                                updateHarmonyPatchInfo = true;
                                 break;
                             case PatchType.Finalizer:
                                 RemovePatch(patch, id, ref patchInfo.finalizers);
+                                updateHarmonyPatchInfo = true;
                                 break;
                             case PatchType.Replace:
                                 RemovePatch(patch, id, ref jaInternalPatchInfo.replaces);
                                 break;
                         }
-                        MethodInfo replacement = PatchUpdateWrapper(patchAttribute.MethodBase, patchInfo, jaInternalPatchInfo);
-                        typeof(Harmony).Assembly.GetType("HarmonyLib.HarmonySharedState").Invoke("UpdatePatchInfo", patchAttribute.MethodBase, replacement, patchInfo);
-                        JaPatches[patchAttribute.MethodBase] = jaInternalPatchInfo;
+
+                        if(updateHarmonyPatchInfo) UpdatePatchInfoOnlyPatchInfo(patchAttribute.MethodBase, patchInfo);
+                        _patchWaiter.AddNormalPatch(patchAttribute.MethodBase);
                     }
                 } else if(baseAttribute is JAReversePatchAttribute reversePatchAttribute) {
                     if(reversePatchAttribute.PatchType == ReversePatchType.Original || reversePatchAttribute.PatchType.HasFlag(ReversePatchType.DontUpdate)) continue;
@@ -883,6 +895,11 @@ public class JAPatcher : IDisposable {
             } catch (Exception e) {
                 mod.LogReportException("Failed to unpatch patch '" + baseAttribute.PatchId + "'.", e);
             }
+        }
+        if(!usingWaiting || originalWaiter == null || !MainThread.IsRunningOnMainThreadUpdate) RunWaiterPatchForce();
+        if(!usingWaiting && originalWaiter != null) {
+            _patchWaiter = originalWaiter;
+            _patchWaiter.RemoveFrom(originalWaiter);
         }
     }
 
