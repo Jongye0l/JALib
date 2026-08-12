@@ -864,7 +864,7 @@ public class JAPatcher : IDisposable {
         if(!patched || _doNotUnPatch) return;
         patched = false;
         PatchWaiter originalWaiter = _patchWaiter;
-        if(originalWaiter == null || !usingWaiting) originalWaiter = _patchWaiter;
+        if(originalWaiter == null || !usingWaiting) _patchWaiter = new PatchWaiter();
         foreach(JAPatchBaseAttribute baseAttribute in patchData) {
             try {
                 if(baseAttribute.MethodBase == null) {
