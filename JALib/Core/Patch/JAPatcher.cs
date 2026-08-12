@@ -283,8 +283,8 @@ public class JAPatcher : IDisposable {
         if(!usingWaiting || !MainThread.IsRunningOnMainThreadUpdate) RunWaiterPatchForce();
         else if(originalWaiter == null) RunWaiterPatch();
         if(!usingWaiting && originalWaiter != null) {
+            if(_patchWaiter != null) originalWaiter.RemoveFrom(_patchWaiter);
             _patchWaiter = originalWaiter;
-            _patchWaiter.RemoveFrom(originalWaiter);
         }
     }
 
