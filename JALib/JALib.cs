@@ -124,7 +124,7 @@ sealed class JALib : JAMod {
         }
         if(File.Exists(applicationPath)) {
             FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(applicationPath);
-            if(Version.Parse(versionInfo.FileVersion) >= new Version(1, 0, 0, 4)) return;
+            if(Version.Parse(versionInfo.FileVersion) >= new Version(1, 0, 0, 5)) return;
         }
         Directory.CreateDirectory(applicationFolderPath);
         Process[] processes = Process.GetProcessesByName("JALib ModApplicator.exe");

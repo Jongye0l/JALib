@@ -23,7 +23,9 @@ namespace JALib.ModApplicator;
 class Program {
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
-    private static readonly HttpClient Client = new();
+    private static readonly HttpClient Client = new(new HttpClientHandler {
+        AllowAutoRedirect = false
+    });
     private static string _adofaiPath;
     private static AdofaiStatus _adofaiStatus = AdofaiStatus.NotSet;
     private static int _port;
@@ -181,11 +183,9 @@ End:
     }
     
     private static async Task<HttpResponseMessage> GetResponse(string url) {
-        Uri uri = new(url);
-        Stopwatch stopwatch = new();
+        Uri uri = new(url, UriKind.RelativeOrAbsolute);
         while(true) {
-            using CancellationTokenSource cts = new(10);
-            stopwatch.Restart();
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10000));
             HttpResponseMessage response = await Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cts.Token);
             if((uint) response.StatusCode < 300 || (uint) response.StatusCode >= 400 || (object) response.Headers.Location == null) return response;
             uri = response.Headers.Location;
@@ -208,7 +208,6 @@ End:
             }
             using Stream stream = await response.Content.ReadAsStreamAsync();
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
-            while(_adofaiPath == null) await Task.Delay(10);
             string path = Path.Combine(_adofaiPath, "Mods", modName);
             if(!Directory.Exists(path)) Directory.CreateDirectory(path);
             foreach(ZipArchiveEntry entry in archive.Entries) {
