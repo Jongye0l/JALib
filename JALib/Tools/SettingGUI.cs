@@ -206,7 +206,19 @@ public class SettingGUI(JAMod mod) {
         GUILayout.BeginHorizontal();
         GUILayout.Label(text);
         GUILayout.Space(4f);
-        foreach(T current in values) AddEnumButton(ref value, current.ToString(), current, onChanged);
+
+        JALocalization localization = mod.Localization;
+        string keyPrefix = "Enum." + typeof(T).Name + '.';
+        string keyPrefix2 = "Enum." + typeof(T).FullName + '.';
+
+        foreach(T current in values) {
+            string valueString = current.ToString();
+            if(!localization.TryGet(keyPrefix + valueString, out string str)) 
+                if(!localization.TryGet(keyPrefix2 + valueString, out str)) 
+                    str = valueString;
+
+            AddEnumButton(ref value, str, current, onChanged);
+        }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
     }
