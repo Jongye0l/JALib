@@ -91,7 +91,7 @@ public static class Installer {
         Uri uri = new(url);
         Stopwatch stopwatch = new();
         while(true) {
-            using CancellationTokenSource cts = new(10);
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
             stopwatch.Restart();
             HttpResponseMessage response;
             try {
