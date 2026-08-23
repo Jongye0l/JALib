@@ -21,25 +21,30 @@ public class SettingGUI(JAMod mod) {
                 mod.ModSetting.Save();
             }
             GUILayout.Space(4f);
-            valueString = GUILayout.TextField(valueString ?? value.ToString());
-            int resultInt;
-            try {
-                resultInt = valueString.IsNullOrEmpty() ? defaultValue : int.Parse(valueString);
-                if(resultInt < min) {
-                    resultInt = min;
-                    valueString = min.ToString();
-                } else if(resultInt > max) {
-                    resultInt = max;
-                    valueString = max.ToString();
+            string original = valueString ??= value.ToString();
+            string result = GUILayout.TextField(original);
+            if(result != original) {
+                int resultInt;
+                try {
+                    resultInt = valueString.IsNullOrEmpty() ? defaultValue : int.Parse(valueString);
+                    if(resultInt < min) {
+                        resultInt = min;
+                        valueString = min.ToString();
+                    } else if(resultInt > max) {
+                        resultInt = max;
+                        valueString = max.ToString();
+                    } else {
+                        valueString = result;
+                    }
+                } catch (FormatException) {
+                    resultInt = defaultValue;
+                    valueString = defaultValue.ToString();
                 }
-            } catch (FormatException) {
-                resultInt = defaultValue;
-                valueString = defaultValue.ToString();
-            }
-            if(resultInt != value) {
-                value = resultInt;
-                onChanged?.Invoke();
-                mod.ModSetting.Save();
+                if(resultInt != value) {
+                    value = resultInt;
+                    onChanged?.Invoke();
+                    mod.ModSetting.Save();
+                }
             }
         } else if(value2) {
             value2 = false;
@@ -54,25 +59,30 @@ public class SettingGUI(JAMod mod) {
         GUILayout.BeginHorizontal();
         GUILayout.Label(text);
         GUILayout.Space(4f);
-        valueString = GUILayout.TextField(valueString ?? value.ToString());
-        int resultInt;
-        try {
-            resultInt = valueString.IsNullOrEmpty() ? defaultValue : int.Parse(valueString);
-            if(resultInt < min) {
-                resultInt = min;
-                valueString = min.ToString();
-            } else if(resultInt > max) {
-                resultInt = max;
-                valueString = max.ToString();
+        string original = valueString ??= value.ToString();
+        string result = GUILayout.TextField(original);
+        if(result != original) {
+            int resultInt;
+            try {
+                resultInt = valueString.IsNullOrEmpty() ? defaultValue : int.Parse(valueString);
+                if(resultInt < min) {
+                    resultInt = min;
+                    valueString = min.ToString();
+                } else if(resultInt > max) {
+                    resultInt = max;
+                    valueString = max.ToString();
+                } else {
+                    valueString = result;
+                }
+            } catch (FormatException) {
+                resultInt = defaultValue;
+                valueString = defaultValue.ToString();
             }
-        } catch (FormatException) {
-            resultInt = defaultValue;
-            valueString = defaultValue.ToString();
-        }
-        if(resultInt != value) {
-            value = resultInt;
-            onChanged?.Invoke();
-            mod.ModSetting.Save();
+            if(resultInt != value) {
+                value = resultInt;
+                onChanged?.Invoke();
+                mod.ModSetting.Save();
+            }
         }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
@@ -82,25 +92,30 @@ public class SettingGUI(JAMod mod) {
         GUILayout.BeginHorizontal();
         GUILayout.Label(text);
         GUILayout.Space(4f);
-        valueString = GUILayout.TextField(valueString ?? value.ToString());
-        float resultFloat;
-        try {
-            resultFloat = valueString.IsNullOrEmpty() ? defaultValue : float.Parse(valueString);
-            if(resultFloat < min) {
-                resultFloat = min;
-                valueString = min.ToString();
-            } else if(resultFloat > max) {
-                resultFloat = max;
-                valueString = max.ToString();
+        string original = valueString ??= value.ToString();
+        string result = GUILayout.TextField(original);
+        if(result != original) {
+            float resultFloat;
+            try {
+                resultFloat = valueString.IsNullOrEmpty() ? defaultValue : float.Parse(valueString);
+                if(resultFloat < min) {
+                    resultFloat = min;
+                    valueString = min.ToString();
+                } else if(resultFloat > max) {
+                    resultFloat = max;
+                    valueString = max.ToString();
+                } else {
+                    valueString = result;
+                }
+            } catch (FormatException) {
+                resultFloat = defaultValue;
+                valueString = defaultValue.ToString();
             }
-        } catch (FormatException) {
-            resultFloat = defaultValue;
-            valueString = defaultValue.ToString();
-        }
-        if(resultFloat != value) {
-            value = resultFloat;
-            onChanged?.Invoke();
-            mod.ModSetting.Save();
+            if(resultFloat != value) {
+                value = resultFloat;
+                onChanged?.Invoke();
+                mod.ModSetting.Save();
+            }
         }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
@@ -110,25 +125,30 @@ public class SettingGUI(JAMod mod) {
         GUILayout.BeginHorizontal();
         GUILayout.Label(text);
         GUILayout.Space(4f);
-        valueString = GUILayout.TextField(valueString ?? value.ToString());
-        long resultLong;
-        try {
-            resultLong = valueString.IsNullOrEmpty() ? defaultValue : long.Parse(valueString);
-            if(resultLong < min) {
-                resultLong = min;
-                valueString = min.ToString();
-            } else if(resultLong > max) {
-                resultLong = max;
-                valueString = max.ToString();
+        string original = valueString ??= value.ToString();
+        string result = GUILayout.TextField(valueString ?? value.ToString());
+        if(result != original) {
+            long resultLong;
+            try {
+                resultLong = valueString.IsNullOrEmpty() ? defaultValue : long.Parse(valueString);
+                if(resultLong < min) {
+                    resultLong = min;
+                    valueString = min.ToString();
+                } else if(resultLong > max) {
+                    resultLong = max;
+                    valueString = max.ToString();
+                } else {
+                    valueString = result;
+                }
+            } catch (FormatException) {
+                resultLong = defaultValue;
+                valueString = defaultValue.ToString();
             }
-        } catch (FormatException) {
-            resultLong = defaultValue;
-            valueString = defaultValue.ToString();
-        }
-        if(resultLong != value) {
-            value = resultLong;
-            onChanged?.Invoke();
-            mod.ModSetting.Save();
+            if(resultLong != value) {
+                value = resultLong;
+                onChanged?.Invoke();
+                mod.ModSetting.Save();
+            }
         }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
@@ -138,25 +158,30 @@ public class SettingGUI(JAMod mod) {
         GUILayout.BeginHorizontal();
         GUILayout.Label(text);
         GUILayout.Space(4f);
-        valueString = GUILayout.TextField(valueString ?? value.ToString());
-        double resultDouble;
-        try {
-            resultDouble = valueString.IsNullOrEmpty() ? defaultValue : double.Parse(valueString);
-            if(resultDouble < min) {
-                resultDouble = min;
-                valueString = min.ToString();
-            } else if(resultDouble > max) {
-                resultDouble = max;
-                valueString = max.ToString();
+        string original = valueString ??= value.ToString();
+        string result = GUILayout.TextField(original);
+        if(result != original) {
+            double resultDouble;
+            try {
+                resultDouble = valueString.IsNullOrEmpty() ? defaultValue : double.Parse(valueString);
+                if(resultDouble < min) {
+                    resultDouble = min;
+                    valueString = min.ToString();
+                } else if(resultDouble > max) {
+                    resultDouble = max;
+                    valueString = max.ToString();
+                } else {
+                    valueString = result;
+                }
+            } catch (FormatException) {
+                resultDouble = defaultValue;
+                valueString = defaultValue.ToString();
             }
-        } catch (FormatException) {
-            resultDouble = defaultValue;
-            valueString = defaultValue.ToString();
-        }
-        if(resultDouble != value) {
-            value = resultDouble;
-            onChanged?.Invoke();
-            mod.ModSetting.Save();
+            if(resultDouble != value) {
+                value = resultDouble;
+                onChanged?.Invoke();
+                mod.ModSetting.Save();
+            }
         }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
@@ -166,8 +191,9 @@ public class SettingGUI(JAMod mod) {
         GUILayout.BeginHorizontal();
         GUILayout.Label(text);
         GUILayout.Space(4f);
-        string result = GUILayout.TextField(value ?? defaultValue);
-        if(value != result) {
+        string original = value ?? defaultValue;
+        string result = GUILayout.TextField(original);
+        if(result != original) {
             value = result;
             onChanged?.Invoke();
             mod.ModSetting.Save();
@@ -208,17 +234,21 @@ public class SettingGUI(JAMod mod) {
             onChanged?.Invoke();
             mod.ModSetting.Save();
         }
-        valueString = GUILayout.TextField(valueString ?? value.ToString(), GUILayout.Width(50));
-        try {
-            result = valueString.IsNullOrEmpty() ? defaultValue : float.Parse(valueString);
-        } catch (FormatException) {
-            result = defaultValue;
-            valueString = result.ToString();
-        }
-        if(result != value) {
-            value = result;
-            onChanged?.Invoke();
-            mod.ModSetting.Save();
+        string original = valueString ??= value.ToString();
+        string resultString = GUILayout.TextField(original, GUILayout.Width(50));
+        if(resultString != original) {
+            valueString = resultString;
+            try {
+                result = valueString.IsNullOrEmpty() ? defaultValue : float.Parse(valueString);
+            } catch (FormatException) {
+                result = defaultValue;
+                valueString = result.ToString();
+            }
+            if(result != value) {
+                value = result;
+                onChanged?.Invoke();
+                mod.ModSetting.Save();
+            }
         }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
@@ -235,17 +265,20 @@ public class SettingGUI(JAMod mod) {
             onChanged?.Invoke();
             mod.ModSetting.Save();
         }
-        valueString = GUILayout.TextField(valueString ?? value.ToString(), GUILayout.Width(50));
-        try {
-            result = valueString.IsNullOrEmpty() ? defaultValue : int.Parse(valueString);
-        } catch (FormatException) {
-            result = defaultValue;
-            valueString = result.ToString();
-        }
-        if(result != value) {
-            value = result;
-            onChanged?.Invoke();
-            mod.ModSetting.Save();
+        string original = valueString ?? value.ToString();
+        string resultString = GUILayout.TextField(original, GUILayout.Width(50));
+        if(resultString != original) {
+            try {
+                result = valueString.IsNullOrEmpty() ? defaultValue : int.Parse(valueString);
+            } catch (FormatException) {
+                result = defaultValue;
+                valueString = result.ToString();
+            }
+            if(result != value) {
+                value = result;
+                onChanged?.Invoke();
+                mod.ModSetting.Save();
+            }
         }
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
