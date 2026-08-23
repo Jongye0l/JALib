@@ -23,12 +23,12 @@ namespace JALib.ModApplicator;
 class Program {
     private const string Domain1 = "jalib.jongyeol.kr";
     private const string Domain2 = "jalib2.jongyeol.kr";
-    private static readonly HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-    private static string adofaiPath;
-    private static AdofaiStatus adofaiStatus = AdofaiStatus.NotSet;
-    private static int port;
-    private static JALibStatus jaLibStatus = JALibStatus.NotSet;
-    private static Dictionary<string, string> dependencies;
+    private static readonly HttpClient Client = new();
+    private static string _adofaiPath;
+    private static AdofaiStatus _adofaiStatus = AdofaiStatus.NotSet;
+    private static int _port;
+    private static JALibStatus _jaLibStatus = JALibStatus.NotSet;
+    private static Dictionary<string, string> _dependencies;
 
     static Program() {
         Client.DefaultRequestHeaders.ExpectContinue = false;
@@ -84,7 +84,7 @@ class Program {
             Visible = true
         };
         LoadSettings();
-        string path = Path.Combine(adofaiPath, "Mods");
+        string path = Path.Combine(_adofaiPath, "Mods");
         string curModPath = Path.Combine(path, args[0]);
         if(Directory.Exists(curModPath)) {
             string infoPath = Path.Combine(curModPath, "Info.json");
@@ -107,10 +107,10 @@ class Program {
         notifyIcon.Text = string.Format(localization.DependenciesInstalling, args[0]);
         List<Task> modInstallTasks = [];
         Dictionary<string, Version> requestDependencies = new();
-        while(dependencies.Count > 0) {
-            string modName = dependencies.Keys.First();
-            Version version = new(dependencies[modName]);
-            dependencies.Remove(modName);
+        while(_dependencies.Count > 0) {
+            string modName = _dependencies.Keys.First();
+            Version version = new(_dependencies[modName]);
+            _dependencies.Remove(modName);
             if(requestDependencies.ContainsKey(modName)) {
                 if(requestDependencies[modName] < version) requestDependencies[modName] = version;
                 else continue;
@@ -134,10 +134,10 @@ class Program {
         }
         await Task.WhenAll(modInstallTasks);
         bool adofaiRestart = false;
-        if(adofaiStatus == AdofaiStatus.EnabledWithMod) {
+        if(_adofaiStatus == AdofaiStatus.EnabledWithMod) {
             try {
                 using(TcpClient client = new()) {
-                    await client.ConnectAsync("localhost", port);
+                    await client.ConnectAsync("localhost", _port);
                     using NetworkStream stream = client.GetStream();
                     stream.WriteByte(0);
                     byte[] data = Encoding.UTF8.GetBytes(args[0]);
@@ -152,7 +152,7 @@ class Program {
                 goto AdofaiRestart;
             }
         }
-        switch(jaLibStatus) {
+        switch(_jaLibStatus) {
             case JALibStatus.NotInstalled: goto DownloadJALib;
             case JALibStatus.NotEnabled:
             case JALibStatus.UmmNotInstalled:
@@ -168,14 +168,14 @@ End:
         notifyIcon.Text = string.Format(localization.ModApplyFinish, args[0]);
         notifyIcon.ShowBalloonTip(3000, localization.ModAnnounceTitle, args[0] + localization.FinishModApply, ToolTipIcon.Info);
         if(adofaiRestart) {
-            DialogResult result = MessageBox.Show(adofaiStatus == AdofaiStatus.Enabled ? localization.AdofaiRestart : localization.AdofaiStart, localization.AdofaiRestartTitle,
+            DialogResult result = MessageBox.Show(_adofaiStatus == AdofaiStatus.Enabled ? localization.AdofaiRestart : localization.AdofaiStart, localization.AdofaiRestartTitle,
                 MessageBoxButtons.YesNo, MessageBoxIcon.Information);
             if(result == DialogResult.Yes) {
-                if(adofaiStatus == AdofaiStatus.Enabled) {
+                if(_adofaiStatus == AdofaiStatus.Enabled) {
                     Process[] processes = Process.GetProcessesByName("A Dance of Fire and Ice");
                     foreach(Process process in processes) process.Kill();
                 }
-                Process.Start(Path.Combine(adofaiPath, "A Dance of Fire and Ice.exe"));
+                Process.Start(Path.Combine(_adofaiPath, "A Dance of Fire and Ice.exe"));
             }
         }
     }
@@ -208,8 +208,8 @@ End:
             }
             using Stream stream = await response.Content.ReadAsStreamAsync();
             using ZipArchive archive = new(stream, ZipArchiveMode.Read, false, Encoding.UTF8);
-            while(adofaiPath == null) await Task.Delay(10);
-            string path = Path.Combine(adofaiPath, "Mods", modName);
+            while(_adofaiPath == null) await Task.Delay(10);
+            string path = Path.Combine(_adofaiPath, "Mods", modName);
             if(!Directory.Exists(path)) Directory.CreateDirectory(path);
             foreach(ZipArchiveEntry entry in archive.Entries) {
                 string entryPath = Path.Combine(path, entry.FullName);
@@ -219,21 +219,21 @@ End:
             }
             try {
                 JObject modInfo = JObject.Parse(File.ReadAllText(Path.Combine(path, "JAModInfo.json")));
-                if(core) dependencies = modInfo["Dependencies"]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+                if(core) _dependencies = modInfo["Dependencies"]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
                 else {
                     if(modInfo.ContainsKey("Dependencies")) {
                         foreach(KeyValuePair<string, string> value in modInfo["Dependencies"].ToObject<Dictionary<string, string>>()) {
-                            if(dependencies.ContainsKey(value.Key)) {
-                                Version version1 = new(dependencies[value.Key]);
+                            if(_dependencies.ContainsKey(value.Key)) {
+                                Version version1 = new(_dependencies[value.Key]);
                                 Version version2 = new(value.Value);
-                                if(version1 < version2) dependencies[value.Key] = value.Value;
-                            } else dependencies.Add(value.Key, value.Value);
+                                if(version1 < version2) _dependencies[value.Key] = value.Value;
+                            } else _dependencies.Add(value.Key, value.Value);
                         }
                     }
                 }
             } catch (Exception) {
                 MessageBox.Show(Localization.Current.Error_LoadModInfo, Localization.Current.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                dependencies = new Dictionary<string, string>();
+                _dependencies = new Dictionary<string, string>();
             }
         } catch (Exception e) {
             MessageBox.Show(e.ToString(), Localization.Current.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -262,34 +262,34 @@ End:
     public static void LoadSettings() {
         try {
             using RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Classes\JALib");
-            adofaiPath = (string) key.GetValue("AdofaiPath");
-            port = (int) key.GetValue("port");
-            adofaiStatus = AdofaiStatus.EnabledWithMod;
+            _adofaiPath = (string) key.GetValue("AdofaiPath");
+            _port = (int) key.GetValue("port");
+            _adofaiStatus = AdofaiStatus.EnabledWithMod;
         } catch {
             try {
-                adofaiStatus = Process.GetProcessesByName("A Dance of Fire and Ice").Length == 0 ? AdofaiStatus.NotEnabled : AdofaiStatus.Enabled;
-                string jalibPath = Path.Combine(adofaiPath, "Mods", "JALib", "JALib.dll");
+                _adofaiStatus = Process.GetProcessesByName("A Dance of Fire and Ice").Length == 0 ? AdofaiStatus.NotEnabled : AdofaiStatus.Enabled;
+                string jalibPath = Path.Combine(_adofaiPath, "Mods", "JALib", "JALib.dll");
                 if(!File.Exists(jalibPath)) {
-                    jaLibStatus = JALibStatus.NotInstalled;
+                    _jaLibStatus = JALibStatus.NotInstalled;
                     return;
                 }
-                string settingPath = Path.Combine(adofaiPath, "A Dance of Fire and Ice_Data", "Managed", "UnityModManager");
+                string settingPath = Path.Combine(_adofaiPath, "A Dance of Fire and Ice_Data", "Managed", "UnityModManager");
                 if(!Directory.Exists(settingPath)) {
-                    jaLibStatus = JALibStatus.UmmNotInstalled;
+                    _jaLibStatus = JALibStatus.UmmNotInstalled;
                     return;
                 }
                 if(!File.Exists(Path.Combine(settingPath, "Params.xml"))) {
-                    jaLibStatus = JALibStatus.UmmNotInitialized;
+                    _jaLibStatus = JALibStatus.UmmNotInitialized;
                     return;
                 }
                 string data = File.ReadAllText(Path.Combine(settingPath, "Params.xml")).ToLower();
                 if(data.Contains("""
                                  <mod id="jalib" enabled="false"
-                                 """)) jaLibStatus = JALibStatus.NotEnabled;
+                                 """)) _jaLibStatus = JALibStatus.NotEnabled;
                 else if(data.Contains("""
                                       <mod id="jalib" enabled="true"
-                                      """)) jaLibStatus = JALibStatus.Enabled;
-                else jaLibStatus = JALibStatus.Error;
+                                      """)) _jaLibStatus = JALibStatus.Enabled;
+                else _jaLibStatus = JALibStatus.Error;
             } catch (Exception e) {
                 MessageBox.Show(Localization.Current.Error_LoadAdofaiPath + e, Localization.Current.Error_Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(-1);
