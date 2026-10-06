@@ -3,9 +3,10 @@ using System.Reflection;
 using dnlib.DotNet;
 
 namespace JALib.Core.ModLoader;
+using System.Collections.Concurrent;
 
 class AssemblyLoader {
-    public static Dictionary<string, Assembly> LoadedAssemblies = new();
+    public static readonly ConcurrentDictionary<string, Assembly> LoadedAssemblies = new();
 
     static AssemblyLoader() {
         AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
