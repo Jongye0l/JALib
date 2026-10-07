@@ -3,10 +3,9 @@ using System.Reflection;
 using dnlib.DotNet;
 
 namespace JALib.Core.ModLoader;
-using System.Collections.Concurrent;
 
 class AssemblyLoader {
-    public static readonly ConcurrentDictionary<string, Assembly> LoadedAssemblies = new();
+    public static readonly Dictionary<string, Assembly> LoadedAssemblies = new();
 
     static AssemblyLoader() {
         AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
@@ -16,7 +15,7 @@ class AssemblyLoader {
 
     public static Assembly LoadAssembly(string path, bool noChangeAssemblyName) {
         Assembly assembly = Assembly.LoadFrom(path);
-        if(!noChangeAssemblyName) LoadedAssemblies[assembly.GetName().Name[..^6]] = assembly;
+        if(!noChangeAssemblyName) lock(LoadedAssemblies) LoadedAssemblies[assembly.GetName().Name[..^6]] = assembly;
         return assembly;
     }
 
