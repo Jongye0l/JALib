@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using dnlib.DotNet;
 
@@ -27,7 +28,10 @@ class AssemblyLoader {
 
     private static void SetupName(ModuleDef module) {
         AssemblyDef assembly = module.Assembly;
-        assembly.Name += "-JAMod";
+        byte[] data = new byte[assembly.Name.Data.Length + 6];
+        Buffer.BlockCopy(assembly.Name.Data, 0, data, 0, assembly.Name.Data.Length);
+        "-JAMod"u8.CopyTo(data.AsSpan(assembly.Name.Data.Length));
+        assembly.Name = new UTF8String(data);
     }
 
     public static void CreateCacheReloadAssembly(string path, string cachePath, int reloadCount) {
