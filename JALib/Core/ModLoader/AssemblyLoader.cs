@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using dnlib.DotNet;
 
@@ -47,7 +46,19 @@ class AssemblyLoader {
     private static bool CheckType(ITypeDefOrRef type) {
         while(true) {
             if(type == null) return false;
-            if(type.FullName == "UnityEngine.MonoBehaviour") return true;
+            if(type.Name.Data.SequenceEqual("MonoBehaviour"u8)) {
+                switch(type) {
+                    case TypeRef @ref:
+                        if(@ref.Namespace.Data.SequenceEqual("UnityEngine"u8)) return true;
+                        break;
+                    case TypeDef def:
+                        if(def.Namespace.Data.SequenceEqual("UnityEngine"u8)) return true;
+                        break;
+                    default:
+                        if(type.Namespace == "UnityEngine") return true;
+                        break;
+                }
+            }
             type = type.GetBaseType();
         }
     }
